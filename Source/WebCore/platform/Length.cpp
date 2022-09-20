@@ -310,8 +310,11 @@ static Length blendMixedTypes(const Length& from, const Length& to, const Blendi
     if (from.isIntrinsicOrAuto() || to.isIntrinsicOrAuto() || from.isRelative() || to.isRelative())
         return { 0, LengthType::Fixed };
 
+
     auto blend = makeUnique<CalcExpressionBlendLength>(from, to, context.progress);
-    return Length(CalculationValue::create(WTFMove(blend), ValueRange::All));
+    auto blendedValue = Length(CalculationValue::create(WTFMove(blend), ValueRange::All));
+    ALWAYS_LOG_WITH_STREAM(stream << "[GRAOUTS] Blended " << from << " and " << to << " into " << blendedValue);
+    return blendedValue;
 }
 
 Length blend(const Length& from, const Length& to, const BlendingContext& context)
