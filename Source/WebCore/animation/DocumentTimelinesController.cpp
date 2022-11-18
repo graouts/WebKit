@@ -79,6 +79,7 @@ void DocumentTimelinesController::detachFromDocument()
 
 void DocumentTimelinesController::updateAnimationsAndSendEvents(ReducedResolutionSeconds timestamp)
 {
+    WTFLogAlways("[GRAOUTS] DocumentTimelinesController::updateAnimationsAndSendEvents");
     auto previousMaximumAnimationFrameRate = maximumAnimationFrameRate();
     // This will hold the frame rate at which we would schedule updates not
     // accounting for the frame rate of animations.
