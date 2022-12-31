@@ -938,6 +938,19 @@ CSSMarginTrimEnabled:
     WebCore:
       default: true
 
+CSSMixEnabled:
+  type: bool
+  status: unstable
+  humanReadableName: "CSS mix()"
+  humanReadableDescription: "Enable support for CSS mix() defined in CSS Values and Units Module Level 4"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 CSSMotionPathEnabled:
   type: bool
   status: stable
