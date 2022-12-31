@@ -57,6 +57,7 @@
 #include "CSSImageSetValue.h"
 #include "CSSImageValue.h"
 #include "CSSLineBoxContainValue.h"
+#include "CSSMixValue.h"
 #include "CSSNamedImageValue.h"
 #include "CSSOffsetRotateValue.h"
 #include "CSSPaintImageValue.h"
@@ -158,6 +159,8 @@ template<typename Visitor> constexpr decltype(auto) CSSValue::visitDerived(Visit
         return std::invoke(std::forward<Visitor>(visitor), downcast<CSSLineBoxContainValue>(*this));
     case LinearGradientClass:
         return std::invoke(std::forward<Visitor>(visitor), downcast<CSSLinearGradientValue>(*this));
+    case MixClass:
+        return std::invoke(std::forward<Visitor>(visitor), downcast<CSSMixValue>(*this));
     case NamedImageClass:
         return std::invoke(std::forward<Visitor>(visitor), downcast<CSSNamedImageValue>(*this));
     case PrefixedLinearGradientClass:

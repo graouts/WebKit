@@ -782,6 +782,7 @@ css/CSSLayerStatementRule.cpp
 css/CSSLineBoxContainValue.cpp
 css/CSSMarkup.cpp
 css/CSSMediaRule.cpp
+css/CSSMixValue.cpp
 css/CSSNamedImageValue.cpp
 css/CSSNamespaceRule.cpp
 css/CSSOffsetRotateValue.cpp

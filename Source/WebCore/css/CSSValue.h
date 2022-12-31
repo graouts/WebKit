@@ -104,6 +104,7 @@ public:
     bool isSubgridValue() const { return m_classType == SubgridClass; }
     bool isTransformListValue() const { return m_classType == TransformListClass; }
     bool isUnicodeRangeValue() const { return m_classType == UnicodeRangeClass; }
+    bool isMixValue() const { return m_classType == MixClass; }
 
     bool isVariableReferenceValue() const { return m_classType == VariableReferenceClass; }
     bool isPendingSubstitutionValue() const { return m_classType == PendingSubstitutionValueClass; }
@@ -200,6 +201,8 @@ protected:
 
         OffsetRotateClass,
         RayClass,
+
+        MixClass,
 
         // List class types must appear after ValueListClass. Note CSSFunctionValue
         // is deliberately excluded, since we don't want it exposed to the CSS OM
