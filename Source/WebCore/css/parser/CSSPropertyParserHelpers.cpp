@@ -6122,6 +6122,7 @@ RefPtr<CSSValue> consumeTranslate(CSSParserTokenRange& range, CSSParserMode cssP
     // Always include 0% in serialization per-spec.
     if (is<CSSPrimitiveValue>(y)) {
         auto& yPrimitiveValue = downcast<CSSPrimitiveValue>(*y);
+        // FIXME: what about mix() values?
         if (yPrimitiveValue.isCalculated() || yPrimitiveValue.isPercentage() || !*yPrimitiveValue.isZero())
             list->append(*y);
     }
@@ -6132,6 +6133,7 @@ RefPtr<CSSValue> consumeTranslate(CSSParserTokenRange& range, CSSParserMode cssP
     if (is<CSSPrimitiveValue>(z)) {
         auto& zPrimitiveValue = downcast<CSSPrimitiveValue>(*z);
         // If the z value is a zero value and not a percent value, we have nothing left to add to the list.
+        // FIXME: what about mix() values?
         if (!zPrimitiveValue.isCalculated() && !zPrimitiveValue.isPercentage() && *zPrimitiveValue.isZero())
             return list;
         // Add the zero value for y if we did not already add a y value.

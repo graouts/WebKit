@@ -235,6 +235,7 @@ bool GenericMediaQueryParserBase::validateFeatureAgainstSchema(Feature& feature,
 {
     auto isNegative = [&](auto& value) {
         // Calc is supposed to clamp but let's just let the value through as we deal with negative values just fine.
+        // FIXME: what about mix() values?
         if (value.isCalculated())
             return false;
         // FIXME: The spec allows negative values for some features but we use the legacy behavior for now.

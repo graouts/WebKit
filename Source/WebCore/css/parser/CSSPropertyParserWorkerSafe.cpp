@@ -289,6 +289,7 @@ static RefPtr<CSSPrimitiveValue> consumeFontStyleAngle(CSSParserTokenRange& rang
     auto angle = CSSPropertyParserHelpers::consumeAngle(rangeAfterAngle, mode);
     if (!angle)
         return nullptr;
+    // FIXME: what about mix() values?
     if (!angle->isCalculated() && !CSSPropertyParserHelpers::isFontStyleAngleInRange(angle->doubleValue(CSSUnitType::CSS_DEG)))
         return nullptr;
     range = rangeAfterAngle;

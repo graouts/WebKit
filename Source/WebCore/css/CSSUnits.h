@@ -128,7 +128,9 @@ enum class CSSUnitType : uint8_t {
     // The basic idea is that a stylesheet can use the value __qem (for quirky em) instead of em.
     // When the quirky value is used, if you're in quirks mode, the margin will collapse away
     // inside a table cell. This quirk is specified in the HTML spec but our impl is different.
-    CSS_QUIRKY_EMS
+    CSS_QUIRKY_EMS,
+
+    CSS_MIX
 
     // Note that CSSValue allocates 7 bits for m_primitiveUnitType, so there can be no value here > 127.
 };

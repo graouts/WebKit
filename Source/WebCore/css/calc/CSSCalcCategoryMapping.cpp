@@ -282,6 +282,7 @@ bool hasDoubleValue(CSSUnitType type)
     case CSSUnitType::CSS_CALC_PERCENTAGE_WITH_LENGTH:
     case CSSUnitType::CSS_PROPERTY_ID:
     case CSSUnitType::CSS_VALUE_ID:
+    case CSSUnitType::CSS_MIX:
         return false;
     };
     ASSERT_NOT_REACHED();

@@ -180,6 +180,7 @@ ExceptionOr<Ref<CSSStyleValue>> CSSStyleValueFactory::reifyValue(Ref<CSSValue> c
 {
     if (is<CSSPrimitiveValue>(cssValue)) {
         auto primitiveValue = downcast<CSSPrimitiveValue>(cssValue.ptr());
+        // FIXME: what about mix() values?
         if (primitiveValue->isCalculated()) {
             auto* calcValue = primitiveValue->cssCalcValue();
             auto result = CSSNumericValue::reifyMathExpression(calcValue->expressionNode());

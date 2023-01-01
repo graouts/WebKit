@@ -658,6 +658,7 @@ void maybeUpdateFontForLetterSpacing(BuilderState& builderState, CSSValue& value
 
     if (is<CSSPrimitiveValue>(value)) {
         auto& primitiveValue = downcast<CSSPrimitiveValue>(value);
+        // FIXME: what about mix() values?
         if (primitiveValue.isFontRelativeLength() || primitiveValue.isCalculated())
             builderState.updateFont();
     }

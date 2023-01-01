@@ -53,4 +53,24 @@ String CSSMixValue::customCSSText() const
     return makeString("mix(", m_percentageValue->cssText(), "; ", m_fromValue->cssText(), "; ", m_toValue->cssText(), ")");
 }
 
+CSSUnitType CSSMixValue::primitiveType() const
+{
+    // FIXME: should deal with from and to not having the same type.
+    if (is<CSSPrimitiveValue>(m_fromValue))
+        return downcast<CSSPrimitiveValue>(m_fromValue.get()).primitiveType();
+    return CSSUnitType::CSS_UNKNOWN;
+}
+
+double CSSMixValue::doubleValue() const
+{
+    // FIXME: implement.
+    return 0;
+}
+
+double CSSMixValue::computeLengthPx(const CSSToLengthConversionData&) const
+{
+    // FIXME: implement.
+    return 0;
+}
+
 } // namespace WebCore

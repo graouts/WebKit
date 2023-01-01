@@ -298,6 +298,7 @@ Length convertTo100PercentMinusLength(const Length& length)
 
 static Length blendMixedTypes(const Length& from, const Length& to, const BlendingContext& context)
 {
+    // FIXME: what about mix() values?
     if (context.compositeOperation != CompositeOperation::Replace)
         return makeCalculated(CalcOperator::Add, from, to);
 
@@ -316,6 +317,7 @@ static Length blendMixedTypes(const Length& from, const Length& to, const Blendi
 
 Length blend(const Length& from, const Length& to, const BlendingContext& context)
 {
+    // FIXME: what about mix() values?
     if ((from.isAuto() || to.isAuto()) || (from.isUndefined() || to.isUndefined()))
         return context.progress < 0.5 ? from : to;
 

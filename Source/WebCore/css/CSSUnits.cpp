@@ -114,6 +114,7 @@ CSSUnitCategory unitCategory(CSSUnitType type)
     case CSSUnitType::CSS_DIMENSION:
     case CSSUnitType::CSS_FONT_FAMILY:
     case CSSUnitType::CSS_IDENT:
+    case CSSUnitType::CSS_MIX:
     case CSSUnitType::CSS_PAIR:
     case CSSUnitType::CSS_PROPERTY_ID:
     case CSSUnitType::CSS_QUAD:
@@ -269,6 +270,7 @@ TextStream& operator<<(TextStream& ts, CSSUnitType unitType)
     case CSSUnitType::CSS_PROPERTY_ID: ts << "property_id"; break;
     case CSSUnitType::CSS_VALUE_ID: ts << "value_id"; break;
     case CSSUnitType::CSS_QUIRKY_EMS: ts << "quirky_ems"; break;
+    case CSSUnitType::CSS_MIX: ts << "mix"; break;
     }
     return ts;
 }

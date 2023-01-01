@@ -4388,6 +4388,7 @@ inline bool CSSPrimitiveValue::convertingToLengthRequiresNonNullStyle(int length
         return lengthConversion & (FixedIntegerConversion | FixedFloatConversion);
     case CSSUnitType::CSS_CALC:
         return m_value.calc->convertingToLengthRequiresNonNullStyle(lengthConversion);
+    // FIXME: what to do with CSSUnitType::CSS_MIX here?
     default:
         return false;
     }
@@ -4407,6 +4408,7 @@ template<int supported> Length CSSPrimitiveValue::convertToLength(const CSSToLen
         return Length(LengthType::Auto);
     if ((supported & CalculatedConversion) && isCalculated())
         return Length(cssCalcValue()->createCalculationValue(conversionData));
+    // FIXME: what about mix() values?
     return Length(LengthType::Undefined);
 }
 

@@ -76,6 +76,7 @@ static inline bool isValidCSSUnitTypeForDoubleConversion(CSSUnitType unitType)
     case CSSUnitType::CSS_HZ:
     case CSSUnitType::CSS_IN:
     case CSSUnitType::CSS_KHZ:
+    case CSSUnitType::CSS_MIX:
     case CSSUnitType::CSS_MM:
     case CSSUnitType::CSS_MS:
     case CSSUnitType::CSS_NUMBER:
@@ -191,6 +192,7 @@ static inline bool isStringType(CSSUnitType type)
     case CSSUnitType::CSS_LVMAX:
     case CSSUnitType::CSS_LVMIN:
     case CSSUnitType::CSS_LVW:
+    case CSSUnitType::CSS_MIX:
     case CSSUnitType::CSS_MM:
     case CSSUnitType::CSS_MS:
     case CSSUnitType::CSS_NUMBER:
@@ -261,6 +263,9 @@ CSSUnitType CSSPrimitiveValue::primitiveType() const
     // so we need to map our internal CSSUnitType::CSS_FONT_FAMILY type here.
     if (primitiveUnitType() == CSSUnitType::CSS_FONT_FAMILY)
         return CSSUnitType::CSS_STRING;
+
+    if (primitiveUnitType() == CSSUnitType::CSS_MIX)
+        return m_value.mix->primitiveType();
 
     if (primitiveUnitType() != CSSUnitType::CSS_CALC)
         return primitiveUnitType();
@@ -489,6 +494,13 @@ void CSSPrimitiveValue::init(RefPtr<CSSCalcValue>&& c)
     m_value.calc = c.leakRef();
 }
 
+void CSSPrimitiveValue::init(Ref<CSSMixValue>&& mix)
+{
+    setPrimitiveUnitType(CSSUnitType::CSS_MIX);
+    m_hasCachedCSSText = false;
+    m_value.mix = &mix.leakRef();
+}
+
 CSSPrimitiveValue::~CSSPrimitiveValue()
 {
     cleanup();
@@ -526,6 +538,10 @@ void CSSPrimitiveValue::cleanup()
     case CSSUnitType::CSS_CALC_PERCENTAGE_WITH_NUMBER:
     case CSSUnitType::CSS_CALC_PERCENTAGE_WITH_LENGTH:
         ASSERT_NOT_REACHED();
+        break;
+    case CSSUnitType::CSS_MIX:
+        if (m_value.mix)
+            m_value.mix->deref();
         break;
     case CSSUnitType::CSS_SHAPE:
         m_value.shape->deref();
@@ -685,6 +701,9 @@ double CSSPrimitiveValue::computeLengthDouble(const CSSToLengthConversionData& c
         // The multiplier and factor is applied to each value in the calc expression individually
         return m_value.calc->computeLengthPx(conversionData);
     }
+
+    if (primitiveUnitType() == CSSUnitType::CSS_MIX)
+        return m_value.mix->computeLengthPx(conversionData);
 
     return computeNonCalcLengthDouble(conversionData, primitiveType(), m_value.num);
 }
@@ -1093,7 +1112,13 @@ double CSSPrimitiveValue::doubleValue(CSSUnitType unitType) const
 
 double CSSPrimitiveValue::doubleValue() const
 {
-    return primitiveUnitType() != CSSUnitType::CSS_CALC ? m_value.num : m_value.calc->doubleValue();
+    if (primitiveUnitType() == CSSUnitType::CSS_CALC)
+        return m_value.calc->doubleValue();
+
+    if (primitiveUnitType() == CSSUnitType::CSS_MIX)
+        return m_value.mix->doubleValue();
+
+    return m_value.num;
 }
 
 double CSSPrimitiveValue::doubleValueDividingBy100IfPercentage() const
@@ -1101,7 +1126,10 @@ double CSSPrimitiveValue::doubleValueDividingBy100IfPercentage() const
     switch (primitiveUnitType()) {
     case CSSUnitType::CSS_CALC:
         return m_value.calc->primitiveType() == CSSUnitType::CSS_PERCENTAGE ? m_value.calc->doubleValue() / 100.0 : m_value.calc->doubleValue();
-    
+
+    case CSSUnitType::CSS_MIX:
+        return m_value.mix->primitiveType() == CSSUnitType::CSS_PERCENTAGE ? m_value.mix->doubleValue() / 100.0 : m_value.mix->doubleValue();
+
     case CSSUnitType::CSS_PERCENTAGE:
         return m_value.num / 100.0;
         
@@ -1112,21 +1140,21 @@ double CSSPrimitiveValue::doubleValueDividingBy100IfPercentage() const
 
 std::optional<bool> CSSPrimitiveValue::isZero() const
 {
-    if (primitiveUnitType() == CSSUnitType::CSS_CALC)
+    if (primitiveUnitType() == CSSUnitType::CSS_CALC || primitiveUnitType() == CSSUnitType::CSS_MIX)
         return std::nullopt;
     return !m_value.num;
 }
 
 std::optional<bool> CSSPrimitiveValue::isPositive() const
 {
-    if (primitiveUnitType() == CSSUnitType::CSS_CALC)
+    if (primitiveUnitType() == CSSUnitType::CSS_CALC || primitiveUnitType() == CSSUnitType::CSS_MIX)
         return std::nullopt;
     return m_value.num > 0;
 }
 
 std::optional<bool> CSSPrimitiveValue::isNegative() const
 {
-    if (primitiveUnitType() == CSSUnitType::CSS_CALC)
+    if (primitiveUnitType() == CSSUnitType::CSS_CALC || primitiveUnitType() == CSSUnitType::CSS_MIX)
         return std::nullopt;
     return m_value.num < 0;
 }
@@ -1327,6 +1355,7 @@ ASCIILiteral CSSPrimitiveValue::unitTypeString(CSSUnitType unitType)
         case CSSUnitType::CSS_PROPERTY_ID:
         case CSSUnitType::CSS_VALUE_ID:
         case CSSUnitType::CSS_QUIRKY_EMS:
+        case CSSUnitType::CSS_MIX:
             return ""_s;
     }
     ASSERT_NOT_REACHED();
@@ -1459,6 +1488,10 @@ ALWAYS_INLINE String CSSPrimitiveValue::formatNumberForCustomCSSText() const
         if (!m_value.calc)
             break;
         return m_value.calc->cssText();
+    case CSSUnitType::CSS_MIX:
+        if (!m_value.mix)
+            break;
+        return m_value.mix->cssText();
     case CSSUnitType::CSS_SHAPE:
         return m_value.shape->cssText();
     case CSSUnitType::CSS_VW:
@@ -1632,6 +1665,8 @@ bool CSSPrimitiveValue::equals(const CSSPrimitiveValue& other) const
         return m_value.pair && other.m_value.pair && m_value.pair->equals(*other.m_value.pair);
     case CSSUnitType::CSS_CALC:
         return m_value.calc && other.m_value.calc && m_value.calc->equals(*other.m_value.calc);
+    case CSSUnitType::CSS_MIX:
+        return m_value.mix && other.m_value.mix && m_value.mix->equals(*other.m_value.mix);
     case CSSUnitType::CSS_SHAPE:
         return m_value.shape && other.m_value.shape && m_value.shape->equals(*other.m_value.shape);
     case CSSUnitType::CSS_IDENT:
@@ -1668,6 +1703,9 @@ void CSSPrimitiveValue::collectDirectComputationalDependencies(HashSet<CSSProper
     case CSSUnitType::CSS_CALC:
         m_value.calc->collectDirectComputationalDependencies(values);
         break;
+    case CSSUnitType::CSS_MIX:
+        // FIXME: what to do here?
+        break;
     default:
         break;
     }
@@ -1685,6 +1723,9 @@ void CSSPrimitiveValue::collectDirectRootComputationalDependencies(HashSet<CSSPr
         break;
     case CSSUnitType::CSS_CALC:
         m_value.calc->collectDirectRootComputationalDependencies(values);
+        break;
+    case CSSUnitType::CSS_MIX:
+        // FIXME: what to do here?
         break;
     default:
         break;

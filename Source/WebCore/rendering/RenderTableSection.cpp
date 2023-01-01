@@ -214,6 +214,7 @@ static LayoutUnit resolveLogicalHeightForRow(const Length& rowLogicalHeight)
 {
     if (rowLogicalHeight.isFixed())
         return LayoutUnit(rowLogicalHeight.value());
+    // FIXME: what about mix() values?
     if (rowLogicalHeight.isCalculated())
         return LayoutUnit(rowLogicalHeight.nonNanCalculatedValue(0));
     return 0;

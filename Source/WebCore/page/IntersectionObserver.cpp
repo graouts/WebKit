@@ -54,6 +54,7 @@ static ExceptionOr<LengthBox> parseRootMargin(String& rootMargin)
         if (margins.size() == 4)
             return Exception { SyntaxError, "Failed to construct 'IntersectionObserver': Extra text found at the end of rootMargin."_s };
         RefPtr<CSSPrimitiveValue> parsedValue = CSSPropertyParserHelpers::consumeLengthOrPercent(tokenRange, HTMLStandardMode, ValueRange::All);
+        // FIXME: what about mix() values?
         if (!parsedValue || parsedValue->isCalculated())
             return Exception { SyntaxError, "Failed to construct 'IntersectionObserver': rootMargin must be specified in pixels or percent."_s };
         if (parsedValue->isPercentage())

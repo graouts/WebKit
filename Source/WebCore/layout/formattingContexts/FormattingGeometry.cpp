@@ -193,6 +193,7 @@ LayoutUnit FormattingGeometry::contentHeightForFormattingContextRoot(const Eleme
 std::optional<LayoutUnit> FormattingGeometry::computedValue(const Length& geometryProperty, LayoutUnit containingBlockWidth) const
 {
     //  In general, the computed value resolves the specified value as far as possible without laying out the content.
+    // FIXME: what about mix() values?
     if (geometryProperty.isFixed() || geometryProperty.isPercent() || geometryProperty.isCalculated())
         return valueForLength(geometryProperty, containingBlockWidth);
     return { };

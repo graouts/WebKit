@@ -36,6 +36,7 @@ namespace WebCore {
 
 class CSSBasicShape;
 class CSSCalcValue;
+class CSSMixValue;
 class CSSToLengthConversionData;
 class Counter;
 class DeprecatedCSSOMPrimitiveValue;
@@ -116,6 +117,7 @@ public:
     bool isValueID() const { return primitiveUnitType() == CSSUnitType::CSS_VALUE_ID; }
     bool isFlex() const { return primitiveType() == CSSUnitType::CSS_FR; }
     bool isCustomIdent() const { return primitiveUnitType() == CSSUnitType::CustomIdent; }
+    bool isMixed() const { return primitiveUnitType() == CSSUnitType::CSS_MIX; }
 
     static inline Ref<CSSPrimitiveValue> create(CSSValueID);
     static Ref<CSSPrimitiveValue> create(CSSPropertyID propertyID) { return adoptRef(*new CSSPrimitiveValue(propertyID)); }
@@ -181,6 +183,7 @@ public:
     Rect* rectValue() const { return primitiveUnitType() != CSSUnitType::CSS_RECT ? nullptr : m_value.rect; }
     CSSBasicShape* shapeValue() const { return primitiveUnitType() != CSSUnitType::CSS_SHAPE ? nullptr : m_value.shape; }
     CSSValueID valueID() const { return primitiveUnitType() == CSSUnitType::CSS_VALUE_ID ? m_value.valueID : CSSValueInvalid; }
+    CSSMixValue* cssMixValue() const { return primitiveUnitType() != CSSUnitType::CSS_MIX ? nullptr : m_value.mix; }
 
     template<typename T> inline operator T() const; // Defined in CSSPrimitiveValueMappings.h
 
@@ -243,6 +246,7 @@ private:
     void init(Ref<Pair>&&);
     void init(Ref<Quad>&&);
     void init(Ref<Rect>&&);
+    void init(Ref<CSSMixValue>&&);
 
     CSSUnitType primitiveUnitType() const { return static_cast<CSSUnitType>(m_primitiveUnitType); }
     void setPrimitiveUnitType(CSSUnitType type) { m_primitiveUnitType = static_cast<unsigned>(type); }
@@ -271,6 +275,7 @@ private:
         Pair* pair;
         CSSBasicShape* shape;
         CSSCalcValue* calc;
+        CSSMixValue* mix;
     } m_value;
 };
 

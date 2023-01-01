@@ -237,6 +237,7 @@ static Ref<CSSPrimitiveValue> valueForImageSliceSide(const Length& length)
     // Calculating the actual length currently in use would require most of the code from RenderBoxModelObject::paintNinePieceImage.
     // And even if we could do that, it's not clear if that's exactly what we'd want during animation.
     // FIXME: For now, just return 0.
+    // FIXME: what about mix() values?
     ASSERT(length.isCalculated());
     return CSSPrimitiveValue::create(0, CSSUnitType::CSS_NUMBER);
 }

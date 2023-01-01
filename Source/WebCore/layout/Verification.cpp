@@ -186,11 +186,13 @@ static bool outputMismatchingBlockBoxInformationIfNeeded(TextStream& stream, con
         auto containingBlockWidth = layoutState.geometryForBox(FormattingContext::containingBlock(layoutBox)).contentBoxWidth();
         auto marginStart = LayoutUnit { };
         auto& marginStartStyle = layoutBox.style().marginStart();
+        // FIXME: what about mix() values?
         if (marginStartStyle.isFixed() || marginStartStyle.isPercent() || marginStartStyle.isCalculated())
             marginStart = valueForLength(marginStartStyle, containingBlockWidth);
 
         auto marginEnd = LayoutUnit { };
         auto& marginEndStyle = layoutBox.style().marginEnd();
+        // FIXME: what about mix() values?
         if (marginEndStyle.isFixed() || marginEndStyle.isPercent() || marginEndStyle.isCalculated())
             marginEnd = valueForLength(marginEndStyle, containingBlockWidth);
 

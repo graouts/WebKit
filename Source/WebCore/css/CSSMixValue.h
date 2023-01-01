@@ -40,6 +40,9 @@ public:
     bool equals(const CSSMixValue&) const;
 
     String customCSSText() const;
+    CSSUnitType primitiveType() const;
+    double doubleValue() const;
+    double computeLengthPx(const CSSToLengthConversionData&) const;
 
 private:
     CSSMixValue(Ref<CSSPrimitiveValue>&& percentageValue, Ref<CSSValue>&& fromValue, Ref<CSSValue>&& toValue);
