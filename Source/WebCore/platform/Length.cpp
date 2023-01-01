@@ -152,46 +152,51 @@ UniqueArray<Length> newLengthArray(const String& string, int& len)
     return r;
 }
 
-class CalculationValueMap {
+template <typename T>
+class ComputedValueMap {
 public:
-    CalculationValueMap();
+    ComputedValueMap();
 
-    unsigned insert(Ref<CalculationValue>&&);
+    unsigned insert(Ref<T>&&);
     void ref(unsigned handle);
     void deref(unsigned handle);
 
-    CalculationValue& get(unsigned handle) const;
+    T& get(unsigned handle) const;
 
 private:
     struct Entry {
         uint64_t referenceCountMinusOne;
-        CalculationValue* value;
+        T* value;
         Entry();
-        Entry(CalculationValue&);
+        Entry(T&);
     };
 
     unsigned m_nextAvailableHandle;
     HashMap<unsigned, Entry> m_map;
 };
 
-inline CalculationValueMap::Entry::Entry()
+template <typename T>
+inline ComputedValueMap<T>::Entry::Entry()
     : referenceCountMinusOne(0)
     , value(nullptr)
 {
 }
 
-inline CalculationValueMap::Entry::Entry(CalculationValue& value)
+template <typename T>
+inline ComputedValueMap<T>::Entry::Entry(T& value)
     : referenceCountMinusOne(0)
     , value(&value)
 {
 }
 
-inline CalculationValueMap::CalculationValueMap()
+template <typename T>
+inline ComputedValueMap<T>::ComputedValueMap()
     : m_nextAvailableHandle(1)
 {
 }
     
-inline unsigned CalculationValueMap::insert(Ref<CalculationValue>&& value)
+template <typename T>
+inline unsigned ComputedValueMap<T>::insert(Ref<T>&& value)
 {
     ASSERT(m_nextAvailableHandle);
 
@@ -206,21 +211,24 @@ inline unsigned CalculationValueMap::insert(Ref<CalculationValue>&& value)
     return m_nextAvailableHandle++;
 }
 
-inline CalculationValue& CalculationValueMap::get(unsigned handle) const
+template <typename T>
+inline T& ComputedValueMap<T>::get(unsigned handle) const
 {
     ASSERT(m_map.contains(handle));
 
     return *m_map.find(handle)->value.value;
 }
 
-inline void CalculationValueMap::ref(unsigned handle)
+template <typename T>
+inline void ComputedValueMap<T>::ref(unsigned handle)
 {
     ASSERT(m_map.contains(handle));
 
     ++m_map.find(handle)->value.referenceCountMinusOne;
 }
 
-inline void CalculationValueMap::deref(unsigned handle)
+template <typename T>
+inline void ComputedValueMap<T>::deref(unsigned handle)
 {
     ASSERT(m_map.contains(handle));
 
@@ -231,14 +239,14 @@ inline void CalculationValueMap::deref(unsigned handle)
     }
 
     // The adoptRef here is balanced by the leakRef in the insert member function.
-    Ref<CalculationValue> value { adoptRef(*it->value.value) };
+    Ref<T> value { adoptRef(*it->value.value) };
 
     m_map.remove(it);
 }
 
-static CalculationValueMap& calculationValues()
+static ComputedValueMap<CalculationValue>& calculationValues()
 {
-    static NeverDestroyed<CalculationValueMap> map;
+    static NeverDestroyed<ComputedValueMap<CalculationValue>> map;
     return map;
 }
 
