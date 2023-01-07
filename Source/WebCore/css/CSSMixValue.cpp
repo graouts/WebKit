@@ -73,4 +73,14 @@ double CSSMixValue::computeLengthPx(const CSSToLengthConversionData&) const
     return 0;
 }
 
+bool operator==(const CSSMixValue& a, const CSSMixValue& b)
+{
+    return a.equals(b);
+}
+
+TextStream& operator<<(TextStream& ts, const CSSMixValue& value)
+{
+    return ts << value.customCSSText();
+}
+
 } // namespace WebCore

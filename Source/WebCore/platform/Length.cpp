@@ -26,6 +26,7 @@
 #include "Length.h"
 
 #include "AnimationUtilities.h"
+#include "CSSMixValue.h"
 #include "CalcExpressionBlendLength.h"
 #include "CalcExpressionLength.h"
 #include "CalcExpressionOperation.h"
@@ -250,10 +251,22 @@ static ComputedValueMap<CalculationValue>& calculationValues()
     return map;
 }
 
+static ComputedValueMap<CSSMixValue>& mixValues()
+{
+    static NeverDestroyed<ComputedValueMap<CSSMixValue>> map;
+    return map;
+}
+
 Length::Length(Ref<CalculationValue>&& value)
     : m_type(LengthType::Calculated)
 {
     m_calculationValueHandle = calculationValues().insert(WTFMove(value));
+}
+
+Length::Length(Ref<CSSMixValue>&& mixValue)
+    : m_type(LengthType::Mixed)
+{
+    m_mixValueHandle = mixValues().insert(WTFMove(mixValue));
 }
 
 CalculationValue& Length::calculationValue() const
@@ -261,17 +274,29 @@ CalculationValue& Length::calculationValue() const
     ASSERT(isCalculated());
     return calculationValues().get(m_calculationValueHandle);
 }
-    
+
+CSSMixValue& Length::mixValue() const
+{
+    ASSERT(isMixed());
+    return mixValues().get(m_mixValueHandle);
+}
+
 void Length::ref() const
 {
-    ASSERT(isCalculated());
-    calculationValues().ref(m_calculationValueHandle);
+    ASSERT(isCalculated() || isMixed());
+    if (isCalculated())
+        calculationValues().ref(m_calculationValueHandle);
+    if (isMixed())
+        mixValues().ref(m_mixValueHandle);
 }
 
 void Length::deref() const
 {
-    ASSERT(isCalculated());
+    ASSERT(isCalculated() || isMixed());
+    if (isCalculated())
     calculationValues().deref(m_calculationValueHandle);
+    if (isMixed())
+        mixValues().ref(m_mixValueHandle);
 }
 
 float Length::nonNanCalculatedValue(float maxValue) const
@@ -286,6 +311,11 @@ float Length::nonNanCalculatedValue(float maxValue) const
 bool Length::isCalculatedEqual(const Length& other) const
 {
     return calculationValue() == other.calculationValue();
+}
+
+bool Length::isMixedEqual(const Length& other) const
+{
+    return mixValue() == other.mixValue();
 }
 
 static Length makeCalculated(CalcOperator calcOperator, const Length& a, const Length& b)
@@ -387,6 +417,7 @@ static TextStream& operator<<(TextStream& ts, LengthType type)
     case LengthType::Calculated: ts << "calc"; break;
     case LengthType::Content: ts << "content"; break;
     case LengthType::Undefined: ts << "undefined"; break;
+    case LengthType::Mixed: ts << "mix"; break;
     }
     return ts;
 }
@@ -416,6 +447,9 @@ TextStream& operator<<(TextStream& ts, Length length)
         break;
     case LengthType::Calculated:
         ts << length.calculationValue();
+        break;
+    case LengthType::Mixed:
+        ts << length.mixValue();
         break;
     }
     

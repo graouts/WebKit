@@ -254,6 +254,8 @@ static RefPtr<CSSCalcExpressionNode> createCSS(const Length& length, const Rende
     switch (length.type()) {
     case LengthType::Percent:
     case LengthType::Fixed:
+    // FIXME: is this correct?
+    case LengthType::Mixed:
         return CSSCalcPrimitiveValueNode::create(CSSPrimitiveValue::create(length, style));
     case LengthType::Calculated:
         return createCSS(length.calculationValue().expression(), style);

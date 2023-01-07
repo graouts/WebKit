@@ -48,6 +48,7 @@ enum class LengthType : uint8_t {
     FitContent,
     Calculated,
     Content,
+    Mixed,
     Undefined
 };
 
@@ -58,6 +59,7 @@ enum class ValueRange : uint8_t {
 
 struct BlendingContext;
 class CalculationValue;
+class CSSMixValue;
 
 struct Length {
     WTF_MAKE_FAST_ALLOCATED;
@@ -70,6 +72,7 @@ public:
     Length(double value, LengthType, bool hasQuirk = false);
 
     WEBCORE_EXPORT explicit Length(Ref<CalculationValue>&&);
+    WEBCORE_EXPORT explicit Length(Ref<CSSMixValue>&&);
 
     Length(const Length&);
     Length(Length&&);
@@ -90,6 +93,7 @@ public:
     int intValue() const;
     float percent() const;
     CalculationValue& calculationValue() const;
+    CSSMixValue& mixValue() const;
 
     LengthType type() const;
 
@@ -105,6 +109,7 @@ public:
     bool isFitContent() const;
     bool isMinIntrinsic() const;
     bool isContent() const;
+    bool isMixed() const;
 
     bool hasQuirk() const;
     void setHasQuirk(bool);
@@ -132,6 +137,7 @@ public:
 
 private:
     bool isCalculatedEqual(const Length&) const;
+    bool isMixedEqual(const Length&) const;
 
     void initialize(const Length&);
     void initialize(Length&&);
@@ -143,6 +149,7 @@ private:
         int m_intValue { 0 };
         float m_floatValue;
         unsigned m_calculationValueHandle;
+        unsigned m_mixValueHandle;
     };
     LengthType m_type;
     bool m_hasQuirk { false };
@@ -212,7 +219,7 @@ inline Length& Length::operator=(const Length& other)
     if (this == &other)
         return *this;
 
-    if (isCalculated())
+    if (isCalculated() || isMixed())
         deref();
 
     initialize(other);
@@ -224,7 +231,7 @@ inline Length& Length::operator=(Length&& other)
     if (this == &other)
         return *this;
 
-    if (isCalculated())
+    if (isCalculated() || isMixed())
         deref();
 
     initialize(WTFMove(other));
@@ -261,6 +268,10 @@ inline void Length::initialize(const Length& other)
         m_calculationValueHandle = other.m_calculationValueHandle;
         ref();
         break;
+    case LengthType::Mixed:
+        m_mixValueHandle = other.m_mixValueHandle;
+        ref();
+        break;
     }
 }
 
@@ -293,6 +304,9 @@ inline void Length::initialize(Length&& other)
     case LengthType::Calculated:
         m_calculationValueHandle = std::exchange(other.m_calculationValueHandle, 0);
         break;
+    case LengthType::Mixed:
+        m_mixValueHandle = std::exchange(other.m_mixValueHandle, 0);
+        break;
     }
 
     other.m_type = LengthType::Auto;
@@ -300,7 +314,7 @@ inline void Length::initialize(Length&& other)
 
 inline Length::~Length()
 {
-    if (isCalculated())
+    if (isCalculated() || isMixed())
         deref();
 }
 
@@ -313,6 +327,8 @@ inline bool Length::operator==(const Length& other) const
         return true;
     if (isCalculated())
         return isCalculatedEqual(other);
+    if (isMixed())
+        return isMixedEqual(other);
     return value() == other.value();
 }
 
@@ -323,6 +339,7 @@ inline bool Length::operator!=(const Length& other) const
 
 inline Length& Length::operator*=(float value)
 {
+    // FIXME: what aboux mix() here?
     ASSERT(!isCalculated());
     if (isCalculated())
         return *this;
@@ -339,6 +356,7 @@ inline float Length::value() const
 {
     ASSERT(!isUndefined());
     ASSERT(!isCalculated());
+    ASSERT(!isMixed());
     return m_isFloat ? m_floatValue : m_intValue;
 }
 
@@ -346,8 +364,9 @@ inline int Length::intValue() const
 {
     ASSERT(!isUndefined());
     ASSERT(!isCalculated());
+    ASSERT(!isMixed());
     // FIXME: Makes no sense to return 0 here but not in the value() function above.
-    if (isCalculated())
+    if (isCalculated() || isMixed())
         return 0;
     return m_isFloat ? static_cast<int>(m_floatValue) : m_intValue;
 }
@@ -427,6 +446,7 @@ inline bool Length::isMinContent() const
 
 inline bool Length::isNegative() const
 {
+    // FIXME: what about mix() here?
     if (isUndefined() || isCalculated())
         return false;
     return m_isFloat ? (m_floatValue < 0) : (m_intValue < 0);
@@ -447,6 +467,7 @@ inline bool Length::isUndefined() const
     return type() == LengthType::Undefined;
 }
 
+// FIXME: should we add mix() here?
 inline bool Length::isPercentOrCalculated() const
 {
     return isPercent() || isCalculated();
@@ -454,6 +475,7 @@ inline bool Length::isPercentOrCalculated() const
 
 inline bool Length::isPositive() const
 {
+    // FIXME: what about mixed() here?
     if (isUndefined())
         return false;
     if (isCalculated())
@@ -463,6 +485,7 @@ inline bool Length::isPositive() const
 
 inline bool Length::isZero() const
 {
+    // FIXME: what about mix() here?
     ASSERT(!isUndefined());
     if (isCalculated() || isAuto())
         return false;
@@ -472,6 +495,11 @@ inline bool Length::isZero() const
 inline bool Length::isCalculated() const
 {
     return type() == LengthType::Calculated;
+}
+
+inline bool Length::isMixed() const
+{
+    return type() == LengthType::Mixed;
 }
 
 inline bool Length::isLegacyIntrinsic() const

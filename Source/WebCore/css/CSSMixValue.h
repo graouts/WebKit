@@ -52,6 +52,10 @@ private:
     Ref<CSSValue> m_toValue;
 };
 
+bool operator==(const CSSMixValue&, const CSSMixValue&);
+
+TextStream& operator<<(TextStream&, const CSSMixValue&);
+
 } // namespace WebCore
 
 SPECIALIZE_TYPE_TRAITS_CSS_VALUE(CSSMixValue, isMixValue())

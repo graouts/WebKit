@@ -57,6 +57,9 @@ inline LayoutUnit minimumValueForLength(const Length& length, LayoutUnit maximum
         return LayoutUnit(static_cast<float>(maximumValue * length.percent() / 100.0f));
     case LengthType::Calculated:
         return LayoutUnit(length.nonNanCalculatedValue(maximumValue));
+    case LengthType::Mixed:
+        // FIXME: implement this.
+        return 0;
     case LengthType::FillAvailable:
     case LengthType::Auto:
     case LengthType::Content:

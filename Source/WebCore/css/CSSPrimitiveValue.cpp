@@ -25,6 +25,7 @@
 #include "CSSCalcValue.h"
 #include "CSSHelper.h"
 #include "CSSMarkup.h"
+#include "CSSMixValue.h"
 #include "CSSParserIdioms.h"
 #include "CSSPrimitiveValueMappings.h"
 #include "CSSPropertyNames.h"
@@ -349,6 +350,8 @@ CSSPrimitiveValue::CSSPrimitiveValue(const Length& length, const RenderStyle& st
     case LengthType::Calculated:
         init(CSSCalcValue::create(length.calculationValue(), style));
         return;
+    // FIXME: implement this.
+    case LengthType::Mixed:
     case LengthType::Relative:
     case LengthType::Undefined:
         ASSERT_NOT_REACHED();
@@ -434,6 +437,7 @@ void CSSPrimitiveValue::init(const Length& length)
         m_value.num = length.percent();
         return;
     case LengthType::Calculated:
+    case LengthType::Mixed:
     case LengthType::Relative:
     case LengthType::Undefined:
         ASSERT_NOT_REACHED();

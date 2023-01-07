@@ -3461,6 +3461,9 @@ LayoutUnit RenderBox::computeReplacedLogicalWidthUsing(SizeType widthType, Lengt
             return adjustContentBoxLogicalWidthForBoxSizing(minimumValueForLength(logicalWidth, containerWidth), logicalWidth.type());
         return 0_lu;
     }
+    case LengthType::Mixed:
+        // FIXME: implement.
+        return 0_lu;
     case LengthType::Intrinsic:
     case LengthType::MinIntrinsic:
     case LengthType::Auto:
