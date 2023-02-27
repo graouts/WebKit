@@ -1023,6 +1023,10 @@ public:
     void willBeginScrolling();
     void didFinishScrolling();
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void startAcceleratedTimelineUpdatesIfNecessary();
+#endif
+
 private:
     struct Navigation {
         RegistrableDomain domain;

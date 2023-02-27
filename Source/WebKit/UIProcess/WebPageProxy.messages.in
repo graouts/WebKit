@@ -633,4 +633,9 @@ messages -> WebPageProxy {
     DecidePolicyForModalContainer(OptionSet<WebCore::ModalContainerControlType> types) -> (enum:uint8_t WebCore::ModalContainerDecision decision)
 
     DidChangeLookalikeCharacters(URL originalURL, URL adjustedURL)
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION) && HAVE(CVDISPLAYLINK)
+    StartAcceleratedAnimationDisplayLink(WebKit::DisplayLinkObserverID observerID, uint32_t displayID)
+    StopAcceleratedAnimationDisplayLink(WebKit::DisplayLinkObserverID observerID, uint32_t displayID)
+#endif
 }

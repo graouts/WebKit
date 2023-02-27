@@ -3130,6 +3130,9 @@ void WebPageProxy::updateDisplayLinkFrequency()
         return;
 
     bool wantsFullSpeedUpdates = m_hasActiveAnimatedScroll || m_wheelEventActivityHysteresis.state() == PAL::HysteresisState::Started;
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    wantsFullSpeedUpdates = wantsFullSpeedUpdates || m_hasActiveAcceleratedAnimationDisplayLink;
+#endif
     if (wantsFullSpeedUpdates != m_registeredForFullSpeedUpdates) {
         process().setDisplayLinkForDisplayWantsFullSpeedUpdates(*m_displayID, wantsFullSpeedUpdates);
         m_registeredForFullSpeedUpdates = wantsFullSpeedUpdates;
@@ -12023,6 +12026,24 @@ void WebPageProxy::adjustLayersForLayoutViewport(const FloatPoint& scrollPositio
     m_scrollingCoordinatorProxy->viewportChangedViaDelegatedScrolling(scrollPosition, layoutViewport, scale);
 #endif
 }
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION) && HAVE(CVDISPLAYLINK)
+void WebPageProxy::startAcceleratedAnimationDisplayLink(DisplayLinkObserverID observerID, WebCore::PlatformDisplayID displayID)
+{
+    ASSERT(m_displayID && *m_displayID == displayID);
+    process().startDisplayLink(observerID, displayID, WebCore::FullSpeedFramesPerSecond);
+    m_hasActiveAcceleratedAnimationDisplayLink = true;
+    updateDisplayLinkFrequency();
+}
+
+void WebPageProxy::stopAcceleratedAnimationDisplayLink(DisplayLinkObserverID observerID, WebCore::PlatformDisplayID displayID)
+{
+    ASSERT(m_displayID && *m_displayID == displayID);
+    process().stopDisplayLink(observerID, displayID);
+    m_hasActiveAcceleratedAnimationDisplayLink = false;
+    updateDisplayLinkFrequency();
+}
+#endif // ENABLE(THREADED_ANIMATION_RESOLUTION) && HAVE(CVDISPLAYLINK)
 
 } // namespace WebKit
 

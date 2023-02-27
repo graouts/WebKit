@@ -204,6 +204,10 @@
 #include "NavigatorMediaSession.h"
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "AcceleratedTimeline.h"
+#endif
+
 namespace WebCore {
 
 static HashSet<Page*>& allPages()
@@ -1891,6 +1895,10 @@ void Page::doAfterUpdateRendering()
     forEachDocument([] (Document& document) {
         document.updateTextTrackRepresentationImageIfNeeded();
     });
+#endif
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION) && PLATFORM(MAC)
+    startAcceleratedTimelineUpdatesIfNecessary();
 #endif
 
 #if ENABLE(IMAGE_ANALYSIS)
@@ -4357,5 +4365,23 @@ void Page::reloadExecutionContextsForOrigin(const ClientOrigin& origin, std::opt
         frame = frame->tree().traverseNextSkippingChildren();
     }
 }
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void Page::startAcceleratedTimelineUpdatesIfNecessary()
+{
+    auto& chromeClient = chrome().client();
+    if (!chromeClient.canScheduleAcceleratedTimelineUpdates())
+        return;
+
+    forEachDocument([&] (Document& document) {
+        if (auto* acceleratedTimeline = document.existingAcceleratedTimeline()) {
+            if (acceleratedTimeline->shouldScheduleUpdates()) {
+                chromeClient.startAcceleratedTimelineUpdates();
+                return;
+            }
+        }
+    });
+}
+#endif
 
 } // namespace WebCore

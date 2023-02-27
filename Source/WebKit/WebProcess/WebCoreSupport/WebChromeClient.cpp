@@ -1624,4 +1624,23 @@ const AtomString& WebChromeClient::searchStringForModalContainerObserver() const
 }
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+bool WebChromeClient::canScheduleAcceleratedTimelineUpdates() const
+{
+    return !m_page.isUsingUISideCompositing();
+}
+
+void WebChromeClient::startAcceleratedTimelineUpdates()
+{
+    ASSERT(canScheduleAcceleratedTimelineUpdates());
+    WebProcess::singleton().eventDispatcher().startAcceleratedTimelineUpdates(m_page.identifier());
+}
+
+void WebChromeClient::stopAcceleratedTimelineUpdates()
+{
+    ASSERT(canScheduleAcceleratedTimelineUpdates());
+    WebProcess::singleton().eventDispatcher().stopAcceleratedTimelineUpdates(m_page.identifier());
+}
+#endif
+
 } // namespace WebKit

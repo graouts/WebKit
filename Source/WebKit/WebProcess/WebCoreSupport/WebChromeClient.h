@@ -479,6 +479,12 @@ private:
 
     const AtomString& searchStringForModalContainerObserver() const final;
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    bool canScheduleAcceleratedTimelineUpdates() const final;
+    void startAcceleratedTimelineUpdates() final;
+    void stopAcceleratedTimelineUpdates() final;
+#endif
+
     mutable bool m_cachedMainFrameHasHorizontalScrollbar { false };
     mutable bool m_cachedMainFrameHasVerticalScrollbar { false };
 

@@ -634,6 +634,12 @@ public:
 
     WEBCORE_EXPORT virtual ~ChromeClient();
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    virtual bool canScheduleAcceleratedTimelineUpdates() const { return false; }
+    virtual void startAcceleratedTimelineUpdates() { }
+    virtual void stopAcceleratedTimelineUpdates() { }
+#endif
+
 protected:
     WEBCORE_EXPORT ChromeClient();
 };

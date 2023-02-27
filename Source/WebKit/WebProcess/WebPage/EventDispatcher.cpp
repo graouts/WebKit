@@ -54,6 +54,10 @@
 #include <WebCore/ThreadedScrollingTree.h>
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "AcceleratedTimelineScheduler.h"
+#endif
+
 namespace WebKit {
 using namespace WebCore;
 
@@ -63,6 +67,9 @@ EventDispatcher::EventDispatcher()
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
     , m_momentumEventDispatcher(WTF::makeUnique<MomentumEventDispatcher>(*this))
     , m_observerID(DisplayLinkObserverID::generate())
+#endif
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    , m_acceleratedTimelineScheduler(WTF::makeUnique<AcceleratedTimelineScheduler>())
 #endif
 {
 }
@@ -318,6 +325,10 @@ void EventDispatcher::displayDidRefresh(PlatformDisplayID displayID, const Displ
 
     notifyScrollingTreesDisplayDidRefresh(displayID);
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    m_acceleratedTimelineScheduler->displayDidRefresh(displayID);
+#endif
+
     if (!sendToMainThread)
         return;
 
@@ -331,7 +342,11 @@ void EventDispatcher::pageScreenDidChange(PageIdentifier pageID, PlatformDisplay
 {
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
     m_momentumEventDispatcher->pageScreenDidChange(pageID, displayID, nominalFramesPerSecond);
-#else
+#endif
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    m_acceleratedTimelineScheduler->pageScreenDidChange(pageID, displayID, nominalFramesPerSecond);
+#endif
+#if !ENABLE(MOMENTUM_EVENT_DISPATCHER) && !ENABLE(THREADED_ANIMATION_RESOLUTION)
     UNUSED_PARAM(pageID);
     UNUSED_PARAM(displayID);
 #endif
@@ -368,5 +383,17 @@ void EventDispatcher::flushMomentumEventLoggingSoon()
 }
 #endif
 #endif // ENABLE(MOMENTUM_EVENT_DISPATCHER)
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void EventDispatcher::startAcceleratedTimelineUpdates(WebCore::PageIdentifier pageID)
+{
+    m_acceleratedTimelineScheduler->startUpdatingPage(pageID);
+}
+
+void EventDispatcher::stopAcceleratedTimelineUpdates(WebCore::PageIdentifier pageID)
+{
+    m_acceleratedTimelineScheduler->stopUpdatingPage(pageID);
+}
+#endif
 
 } // namespace WebKit

@@ -27,45 +27,51 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include "AcceleratedEffect.h"
-#include "GraphicsLayer.h"
-#include "PageIdentifier.h"
-#include <wtf/HashSet.h>
-#include <wtf/Seconds.h>
+#include "DisplayLinkObserverID.h"
+#include <WebCore/PageIdentifier.h>
+#include <wtf/MonotonicTime.h>
+#include <wtf/Noncopyable.h>
 
 namespace WebCore {
+struct DisplayUpdate;
+using FramesPerSecond = unsigned;
+using PlatformDisplayID = uint32_t;
+}
 
-class Document;
-class Element;
-struct Styleable;
+namespace WebKit {
 
-class AcceleratedTimeline {
+class EventDispatcher;
+
+class AcceleratedTimelineScheduler {
+    WTF_MAKE_NONCOPYABLE(AcceleratedTimelineScheduler);
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    AcceleratedTimeline(Document&);
+    AcceleratedTimelineScheduler();
+    ~AcceleratedTimelineScheduler();
 
-    WEBCORE_EXPORT static void updateTimelinesForPageId(PageIdentifier, const Function<void(bool)>&&);
+    void startUpdatingPage(WebCore::PageIdentifier);
+    void stopUpdatingPage(WebCore::PageIdentifier);
 
-    void updateEffectStacks();
-    void updateEffectStackForTarget(const Styleable&);
-    
-    bool shouldScheduleUpdates() const;
-    void update();
-    
-    Seconds timeOrigin() const { return m_timeOrigin; }
-    
-protected:
-    
+    void displayDidRefresh(WebCore::PlatformDisplayID);
+    void pageScreenDidChange(WebCore::PageIdentifier, WebCore::PlatformDisplayID, std::optional<unsigned> nominalFramesPerSecond);
+
 private:
-    static HashSet<AcceleratedTimeline*>& timelines();
+    struct DisplayProperties {
+        WebCore::PlatformDisplayID displayId;
+        WebCore::FramesPerSecond nominalFrameRate;
+    };
+    std::optional<DisplayProperties> displayProperties(WebCore::PageIdentifier) const;
 
-    using HashedStyleable = std::pair<Element*, unsigned>;
-    HashSet<HashedStyleable> m_targetsPendingUpdate;
-    HashSet<GraphicsLayer*> m_animatedGraphicsLayers;
-    Seconds m_timeOrigin;
-    PageIdentifier m_pageId;
+    void startDisplayLink(WebCore::PageIdentifier);
+    void stopDisplayLink(WebCore::PageIdentifier);
+    void stopAllDisplayLinks();
+
+    void updateTimelinesForPageId(WebCore::PageIdentifier);
+
+    HashMap<WebCore::PageIdentifier, DisplayProperties> m_displayProperties;
+    HashMap<WebCore::PlatformDisplayID, DisplayLinkObserverID, DefaultHash<WebCore::PlatformDisplayID>, WTF::UnsignedWithZeroKeyHashTraits<WebCore::PlatformDisplayID>> m_observers;
 };
 
-} // namespace WebCore
+} // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)

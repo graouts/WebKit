@@ -63,6 +63,10 @@ class WebWheelEvent;
 class WebTouchEvent;
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+class AcceleratedTimelineScheduler;
+#endif
+
 class EventDispatcher final :
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
     public MomentumEventDispatcher::Client,
@@ -89,6 +93,11 @@ public:
     void initializeConnection(IPC::Connection&);
 
     void notifyScrollingTreesDisplayDidRefresh(WebCore::PlatformDisplayID);
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void startAcceleratedTimelineUpdates(WebCore::PageIdentifier);
+    void stopAcceleratedTimelineUpdates(WebCore::PageIdentifier);
+#endif
 
 private:
     // IPC::MessageReceiver overrides.
@@ -159,6 +168,11 @@ private:
     std::unique_ptr<MomentumEventDispatcher> m_momentumEventDispatcher;
     DisplayLinkObserverID m_observerID;
 #endif
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    std::unique_ptr<AcceleratedTimelineScheduler> m_acceleratedTimelineScheduler;
+#endif
+
 };
 
 } // namespace WebKit

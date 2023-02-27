@@ -2215,6 +2215,11 @@ public:
     void reportNetworkIssue(const URL&);
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION) && HAVE(CVDISPLAYLINK)
+    void startAcceleratedAnimationDisplayLink(DisplayLinkObserverID, WebCore::PlatformDisplayID);
+    void stopAcceleratedAnimationDisplayLink(DisplayLinkObserverID, WebCore::PlatformDisplayID);
+#endif
+
 #if ENABLE(ACCESSIBILITY_ANIMATION_CONTROL)
     void pauseAllAnimations(CompletionHandler<void()>&&);
     void playAllAnimations(CompletionHandler<void()>&&);
@@ -3428,6 +3433,10 @@ private:
 #endif
 
     RefPtr<WebKit::WebPageProxy> m_pageToCloneSessionStorageFrom;
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION) && HAVE(CVDISPLAYLINK)
+    bool m_hasActiveAcceleratedAnimationDisplayLink { false };
+#endif
 };
 
 #ifdef __OBJC__

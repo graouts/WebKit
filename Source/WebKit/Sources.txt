@@ -826,6 +826,7 @@ WebProcess/WebCoreSupport/WebSpeechSynthesisClient.cpp
 WebProcess/WebCoreSupport/WebStorageConnection.cpp
 WebProcess/WebCoreSupport/WebWorkerClient.cpp
 
+WebProcess/WebPage/AcceleratedTimelineScheduler.cpp
 WebProcess/WebPage/DrawingArea.cpp
 WebProcess/WebPage/EventDispatcher.cpp
 WebProcess/WebPage/FindController.cpp

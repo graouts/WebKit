@@ -30,6 +30,7 @@
 
 #include "Document.h"
 #include "LocalDOMWindow.h"
+#include "GraphicsLayerCA.h"
 #include "Page.h"
 #include "Performance.h"
 #include "RenderElement.h"
@@ -38,20 +39,58 @@
 #include "RenderLayerModelObject.h"
 #include "RenderStyleConstants.h"
 #include "Styleable.h"
+#include "ScrollingThread.h"
 #include <wtf/MonotonicTime.h>
+#include <wtf/NeverDestroyed.h>
 
 namespace WebCore {
 
+HashSet<AcceleratedTimeline*>& AcceleratedTimeline::timelines()
+{
+    static NeverDestroyed<HashSet<AcceleratedTimeline*>> vector;
+    return vector;
+}
+
+void AcceleratedTimeline::updateTimelinesForPageId(PageIdentifier pageId, const Function<void(bool)>&& callback)
+{
+    LOG_WITH_STREAM(Animations, stream << "AcceleratedTimeline::updateTimelinesForPageId(" << pageId << ")");
+    ScrollingThread::dispatch([pageId, callback = WTFMove(callback)] {
+        auto shouldKeepUpdating = false;
+
+        for (auto* acceleratedTimeline : timelines()) {
+            if (!acceleratedTimeline || acceleratedTimeline->m_pageId != pageId)
+                continue;
+
+            acceleratedTimeline->update();
+            if (!shouldKeepUpdating && acceleratedTimeline->shouldScheduleUpdates())
+                shouldKeepUpdating = true;
+        }
+
+        if (shouldKeepUpdating)
+            return;
+
+        ScrollingThread::dispatchBarrier([shouldKeepUpdating, callback = WTFMove(callback)] {
+            callback(shouldKeepUpdating);
+        });
+    });
+}
+
 AcceleratedTimeline::AcceleratedTimeline(Document& document)
 {
+    ASSERT(isMainThread());
     auto now = MonotonicTime::now();
     m_timeOrigin = now.secondsSinceEpoch();
     if (auto* domWindow = document.domWindow())
         m_timeOrigin -= Seconds::fromMilliseconds(domWindow->performance().relativeTimeFromTimeOriginInReducedResolution(now));
+    
+    ASSERT(document.pageID());
+    m_pageId = *document.pageID();
+    timelines().add(this);
 }
 
 void AcceleratedTimeline::updateEffectStacks()
 {
+    ASSERT(isMainThread());
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });
     for (auto hashedStyleable : targetsPendingUpdate) {
         auto* element = hashedStyleable.first;
@@ -66,14 +105,43 @@ void AcceleratedTimeline::updateEffectStacks()
             continue;
 
         auto* renderLayer = downcast<RenderLayerModelObject>(*renderer).layer();
-        ASSERT(renderLayer && renderLayer->backing());
-        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues();
+        ASSERT(renderLayer && renderLayer->backing() && renderLayer->backing()->graphicsLayer());
+        auto& renderLayerBacking = *renderLayer->backing();
+
+        auto hasRunningAcceleratedEffects = renderLayerBacking.updateAcceleratedEffectsAndBaseValues();
+        if (hasRunningAcceleratedEffects)
+            m_animatedGraphicsLayers.add(renderLayerBacking.graphicsLayer());
+        else
+            m_animatedGraphicsLayers.remove(renderLayerBacking.graphicsLayer());
     }
 }
 
 void AcceleratedTimeline::updateEffectStackForTarget(const Styleable& target)
 {
+    ASSERT(isMainThread());
     m_targetsPendingUpdate.add({ &target.element, static_cast<unsigned>(target.pseudoId) });
+}
+
+bool AcceleratedTimeline::shouldScheduleUpdates() const
+{
+    return !m_animatedGraphicsLayers.isEmpty();
+}
+
+void AcceleratedTimeline::update()
+{
+    ASSERT(!isMainThread());
+
+    auto currentTime = MonotonicTime::now().secondsSinceEpoch() - m_timeOrigin;
+    for (auto* animatedGraphicsLayer : m_animatedGraphicsLayers) {
+        if (auto* acceleratedEffectStack = animatedGraphicsLayer->acceleratedEffectStack()) {
+            ASSERT(is<GraphicsLayerCA>(animatedGraphicsLayer));
+            auto& graphicsLayerCA = downcast<GraphicsLayerCA>(*animatedGraphicsLayer);
+            auto *primaryLayer = graphicsLayerCA.animatedLayer(AnimatedProperty::Transform)->platformLayer();
+            acceleratedEffectStack->applyPrimaryLayerEffects(primaryLayer, currentTime);
+            auto *backdropLayer = graphicsLayerCA.animatedLayer(AnimatedProperty::WebkitBackdropFilter)->platformLayer();
+            acceleratedEffectStack->applyBackdropLayerEffects(backdropLayer, currentTime);
+        }
+    }
 }
 
 } // namespace WebCore
