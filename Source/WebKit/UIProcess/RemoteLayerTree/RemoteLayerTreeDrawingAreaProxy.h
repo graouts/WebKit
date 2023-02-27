@@ -55,6 +55,11 @@ public:
     void acceleratedAnimationDidStart(WebCore::GraphicsLayer::PlatformLayerID, const String& key, MonotonicTime startTime);
     void acceleratedAnimationDidEnd(WebCore::GraphicsLayer::PlatformLayerID, const String& key);
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    virtual void animationsDidChangeOnNode(RemoteLayerTreeNode&) = 0;
+    virtual void updateAnimations() = 0;
+#endif
+
     TransactionID nextLayerTreeTransactionID() const { return m_pendingLayerTreeTransactionID.next(); }
     TransactionID lastCommittedLayerTreeTransactionID() const { return m_transactionIDForPendingCACommit; }
 
@@ -76,6 +81,10 @@ protected:
     void updateDebugIndicatorPosition();
 
     bool shouldCoalesceVisualEditorStateUpdates() const override { return true; }
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    bool hasAnimatedNodes() const;
+#endif
 
 private:
     void sizeDidChange() final;
@@ -141,6 +150,11 @@ private:
     unsigned m_countOfTransactionsWithNonEmptyLayerChanges { 0 };
 
     Vector<Ref<WebProcessProxy>> m_processesWithRegisteredRemoteLayerTreeDrawingAreaProxyMessageReceiver;
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    HashSet<RemoteLayerTreeNode*> m_animatedNodes;
+    Seconds m_acceleratedTimelineTimeOrigin;
+#endif
 };
 
 } // namespace WebKit

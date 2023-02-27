@@ -59,7 +59,7 @@ public:
     bool operator!=(const PathOperation& o) const { return !(*this == o); }
 
     virtual bool canBlend(const PathOperation&) const { return false; }
-    virtual RefPtr<PathOperation> blend(const PathOperation*, const BlendingContext&) const { return nullptr; }
+    WEBCORE_EXPORT virtual RefPtr<PathOperation> blend(const PathOperation*, const BlendingContext&) const { return nullptr; }
 
     OperationType type() const { return m_type; }
     bool isSameType(const PathOperation& o) const { return o.type() == m_type; }

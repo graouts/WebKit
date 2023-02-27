@@ -308,6 +308,15 @@ void RemoteLayerTreePropertyApplier::applyProperties(RemoteLayerTreeNode& node, 
 #endif
     updateMask(node, properties, relatedLayers);
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    if (properties.changedProperties & LayerChange::AnimationsChanged) {
+        LOG_WITH_STREAM(Animations, stream << "RemoteLayerTreePropertyApplier::applyProperties() found " << properties.effects.size() << " effects");
+        node.setAcceleratedEffectsAndBaseValues(properties.effects, properties.baseValues);
+        if (layerTreeHost)
+            layerTreeHost->animationsDidChangeOnNode(node);
+    }
+#endif
+
     if (properties.changedProperties & LayerChange::EventRegionChanged)
         node.setEventRegion(properties.eventRegion);
 

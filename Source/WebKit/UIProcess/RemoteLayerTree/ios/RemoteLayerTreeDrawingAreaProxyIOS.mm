@@ -33,6 +33,10 @@
 #import <QuartzCore/CADisplayLink.h>
 #import <pal/spi/cocoa/QuartzCoreSPI.h>
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#import <WebCore/ScrollingThread.h>
+#endif
+
 @interface WKDisplayLinkHandler : NSObject {
     WebKit::RemoteLayerTreeDrawingAreaProxy* _drawingAreaProxy;
     CADisplayLink *_displayLink;
@@ -148,6 +152,68 @@
 
 @end
 
+// FIXME: refactor this to have a single display link handler.
+@interface WKAnimationDisplayLinkHandler : NSObject {
+    WebKit::RemoteLayerTreeDrawingAreaProxy* _drawingAreaProxy;
+    CADisplayLink *_displayLink;
+}
+
+- (id)initWithDrawingAreaProxy:(WebKit::RemoteLayerTreeDrawingAreaProxy*)drawingAreaProxy;
+- (void)displayLinkFired:(CADisplayLink *)sender;
+- (void)invalidate;
+- (void)schedule;
+
+@end
+
+@implementation WKAnimationDisplayLinkHandler
+
+- (id)initWithDrawingAreaProxy:(WebKit::RemoteLayerTreeDrawingAreaProxy*)drawingAreaProxy
+{
+    ASSERT(WebCore::ScrollingThread::isCurrentThread());
+    if (self = [super init]) {
+        _drawingAreaProxy = drawingAreaProxy;
+        // Note that CADisplayLink retains its target (self), so a call to -invalidate is needed on teardown.
+        _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(displayLinkFired:)];
+        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+        _displayLink.paused = YES;
+        _displayLink.preferredFramesPerSecond = (1.0 / _displayLink.maximumRefreshRate);
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    ASSERT(!_displayLink);
+    [super dealloc];
+}
+
+- (void)displayLinkFired:(CADisplayLink *)sender
+{
+    ASSERT(WebCore::ScrollingThread::isCurrentThread());
+    _drawingAreaProxy->updateAnimations();
+}
+
+- (void)invalidate
+{
+    ASSERT(isUIThread());
+    [_displayLink invalidate];
+    _displayLink = nullptr;
+}
+
+- (void)schedule
+{
+    ASSERT(WebCore::ScrollingThread::isCurrentThread());
+    _displayLink.paused = NO;
+}
+
+- (void)pause
+{
+    ASSERT(WebCore::ScrollingThread::isCurrentThread());
+    _displayLink.paused = YES;
+}
+
+@end
+
 namespace WebKit {
 using namespace IPC;
 using namespace WebCore;
@@ -160,6 +226,7 @@ RemoteLayerTreeDrawingAreaProxyIOS::RemoteLayerTreeDrawingAreaProxyIOS(WebPagePr
 RemoteLayerTreeDrawingAreaProxyIOS::~RemoteLayerTreeDrawingAreaProxyIOS()
 {
     [m_displayLinkHandler invalidate];
+    [m_animationDisplayLinkHandler invalidate];
 }
 
 std::unique_ptr<RemoteScrollingCoordinatorProxy> RemoteLayerTreeDrawingAreaProxyIOS::createScrollingCoordinatorProxy() const
@@ -193,6 +260,36 @@ void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacks()
 {
     [displayLinkHandler() pause];
 }
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void RemoteLayerTreeDrawingAreaProxyIOS::animationsDidChangeOnNode(RemoteLayerTreeNode& node)
+{
+    RemoteLayerTreeDrawingAreaProxy::animationsDidChangeOnNode(node);
+
+    ASSERT(isUIThread());
+    WebCore::ScrollingThread::dispatch([&] {
+        [animationDisplayLinkHandler() schedule];
+    });
+}
+
+void RemoteLayerTreeDrawingAreaProxyIOS::updateAnimations()
+{
+    RemoteLayerTreeDrawingAreaProxy::updateAnimations();
+
+    if (hasAnimatedNodes())
+        [animationDisplayLinkHandler() schedule];
+    else
+        [animationDisplayLinkHandler() pause];
+}
+
+WKAnimationDisplayLinkHandler *RemoteLayerTreeDrawingAreaProxyIOS::animationDisplayLinkHandler()
+{
+    ASSERT(WebCore::ScrollingThread::isCurrentThread());
+    if (!m_animationDisplayLinkHandler)
+        m_animationDisplayLinkHandler = adoptNS([[WKAnimationDisplayLinkHandler alloc] initWithDrawingAreaProxy:this]);
+    return m_animationDisplayLinkHandler.get();
+}
+#endif // ENABLE(THREADED_ANIMATION_RESOLUTION)
 
 } // namespace WebKit
 

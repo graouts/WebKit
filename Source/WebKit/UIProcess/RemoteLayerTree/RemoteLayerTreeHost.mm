@@ -309,6 +309,13 @@ void RemoteLayerTreeHost::animationDidEnd(WebCore::GraphicsLayer::PlatformLayerI
         m_drawingArea->acceleratedAnimationDidEnd(layerID, animationKey);
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void RemoteLayerTreeHost::animationsDidChangeOnNode(RemoteLayerTreeNode& node)
+{
+    m_drawingArea->animationsDidChangeOnNode(node);
+}
+#endif
+
 void RemoteLayerTreeHost::detachFromDrawingArea()
 {
     m_drawingArea = nullptr;

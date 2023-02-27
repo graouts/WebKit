@@ -30,6 +30,7 @@
 #if PLATFORM(IOS_FAMILY)
 
 OBJC_CLASS WKDisplayLinkHandler;
+OBJC_CLASS WKAnimationDisplayLinkHandler;
 
 namespace WebKit {
 
@@ -50,6 +51,13 @@ private:
     WKDisplayLinkHandler *displayLinkHandler();
 
     RetainPtr<WKDisplayLinkHandler> m_displayLinkHandler;
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void animationsDidChangeOnNode(RemoteLayerTreeNode&) final;
+    void updateAnimations() final;
+    WKAnimationDisplayLinkHandler *animationDisplayLinkHandler();
+    RetainPtr<WKAnimationDisplayLinkHandler> m_animationDisplayLinkHandler;
+#endif
 };
 
 } // namespace WebKit

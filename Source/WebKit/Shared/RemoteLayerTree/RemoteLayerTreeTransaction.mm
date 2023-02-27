@@ -670,6 +670,10 @@ void RemoteLayerTreeTransaction::encode(IPC::Encoder& encoder) const
 #if PLATFORM(IOS_FAMILY)
     encoder << m_dynamicViewportSizeUpdateID;
 #endif
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    encoder << m_acceleratedTimelineTimeOrigin;
+#endif
 }
 
 bool RemoteLayerTreeTransaction::decode(IPC::Decoder& decoder, RemoteLayerTreeTransaction& result)
@@ -818,6 +822,11 @@ bool RemoteLayerTreeTransaction::decode(IPC::Decoder& decoder, RemoteLayerTreeTr
 
 #if PLATFORM(IOS_FAMILY)
     if (!decoder.decode(result.m_dynamicViewportSizeUpdateID))
+        return false;
+#endif
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    if (!decoder.decode(result.m_acceleratedTimelineTimeOrigin))
         return false;
 #endif
 

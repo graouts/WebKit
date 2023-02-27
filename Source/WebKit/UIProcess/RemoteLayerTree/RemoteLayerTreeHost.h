@@ -67,6 +67,10 @@ public:
     void animationDidStart(WebCore::GraphicsLayer::PlatformLayerID, CAAnimation *, MonotonicTime startTime);
     void animationDidEnd(WebCore::GraphicsLayer::PlatformLayerID, CAAnimation *);
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void animationsDidChangeOnNode(RemoteLayerTreeNode&);
+#endif
+
     void detachFromDrawingArea();
     void clearLayers();
 
