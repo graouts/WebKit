@@ -40,6 +40,7 @@
 
 namespace WebCore {
 
+class FloatRect;
 class IntRect;
 class KeyframeEffect;
 
@@ -78,6 +79,8 @@ public:
 
     WEBCORE_EXPORT Ref<AcceleratedEffect> clone() const;
     WEBCORE_EXPORT Ref<AcceleratedEffect> copyWithProperties(OptionSet<AcceleratedEffectProperty>&) const;
+
+    void apply(Seconds, AcceleratedEffectValues&, const FloatRect&);
 
     // Encoding and decoding support
     AnimationEffectTiming timing() const { return m_timing; }
