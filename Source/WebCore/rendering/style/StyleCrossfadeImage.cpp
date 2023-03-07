@@ -173,13 +173,17 @@ FloatSize StyleCrossfadeImage::fixedSize(const RenderElement& renderer) const
 
     // Rounding issues can cause transitions between images of equal size to return
     // a different fixed size; avoid performing the interpolation if the images are the same size.
-    if (fromImageSize == toImageSize)
+    if (fromImageSize == toImageSize) {
+        WTFLogAlways("[GRAOUTS] StyleCrossfadeImage::fixedSize() -> %f x %f (path 1)", fromImageSize.width(), fromImageSize.height());
         return fromImageSize;
+    }
 
     float percentage = m_percentage;
     float inversePercentage = 1 - percentage;
 
-    return fromImageSize * inversePercentage + toImageSize * percentage;
+    auto size = fromImageSize * inversePercentage + toImageSize * percentage;
+    WTFLogAlways("[GRAOUTS] StyleCrossfadeImage::fixedSize() -> %f x %f (path 2)", size.width(), size.height());
+    return size;
 }
 
 void StyleCrossfadeImage::imageChanged(CachedImage*, const IntRect*)

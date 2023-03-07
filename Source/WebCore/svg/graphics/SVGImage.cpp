@@ -174,9 +174,9 @@ IntSize SVGImage::containerSize() const
     ASSERT(rootElement->renderer()->style().effectiveZoom() == 1);
 
     FloatSize currentSize;
-    if (rootElement->hasIntrinsicWidth() && rootElement->hasIntrinsicHeight())
-        currentSize = rootElement->currentViewportSizeExcludingZoom();
-    else
+//    if (rootElement->hasIntrinsicWidth() && rootElement->hasIntrinsicHeight())
+//        currentSize = rootElement->currentViewportSizeExcludingZoom();
+//    else
         currentSize = rootElement->currentViewBoxRect().size();
 
     // Use the default CSS intrinsic size if the above failed.
@@ -311,7 +311,10 @@ ImageDrawResult SVGImage::draw(GraphicsContext& context, const FloatRect& dstRec
     context.translate(destOffset);
     context.scale(scale);
 
-    view->resize(containerSize());
+    auto viewResize = containerSize();
+    view->resize(viewResize);
+
+    WTFLogAlways("[GRAOUTS] SVGImage::draw(), scale = %f x %f, viewResize = %d x %d", scale.width(), scale.height(), viewResize.width(), viewResize.height());
 
     {
         ScriptDisallowedScope::DisableAssertionsInScope disabledScope;

@@ -2128,6 +2128,7 @@ public:
 private:
     void blend(FillLayer* destination, const FillLayer* from, const FillLayer* to, const CSSPropertyBlendingContext& context) const final
     {
+        WTFLogAlways("[GRAOUTS] blend()");
         (destination->*this->m_setter)(blendFunc(this->value(from), this->value(to), context));
     }
 

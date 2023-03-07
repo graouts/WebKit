@@ -173,6 +173,7 @@ ImageDrawResult Image::drawTiled(GraphicsContext& ctxt, const FloatRect& destRec
         intrinsicTileSize.setHeight(scaledTileSize.height());
 
     FloatSize scale(scaledTileSize / intrinsicTileSize);
+    WTFLogAlways("[GRAOUTS] Image::drawTiled(), scaledTileSize = %f x %f, intrinsicTileSize = %f x %f, scale = %f x %f", scaledTileSize.width(), scaledTileSize.height(), intrinsicTileSize.width(), intrinsicTileSize.height(), scale.width(), scale.height());
 
     FloatRect oneTileRect;
     FloatSize actualTileSize = scaledTileSize + spacing;

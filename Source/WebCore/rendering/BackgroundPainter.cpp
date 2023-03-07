@@ -387,6 +387,7 @@ void BackgroundPainter::paintFillLayer(const Color& color, const FillLayer& bgLa
 
     // no progressive loading of the background image
     if (!baseBgColorOnly && shouldPaintBackgroundImage) {
+        WTFLogAlways("[GRAOUTS] BackgroundPainter::paintFillLayer()");
         // Multiline inline boxes paint like the image was one long strip spanning lines. The backgroundImageStrip is this fictional rectangle.
         auto imageRect = backgroundImageStrip.isEmpty() ? scrolledPaintRect : backgroundImageStrip;
         auto paintOffset = backgroundImageStrip.isEmpty() ? rect.location() : backgroundImageStrip.location();

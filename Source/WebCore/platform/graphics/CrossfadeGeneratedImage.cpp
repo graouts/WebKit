@@ -40,6 +40,8 @@ CrossfadeGeneratedImage::CrossfadeGeneratedImage(Image& fromImage, Image& toImag
     , m_crossfadeSize(crossfadeSize)
 {
     setContainerSize(size);
+    m_fromImage->setContainerSize({ });
+    m_toImage->setContainerSize({ });
 }
 
 static void drawCrossfadeSubimage(GraphicsContext& context, Image& image, CompositeOperator operation, float opacity, const FloatSize& targetSize)
@@ -61,8 +63,12 @@ static void drawCrossfadeSubimage(GraphicsContext& context, Image& image, Compos
         options = { operation };
     }
 
-    if (targetSize != imageSize)
-        context.scale(targetSize / imageSize);
+    auto scale = targetSize / imageSize;
+    if (targetSize != imageSize) {
+        context.scale(scale);
+    }
+
+    WTFLogAlways("[GRAOUTS] drawCrossfadeSubimage(), imageSize = %f x %f, targetSize = %f x %f, scale = %f x %f", imageSize.width(), imageSize.height(), targetSize.width(), targetSize.height(), scale.width(), scale.height());
 
     context.drawImage(image, IntPoint(), options);
 
@@ -93,8 +99,11 @@ ImageDrawResult CrossfadeGeneratedImage::draw(GraphicsContext& context, const Fl
     context.setCompositeOperation(options.compositeOperator(), options.blendMode());
     context.clip(dstRect);
     context.translate(dstRect.location());
-    if (dstRect.size() != srcRect.size())
-        context.scale(dstRect.size() / srcRect.size());
+    if (dstRect.size() != srcRect.size()) {
+        auto scale = dstRect.size() / srcRect.size();
+        WTFLogAlways("[GRAOUTS] CrossfadeGeneratedImage::draw(), scale = %f x %f, dstRect = %f x %f, srcRect = %f x %f", scale.width(), scale.height(), dstRect.size().width(), dstRect.size().height(), srcRect.size().width(), srcRect.size().height());
+        context.scale(scale);
+    }
     context.translate(-srcRect.location());
     
     drawCrossfade(context);
