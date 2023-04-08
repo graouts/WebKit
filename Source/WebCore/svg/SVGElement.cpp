@@ -1125,4 +1125,9 @@ bool SVGElement::hasAssociatedSVGLayoutBox() const
     return true;
 }
 
+void SVGElement::styleChanged(const RenderStyle*)
+{
+    invalidateInstances();
+}
+
 }

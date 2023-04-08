@@ -39,6 +39,7 @@ class AffineTransform;
 class CSSStyleDeclaration;
 class DeprecatedCSSOMValue;
 class Document;
+class RenderStyle;
 class SVGDocumentExtensions;
 class SVGElementRareData;
 class SVGPropertyAnimatorFactory;
@@ -168,6 +169,8 @@ public:
     SVGConditionalProcessingAttributes* conditionalProcessingAttributesIfExists() const;
 
     bool hasAssociatedSVGLayoutBox() const;
+
+    void styleChanged(const RenderStyle* oldStyle);
 
 protected:
     SVGElement(const QualifiedName&, Document&, UniqueRef<SVGPropertyRegistry>&&, ConstructionType = CreateSVGElement);

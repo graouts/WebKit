@@ -485,12 +485,13 @@ void SVGRenderSupport::applyStrokeStyleToContext(GraphicsContext& context, const
 
 void SVGRenderSupport::styleChanged(RenderElement& renderer, const RenderStyle* oldStyle)
 {
+    auto* svgElement = dynamicDowncast<SVGElement>(renderer.element());
+    if (!svgElement)
+        return;
+    svgElement->styleChanged(oldStyle);
 #if ENABLE(CSS_COMPOSITING)
-    if (renderer.element() && renderer.element()->isSVGElement() && (!oldStyle || renderer.style().hasBlendMode() != oldStyle->hasBlendMode()))
+    if (!oldStyle || renderer.style().hasBlendMode() != oldStyle->hasBlendMode())
         SVGRenderSupport::updateMaskedAncestorShouldIsolateBlending(renderer);
-#else
-    UNUSED_PARAM(renderer);
-    UNUSED_PARAM(oldStyle);
 #endif
 }
 
