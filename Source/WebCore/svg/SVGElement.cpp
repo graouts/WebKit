@@ -1128,6 +1128,21 @@ bool SVGElement::hasAssociatedSVGLayoutBox() const
 void SVGElement::styleChanged(const RenderStyle*)
 {
     invalidateInstances();
+
+    if (auto* renderer = this->renderer()) {
+        auto& style = renderer->style();
+        auto transform = style.transform();
+        TextStream ts;
+        ts << "transform:";
+        auto& operations = transform.operations();
+        if (operations.isEmpty())
+            ts << " none";
+        for (auto operation : operations)
+            ts << " " << operation;
+        ts << "; opacity: " << style.opacity();
+        WTFLogAlways("[GRAOUTS] %s", ts.release().ascii().data());
+    } else
+        WTFLogAlways("[GRAOUTS] No renderer in SVGElement::styleChanged()");
 }
 
 }

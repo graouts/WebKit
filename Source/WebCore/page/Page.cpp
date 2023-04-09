@@ -1711,6 +1711,7 @@ unsigned Page::renderingUpdateCount() const
 // https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering
 void Page::updateRendering()
 {
+    WTFLogAlways("[GRAOUTS] >>>> Page::updateRendering()");
     LOG(EventLoop, "Page %p updateRendering() - re-entering %d", this, !m_renderingUpdateRemainingSteps.isEmpty());
 
     if (m_renderingUpdateRemainingSteps.isEmpty())
@@ -1840,6 +1841,7 @@ void Page::updateRendering()
 
     if (!isSVGImagePage)
         tracePoint(RenderingUpdateEnd);
+    WTFLogAlways("[GRAOUTS] <<<< Page::updateRendering()");
 }
 
 void Page::isolatedUpdateRendering()
