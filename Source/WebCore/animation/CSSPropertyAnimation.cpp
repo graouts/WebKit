@@ -3785,7 +3785,15 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
         CSSPropertyBorderRadius,
         CSSPropertyBorderWidth,
         CSSPropertyBorder,
+        CSSPropertyBorderBlock,
+        CSSPropertyBorderBlockColor,
+        CSSPropertyBorderBlockStyle,
+        CSSPropertyBorderBlockWidth,
         CSSPropertyBorderImage,
+        CSSPropertyBorderInline,
+        CSSPropertyBorderInlineColor,
+        CSSPropertyBorderInlineStyle,
+        CSSPropertyBorderInlineWidth,
         CSSPropertyBorderSpacing,
         CSSPropertyListStyle, // for list-style-image
         CSSPropertyMargin,
@@ -3888,14 +3896,6 @@ CSSPropertyAnimationWrapperMap::CSSPropertyAnimationWrapperMap()
         case CSSPropertyAppearance:
         case CSSPropertyBlockStepInsert:
         case CSSPropertyBlockStepSize:
-        case CSSPropertyBorderBlock: // logical shorthand
-        case CSSPropertyBorderBlockColor: // logical shorthand
-        case CSSPropertyBorderBlockStyle: // logical shorthand
-        case CSSPropertyBorderBlockWidth: // logical shorthand
-        case CSSPropertyBorderInline: // logical shorthand
-        case CSSPropertyBorderInlineColor: // logical shorthand
-        case CSSPropertyBorderInlineStyle: // logical shorthand
-        case CSSPropertyBorderInlineWidth: // logical shorthand
         case CSSPropertyBorderStyle:
         case CSSPropertyBufferedRendering:
         case CSSPropertyColumnSpan:
