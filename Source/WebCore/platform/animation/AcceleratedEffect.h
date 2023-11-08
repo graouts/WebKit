@@ -80,7 +80,7 @@ public:
     WEBCORE_EXPORT Ref<AcceleratedEffect> clone() const;
     WEBCORE_EXPORT Ref<AcceleratedEffect> copyWithProperties(OptionSet<AcceleratedEffectProperty>&) const;
 
-    void apply(Seconds, AcceleratedEffectValues&, const FloatRect&);
+    WEBCORE_EXPORT void apply(Seconds, AcceleratedEffectValues&, const FloatRect&);
 
     // Encoding and decoding support
     AnimationEffectTiming timing() const { return m_timing; }
