@@ -311,9 +311,9 @@ void RemoteLayerTreeHost::animationDidEnd(WebCore::PlatformLayerIdentifier layer
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-void RemoteLayerTreeHost::animationEffectStackWasAdded(Ref<RemoteAcceleratedEffectStack> effects)
+void RemoteLayerTreeHost::animationEffectStackWasAddedToLayer(PlatformLayer* layer, Ref<RemoteAcceleratedEffectStack> effects)
 {
-    m_drawingArea->animationEffectStackWasAdded(WTFMove(effects));
+    m_drawingArea->animationEffectStackWasAddedToLayer(layer, WTFMove(effects));
 }
 
 void RemoteLayerTreeHost::animationEffectStackWasRemoved(Ref<RemoteAcceleratedEffectStack> effects)

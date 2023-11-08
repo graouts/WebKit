@@ -582,7 +582,7 @@ void RemoteLayerTreeEventDispatcher::unlockForAnimationChanges()
     startOrStopDisplayLink();
 }
 
-void RemoteLayerTreeEventDispatcher::animationEffectStackWasAdded(Ref<RemoteAcceleratedEffectStack> effects)
+void RemoteLayerTreeEventDispatcher::animationEffectStackWasAddedToLayer(Ref<RemoteAcceleratedEffectStack> effects)
 {
     ASSERT(isMainRunLoop());
     assertIsHeld(m_animationsLock);

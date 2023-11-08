@@ -31,6 +31,7 @@
 #include "RemoteScrollingCoordinator.h"
 #include "RemoteScrollingTree.h"
 #include "RemoteScrollingUIState.h"
+#include <WebCore/PlatformLayer.h>
 #include <WebCore/PlatformLayerIdentifier.h>
 #include <WebCore/ScrollSnapOffsetsInfo.h>
 #include <WebCore/WheelEventTestMonitor.h>
@@ -130,7 +131,7 @@ public:
     virtual void scrollingTreeNodeDidEndScrollSnapping(WebCore::ScrollingNodeID) { }
     
     virtual void willCommitLayerAndScrollingTrees() { }
-    virtual void animationEffectStackWasAdded(Ref<RemoteAcceleratedEffectStack>) { }
+    virtual void animationEffectStackWasAddedToLayer(PlatformLayer*, Ref<RemoteAcceleratedEffectStack>) { }
     virtual void animationEffectStackWasRemoved(Ref<RemoteAcceleratedEffectStack>) { }
     virtual void didCommitLayerAndScrollingTrees() { }
 
