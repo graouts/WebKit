@@ -153,7 +153,9 @@ AcceleratedEffectValues::AcceleratedEffectValues(const RenderStyle& style, const
         scale = srcScale->selfOrCopyWithResolvedCalculatedValues(borderBoxSize);
     if (auto* srcRotate = style.rotate())
         rotate = srcRotate->selfOrCopyWithResolvedCalculatedValues(borderBoxSize);
-    transformOrigin = nonCalculatedLengthPoint(style.transformOriginXY(), borderBoxSize);
+
+    auto computedTransformOrigin = style.computeTransformOrigin(borderBoxRect);
+    transformOrigin = { { computedTransformOrigin.x(), LengthType::Fixed }, { computedTransformOrigin.y(), LengthType::Fixed } };
 
     offsetPath = style.offsetPath();
     offsetPosition = nonCalculatedLengthPoint(style.offsetPosition(), borderBoxSize);
