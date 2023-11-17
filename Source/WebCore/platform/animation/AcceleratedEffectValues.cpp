@@ -32,6 +32,7 @@
 #include "LengthFunctions.h"
 #include "Path.h"
 #include "PathTraversalState.h"
+#include "RenderElement.h"
 #include "RenderStyleInlines.h"
 #include "TransformOperationData.h"
 
@@ -135,7 +136,7 @@ static LengthPoint nonCalculatedLengthPoint(LengthPoint lengthPoint, const IntSi
     };
 }
 
-AcceleratedEffectValues::AcceleratedEffectValues(const RenderStyle& style, const IntRect& borderBoxRect)
+AcceleratedEffectValues::AcceleratedEffectValues(const RenderStyle& style, const RenderElement& renderer, const IntRect& borderBoxRect)
 {
     opacity = style.opacity();
 
@@ -180,6 +181,8 @@ AcceleratedEffectValues::AcceleratedEffectValues(const RenderStyle& style, const
         return operation.copyRef();
     }));
 #endif
+
+    transformOperationData = TransformOperationData(style, renderer);
 }
 
 static PathTraversalState getTraversalStateAtDistance(const Path& path, const Length& distance)

@@ -4077,6 +4077,7 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())
                 hasInterpolatingEffect = true;
+            // FIXME: check the bounds provided here.
             acceleratedEffects.append(AcceleratedEffect::create(*effect, borderBoxRect));
         }
     }

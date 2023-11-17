@@ -231,9 +231,12 @@ AcceleratedEffect::AcceleratedEffect(const KeyframeEffect& effect, const IntRect
         if (animatedProperties.isEmpty())
             continue;
 
+        auto* renderer = effect.renderer();
+        ASSERT(renderer);
+
         auto values = [&]() -> AcceleratedEffectValues {
             if (auto* style = srcKeyframe.style())
-                return { *style, borderBoxRect };
+                return { *style, *renderer, borderBoxRect };
             return { };
         }();
 

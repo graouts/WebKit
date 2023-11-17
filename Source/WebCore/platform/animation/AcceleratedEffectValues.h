@@ -42,6 +42,7 @@ namespace WebCore {
 
 class IntRect;
 class Path;
+class RenderElement;
 class RenderStyle;
 
 struct AcceleratedEffectValues {
@@ -91,7 +92,7 @@ struct AcceleratedEffectValues {
     WEBCORE_EXPORT AcceleratedEffectValues clone() const;
 
     WEBCORE_EXPORT AcceleratedEffectValues(const AcceleratedEffectValues&);
-    AcceleratedEffectValues(const RenderStyle&, const IntRect&);
+    AcceleratedEffectValues(const RenderStyle&, const RenderElement&, const IntRect&);
     AcceleratedEffectValues& operator=(const AcceleratedEffectValues&) = default;
 
     WEBCORE_EXPORT TransformationMatrix computedTransformationMatrix(const FloatRect&) const;
