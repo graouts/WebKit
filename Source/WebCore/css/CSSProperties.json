@@ -1370,7 +1370,8 @@
                     "animation-direction",
                     "animation-fill-mode",
                     "animation-play-state",
-                    "animation-name"
+                    "animation-name",
+                    "animation-timeline"
                 ]
             },
             "specification": {

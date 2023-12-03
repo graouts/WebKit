@@ -863,6 +863,7 @@ static constexpr InitialValue initialValueForLonghand(CSSPropertyID longhand)
     switch (longhand) {
     case CSSPropertyAccentColor:
     case CSSPropertyAlignSelf:
+    case CSSPropertyAnimationTimeline:
     case CSSPropertyAspectRatio:
     case CSSPropertyBackgroundSize:
     case CSSPropertyBlockSize:
@@ -985,7 +986,6 @@ static constexpr InitialValue initialValueForLonghand(CSSPropertyID longhand)
         return InitialNumericValue { 0, CSSUnitType::CSS_S };
     case CSSPropertyAnimationFillMode:
     case CSSPropertyAnimationName:
-    case CSSPropertyAnimationTimeline:
     case CSSPropertyAppearance:
     case CSSPropertyBackgroundImage:
     case CSSPropertyBorderBlockEndStyle:
@@ -1734,11 +1734,11 @@ static RefPtr<CSSValue> consumeAnimationValueForShorthand(CSSPropertyID property
 bool CSSPropertyParser::consumeAnimationShorthand(const StylePropertyShorthand& shorthand, bool important)
 {
     const unsigned longhandCount = shorthand.length();
-    CSSValueListBuilder longhands[8];
-    ASSERT(longhandCount <= 8);
+    CSSValueListBuilder longhands[9];
+    ASSERT(longhandCount <= 9);
 
     do {
-        bool parsedLonghand[8] = { false };
+        bool parsedLonghand[9] = { false };
         do {
             bool foundProperty = false;
             for (size_t i = 0; i < longhandCount; ++i) {
