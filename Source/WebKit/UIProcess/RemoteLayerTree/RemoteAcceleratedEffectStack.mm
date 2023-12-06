@@ -28,38 +28,122 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
+#import <WebCore/PlatformCAFilters.h>
+#import <pal/spi/cocoa/QuartzCoreSPI.h>
 #include <wtf/IsoMallocInlines.h>
 
 namespace WebKit {
 
 WTF_MAKE_ISO_ALLOCATED_IMPL(RemoteAcceleratedEffectStack);
 
-Ref<RemoteAcceleratedEffectStack> RemoteAcceleratedEffectStack::create(Seconds acceleratedTimelineTimeOrigin)
+Ref<RemoteAcceleratedEffectStack> RemoteAcceleratedEffectStack::create(WebCore::FloatRect bounds, Seconds acceleratedTimelineTimeOrigin)
 {
-    return adoptRef(*new RemoteAcceleratedEffectStack(acceleratedTimelineTimeOrigin));
+    return adoptRef(*new RemoteAcceleratedEffectStack(bounds, acceleratedTimelineTimeOrigin));
 }
 
-RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(Seconds acceleratedTimelineTimeOrigin)
-    : m_acceleratedTimelineTimeOrigin(acceleratedTimelineTimeOrigin)
+RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(WebCore::FloatRect bounds, Seconds acceleratedTimelineTimeOrigin)
+    : m_bounds(bounds)
+    , m_acceleratedTimelineTimeOrigin(acceleratedTimelineTimeOrigin)
 {
 }
 
 #if PLATFORM(MAC)
-void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer*, MonotonicTime)
+void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
 {
+    ASSERT(!m_opacityPresentationModifier);
+    ASSERT(!m_transformPresentationModifier);
+
+    auto bounds = FloatRect(layer.bounds);
+    auto computedValues = computeValues(now, bounds);
+    auto computedTransform = computedValues.computedTransformationMatrix(bounds);
+
+    auto *opacity = @(computedValues.opacity);
+    auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+
+    // FIXME: Only set transform and opacity if actually present.
+    m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:2];
+    m_opacityPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"opacity" initialValue:opacity additive:NO group:m_presentationModifierGroup.get()]);
+    m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform additive:NO group:m_presentationModifierGroup.get()]);
+
+    [layer addPresentationModifier:m_opacityPresentationModifier.get()];
+    [layer addPresentationModifier:m_transformPresentationModifier.get()];
+
+    PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
+    m_filterPresentationModifierGroup = PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
+
+    for (auto& filterPresentationModifier : m_filterPresentationModifiers)
+        [layer addPresentationModifier:filterPresentationModifier.get()];
+
+    [m_presentationModifierGroup flushWithTransaction];
+    if (m_filterPresentationModifierGroup)
+        [m_filterPresentationModifierGroup flushWithTransaction];
 }
 
-void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime) const
+void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
 {
+    auto computedValues = computeValues(now, m_bounds);
+    auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+
+    auto *opacity = @(computedValues.opacity);
+    auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+
+    [m_opacityPresentationModifier setValue:opacity];
+    [m_transformPresentationModifier setValue:transform];
+    [m_presentationModifierGroup flush];
+
+    if (m_filterPresentationModifierGroup) {
+        PlatformCAFilters::updatePresentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
+        [m_filterPresentationModifierGroup flush];
+    }
 }
 #endif
 
-void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer*, MonotonicTime) const
+void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now) const
 {
+    auto bounds = FloatRect(layer.bounds);
+    auto computedValues = computeValues(now, bounds);
+    auto computedTransform = computedValues.computedTransformationMatrix(bounds);
+
+    [layer setOpacity:computedValues.opacity];
+    [layer setTransform:computedTransform];
+
+    PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
 }
 
-void RemoteAcceleratedEffectStack::clear(PlatformLayer*)
+AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now, const FloatRect& bounds) const
 {
+    auto values = m_baseValues;
+    auto currentTime = now.secondsSinceEpoch() - m_acceleratedTimelineTimeOrigin;
+    for (auto& effect : m_backdropLayerEffects.isEmpty() ? m_primaryLayerEffects : m_backdropLayerEffects)
+        effect->apply(currentTime, values, bounds);
+    return values;
+}
+
+void RemoteAcceleratedEffectStack::clear(PlatformLayer *layer)
+{
+    if (!m_presentationModifierGroup) {
+        ASSERT(!m_opacityPresentationModifier);
+        ASSERT(!m_transformPresentationModifier);
+        return;
+    }
+
+    ASSERT(m_opacityPresentationModifier);
+    ASSERT(m_transformPresentationModifier);
+
+    [layer removePresentationModifier:m_opacityPresentationModifier.get()];
+    [layer removePresentationModifier:m_transformPresentationModifier.get()];
+    [m_presentationModifierGroup flushWithTransaction];
+
+    m_opacityPresentationModifier = nil;
+    m_transformPresentationModifier = nil;
+    m_presentationModifierGroup = nil;
+
+    for (auto& filterPresentationModifier : m_filterPresentationModifiers)
+        [layer removePresentationModifier:filterPresentationModifier.get()];
+    [m_filterPresentationModifierGroup flushWithTransaction];
+
+    m_filterPresentationModifiers.clear();
+    m_filterPresentationModifierGroup = nil;
 }
 
 } // namespace WebKit

@@ -27,15 +27,21 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
+#include <WebCore/AcceleratedEffect.h>
 #include <WebCore/AcceleratedEffectStack.h>
+#include <WebCore/AcceleratedEffectValues.h>
 #include <WebCore/PlatformLayer.h>
+#include <wtf/RetainPtr.h>
+
+OBJC_CLASS CAPresentationModifierGroup;
+OBJC_CLASS CAPresentationModifier;
 
 namespace WebKit {
 
 class RemoteAcceleratedEffectStack final : public WebCore::AcceleratedEffectStack {
     WTF_MAKE_ISO_ALLOCATED(RemoteAcceleratedEffectStack);
 public:
-    static Ref<RemoteAcceleratedEffectStack> create(Seconds);
+    static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect, Seconds);
 
 #if PLATFORM(MAC)
     void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now);
@@ -47,9 +53,19 @@ public:
     void clear(PlatformLayer*);
 
 private:
-    explicit RemoteAcceleratedEffectStack(Seconds);
+    explicit RemoteAcceleratedEffectStack(WebCore::FloatRect, Seconds);
 
+    WebCore::AcceleratedEffectValues computeValues(MonotonicTime now, const WebCore::FloatRect&) const;
+
+    WebCore::FloatRect m_bounds;
     Seconds m_acceleratedTimelineTimeOrigin;
+
+    RetainPtr<CAPresentationModifierGroup> m_presentationModifierGroup;
+    RetainPtr<CAPresentationModifier> m_opacityPresentationModifier;
+    RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
+
+    RetainPtr<CAPresentationModifierGroup> m_filterPresentationModifierGroup;
+    Vector<RetainPtr<CAPresentationModifier>> m_filterPresentationModifiers;
 };
 
 } // namespace WebKit
