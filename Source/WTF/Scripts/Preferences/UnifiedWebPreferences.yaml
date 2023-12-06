@@ -6688,7 +6688,7 @@ TextRecognitionInVideosEnabled:
 
 ThreadedAnimationResolutionEnabled:
   type: bool
-  status: unstable
+  status: testable
   category: animation
   humanReadableName: "Threaded animation resolution"
   humanReadableDescription: "Run accelerated animations on a separate thread"
