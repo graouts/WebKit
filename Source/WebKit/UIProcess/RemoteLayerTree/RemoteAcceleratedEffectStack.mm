@@ -59,6 +59,7 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     auto *opacity = @(computedValues.opacity);
     auto *transform = [NSValue valueWithCATransform3D:computedTransform];
 
+    // FIXME: Only set transform and opacity if actually present.
     m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:2];
     m_opacityPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"opacity" initialValue:opacity additive:NO group:m_presentationModifierGroup.get()]);
     m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform additive:NO group:m_presentationModifierGroup.get()]);
