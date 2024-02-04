@@ -304,6 +304,22 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
         if (auto toScale = to.scale)
             output.scale = toScale->blend(from.scale.get(), blendingContext);
         break;
+    case AcceleratedEffectProperty::OffsetPath:
+        if (auto fromOffsetPath = from.offsetPath)
+            output.offsetPath = fromOffsetPath->blend(to.offsetPath.get(), blendingContext);
+        break;
+    case AcceleratedEffectProperty::OffsetDistance:
+        output.offsetDistance = blend(from.offsetDistance, to.offsetDistance, blendingContext);
+        break;
+    case AcceleratedEffectProperty::OffsetPosition:
+        output.offsetPosition = blend(from.offsetPosition, to.offsetPosition, blendingContext);
+        break;
+    case AcceleratedEffectProperty::OffsetAnchor:
+        output.offsetAnchor = blend(from.offsetAnchor, to.offsetAnchor, blendingContext);
+        break;
+    case AcceleratedEffectProperty::OffsetRotate:
+        output.offsetRotate = from.offsetRotate.blend(to.offsetRotate, blendingContext);
+        break;
     case AcceleratedEffectProperty::Invalid:
         ASSERT_NOT_REACHED();
         break;
