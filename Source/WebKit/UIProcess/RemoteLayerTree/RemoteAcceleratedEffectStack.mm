@@ -28,6 +28,7 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
+#import <WebCore/PlatformCAFilters.h>
 #import <pal/spi/cocoa/QuartzCoreSPI.h>
 #include <wtf/IsoMallocInlines.h>
 
@@ -65,7 +66,15 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     [layer addPresentationModifier:m_opacityPresentationModifier.get()];
     [layer addPresentationModifier:m_transformPresentationModifier.get()];
 
+    PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
+    m_filterPresentationModifierGroup = PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
+
+    for (auto& filterPresentationModifier : m_filterPresentationModifiers)
+        [layer addPresentationModifier:filterPresentationModifier.get()];
+
     [m_presentationModifierGroup flushWithTransaction];
+    if (m_filterPresentationModifierGroup)
+        [m_filterPresentationModifierGroup flushWithTransaction];
 }
 
 void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
@@ -79,6 +88,11 @@ void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime
     [m_opacityPresentationModifier setValue:opacity];
     [m_transformPresentationModifier setValue:transform];
     [m_presentationModifierGroup flush];
+
+    if (m_filterPresentationModifierGroup) {
+        PlatformCAFilters::updatePresentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
+        [m_filterPresentationModifierGroup flush];
+    }
 }
 #endif
 
@@ -89,13 +103,15 @@ void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *lay
 
     [layer setOpacity:computedValues.opacity];
     [layer setTransform:computedTransform];
+
+    PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
 }
 
 AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now) const
 {
     auto values = m_baseValues;
     auto currentTime = now.secondsSinceEpoch() - m_acceleratedTimelineTimeOrigin;
-    for (auto& effect : m_primaryLayerEffects)
+    for (auto& effect : m_backdropLayerEffects.isEmpty() ? m_primaryLayerEffects : m_backdropLayerEffects)
         effect->apply(currentTime, values, m_bounds);
     return values;
 }
@@ -118,6 +134,13 @@ void RemoteAcceleratedEffectStack::clear(PlatformLayer *layer)
     m_opacityPresentationModifier = nil;
     m_transformPresentationModifier = nil;
     m_presentationModifierGroup = nil;
+
+    for (auto& filterPresentationModifier : m_filterPresentationModifiers)
+        [layer removePresentationModifier:filterPresentationModifier.get()];
+    [m_filterPresentationModifierGroup flushWithTransaction];
+
+    m_filterPresentationModifiers.clear();
+    m_filterPresentationModifierGroup = nil;
 }
 
 } // namespace WebKit
