@@ -35,13 +35,14 @@ namespace WebKit {
 
 WTF_MAKE_ISO_ALLOCATED_IMPL(RemoteAcceleratedEffectStack);
 
-Ref<RemoteAcceleratedEffectStack> RemoteAcceleratedEffectStack::create(Seconds acceleratedTimelineTimeOrigin)
+Ref<RemoteAcceleratedEffectStack> RemoteAcceleratedEffectStack::create(WebCore::FloatRect bounds, Seconds acceleratedTimelineTimeOrigin)
 {
-    return adoptRef(*new RemoteAcceleratedEffectStack(acceleratedTimelineTimeOrigin));
+    return adoptRef(*new RemoteAcceleratedEffectStack(bounds, acceleratedTimelineTimeOrigin));
 }
 
-RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(Seconds acceleratedTimelineTimeOrigin)
-    : m_acceleratedTimelineTimeOrigin(acceleratedTimelineTimeOrigin)
+RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(WebCore::FloatRect bounds, Seconds acceleratedTimelineTimeOrigin)
+    : m_bounds(bounds)
+    , m_acceleratedTimelineTimeOrigin(acceleratedTimelineTimeOrigin)
 {
 }
 
@@ -49,14 +50,20 @@ RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(Seconds acceleratedTi
 void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
 {
     ASSERT(!m_opacityPresentationModifier);
+    ASSERT(!m_transformPresentationModifier);
 
     auto computedValues = computeValues(now);
-    auto *opacity = @(computedValues.opacity);
+    auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
 
-    m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:1];
+    auto *opacity = @(computedValues.opacity);
+    auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+
+    m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:2];
     m_opacityPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"opacity" initialValue:opacity additive:NO group:m_presentationModifierGroup.get()]);
+    m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform additive:NO group:m_presentationModifierGroup.get()]);
 
     [layer addPresentationModifier:m_opacityPresentationModifier.get()];
+    [layer addPresentationModifier:m_transformPresentationModifier.get()];
 
     [m_presentationModifierGroup flushWithTransaction];
 }
@@ -64,8 +71,13 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
 void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
 {
     auto computedValues = computeValues(now);
+    auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+
     auto *opacity = @(computedValues.opacity);
+    auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+
     [m_opacityPresentationModifier setValue:opacity];
+    [m_transformPresentationModifier setValue:transform];
     [m_presentationModifierGroup flush];
 }
 #endif
@@ -73,7 +85,10 @@ void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime
 void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now) const
 {
     auto computedValues = computeValues(now);
+    auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+
     [layer setOpacity:computedValues.opacity];
+    [layer setTransform:computedTransform];
 }
 
 AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now) const
@@ -81,7 +96,7 @@ AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTim
     auto values = m_baseValues;
     auto currentTime = now.secondsSinceEpoch() - m_acceleratedTimelineTimeOrigin;
     for (auto& effect : m_primaryLayerEffects)
-        effect->apply(currentTime, values);
+        effect->apply(currentTime, values, m_bounds);
     return values;
 }
 
@@ -89,15 +104,19 @@ void RemoteAcceleratedEffectStack::clear(PlatformLayer *layer)
 {
     if (!m_presentationModifierGroup) {
         ASSERT(!m_opacityPresentationModifier);
+        ASSERT(!m_transformPresentationModifier);
         return;
     }
 
     ASSERT(m_opacityPresentationModifier);
+    ASSERT(m_transformPresentationModifier);
 
     [layer removePresentationModifier:m_opacityPresentationModifier.get()];
+    [layer removePresentationModifier:m_transformPresentationModifier.get()];
     [m_presentationModifierGroup flushWithTransaction];
 
     m_opacityPresentationModifier = nil;
+    m_transformPresentationModifier = nil;
     m_presentationModifierGroup = nil;
 }
 
