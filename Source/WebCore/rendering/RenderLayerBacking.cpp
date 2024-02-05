@@ -4052,6 +4052,12 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
     if (!renderer().settings().acceleratedCompositedAnimationsEnabled())
         return false;
 
+    OptionSet<AcceleratedEffectProperty> disallowedAcceleratedProperties;
+
+    auto rendererAllowsTransform = renderer().isRenderBox() || renderer().isSVGLayerAwareRenderer();
+    if (!rendererAllowsTransform)
+        disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
+
     auto target = Styleable::fromRenderer(renderer());
     ASSERT(target);
 
@@ -4073,11 +4079,10 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
                 continue;
             if (animatesWidth || animatesHeight) {
                 auto& blendingKeyframes = effect->blendingKeyframes();
-                if ((blendingKeyframes.hasWidthDependentTransform() && animatesWidth)
-                    || (blendingKeyframes.hasHeightDependentTransform() && animatesHeight))
-                    continue;
+                if ((blendingKeyframes.hasWidthDependentTransform() && animatesWidth) || (blendingKeyframes.hasHeightDependentTransform() && animatesHeight))
+                    disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
             }
-            auto acceleratedEffect = AcceleratedEffect::create(*effect, borderBoxRect, baseValues);
+            auto acceleratedEffect = AcceleratedEffect::create(*effect, borderBoxRect, baseValues, disallowedAcceleratedProperties);
             if (!acceleratedEffect)
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())

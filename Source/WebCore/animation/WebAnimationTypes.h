@@ -88,6 +88,13 @@ enum class AcceleratedEffectProperty : uint16_t {
     BackdropFilter = 1 << 12
 };
 
+static OptionSet<AcceleratedEffectProperty> transformRelatedAcceleratedProperties = {
+    AcceleratedEffectProperty::Transform,
+    AcceleratedEffectProperty::Translate,
+    AcceleratedEffectProperty::Rotate,
+    AcceleratedEffectProperty::Scale
+};
+
 struct CSSPropertiesBitSet {
     WTF::BitSet<numCSSProperties> m_properties { };
 };
