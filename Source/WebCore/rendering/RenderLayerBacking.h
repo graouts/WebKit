@@ -182,6 +182,7 @@ public:
     void suspendAnimations(MonotonicTime = MonotonicTime());
     void resumeAnimations();
 
+    bool hasAcceleratedEffects() const;
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     bool updateAcceleratedEffectsAndBaseValues();
 #endif

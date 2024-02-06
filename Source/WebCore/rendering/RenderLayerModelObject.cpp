@@ -281,6 +281,13 @@ void RenderLayerModelObject::transformRelatedPropertyDidChange()
     layer()->backing()->transformRelatedPropertyDidChange();
 }
 
+bool RenderLayerModelObject::hasAcceleratedEffects() const
+{
+    if (!layer() || !layer()->backing())
+        return false;
+    return layer()->backing()->hasAcceleratedEffects();
+}
+
 void RenderLayerModelObject::suspendAnimations(MonotonicTime time)
 {
     if (!layer() || !layer()->backing())
