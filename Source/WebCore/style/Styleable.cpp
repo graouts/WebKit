@@ -43,6 +43,7 @@
 #include "KeyframeEffectStack.h"
 #include "Quirks.h"
 #include "RenderElement.h"
+#include "RenderLayerModelObject.h"
 #include "RenderListItem.h"
 #include "RenderListMarker.h"
 #include "RenderStyleInlines.h"
@@ -194,6 +195,11 @@ bool Styleable::isRunningAcceleratedTransformAnimation() const
 
 bool Styleable::runningAnimationsAreAllAccelerated() const
 {
+    if (auto* renderer = dynamicDowncast<RenderLayerModelObject>(this->renderer())) {
+        if (renderer->hasAcceleratedEffects())
+            return true;
+    }
+
     auto* effectStack = keyframeEffectStack();
     if (!effectStack || !effectStack->hasEffects())
         return false;

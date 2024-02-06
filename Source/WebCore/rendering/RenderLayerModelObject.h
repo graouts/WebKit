@@ -71,6 +71,8 @@ public:
     void animationFinished(const String& name) override;
     void transformRelatedPropertyDidChange() override;
 
+    bool hasAcceleratedEffects() const;
+
     void suspendAnimations(MonotonicTime = MonotonicTime()) override;
 
 #if ENABLE(LAYER_BASED_SVG_ENGINE)

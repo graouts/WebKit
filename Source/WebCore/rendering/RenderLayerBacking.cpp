@@ -4046,6 +4046,17 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const Animation& anim
     return didAnimate;
 }
 
+bool RenderLayerBacking::hasAcceleratedEffects() const
+{
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    if (!renderer().settings().acceleratedCompositedAnimationsEnabled())
+        return false;
+    if (auto* acceleratedEffectStack = m_graphicsLayer->acceleratedEffectStack())
+        return acceleratedEffectStack->hasEffects();
+#endif
+    return false;
+}
+
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
 {

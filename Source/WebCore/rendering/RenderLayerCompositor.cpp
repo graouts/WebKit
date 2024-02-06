@@ -3363,6 +3363,9 @@ bool RenderLayerCompositor::requiresCompositingForAnimation(RenderLayerModelObje
     if (!(m_compositingTriggers & ChromeClient::AnimationTrigger))
         return false;
 
+    if (renderer.hasAcceleratedEffects())
+        return true;
+
     if (auto styleable = Styleable::fromRenderer(renderer)) {
         if (auto* effectsStack = styleable->keyframeEffectStack()) {
             return (effectsStack->isCurrentlyAffectingProperty(CSSPropertyOpacity)
