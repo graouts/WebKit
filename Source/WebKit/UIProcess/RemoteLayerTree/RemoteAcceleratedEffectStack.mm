@@ -28,7 +28,6 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#import <WebCore/PlatformCAFilters.h>
 #import <pal/spi/cocoa/QuartzCoreSPI.h>
 #include <wtf/IsoMallocInlines.h>
 
@@ -48,6 +47,34 @@ RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(WebCore::FloatRect bo
 }
 
 #if PLATFORM(MAC)
+const WebCore::FilterOperations* RemoteAcceleratedEffectStack::longestFilter() const
+{
+    auto isBackdrop = !m_backdropLayerEffects.isEmpty();
+    auto filterProperty = isBackdrop ? AcceleratedEffectProperty::BackdropFilter : AcceleratedEffectProperty::Filter;
+    auto& effects = isBackdrop ? m_backdropLayerEffects : m_primaryLayerEffects;
+
+    const WebCore::FilterOperations* longestFilter = nullptr;
+    for (auto& effect : effects) {
+        if (!effect->animatedProperties().contains(filterProperty))
+            continue;
+        for (auto& keyframe : effect->keyframes()) {
+            if (!keyframe.animatedProperties().contains(filterProperty))
+                continue;
+            auto& filter = isBackdrop ? keyframe.values().backdropFilter : keyframe.values().filter;
+            if (!longestFilter || longestFilter->size() < filter.size())
+                longestFilter = &filter;
+        }
+    }
+
+    if (longestFilter) {
+        auto& baseFilter = isBackdrop ? m_baseValues.backdropFilter : m_baseValues.filter;
+        if (longestFilter->size() < baseFilter.size())
+            longestFilter = &baseFilter;
+    }
+
+    return longestFilter && !longestFilter->isEmpty() ? longestFilter : nullptr;
+}
+
 void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
 {
     ASSERT(!m_opacityPresentationModifier);
@@ -67,11 +94,12 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     [layer addPresentationModifier:m_opacityPresentationModifier.get()];
     [layer addPresentationModifier:m_transformPresentationModifier.get()];
 
+    // FIXME: Only set filters if actually present.
     PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
-    m_filterPresentationModifierGroup = PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
+    m_filterPresentationModifierGroup = PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, longestFilter(), m_filterPresentationModifiers);
 
     for (auto& filterPresentationModifier : m_filterPresentationModifiers)
-        [layer addPresentationModifier:filterPresentationModifier.get()];
+        [layer addPresentationModifier:filterPresentationModifier.second.get()];
 
     [m_presentationModifierGroup flushWithTransaction];
     if (m_filterPresentationModifierGroup)
@@ -137,7 +165,7 @@ void RemoteAcceleratedEffectStack::clear(PlatformLayer *layer)
     m_presentationModifierGroup = nil;
 
     for (auto& filterPresentationModifier : m_filterPresentationModifiers)
-        [layer removePresentationModifier:filterPresentationModifier.get()];
+        [layer removePresentationModifier:filterPresentationModifier.second.get()];
     [m_filterPresentationModifierGroup flushWithTransaction];
 
     m_filterPresentationModifiers.clear();

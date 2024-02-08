@@ -38,11 +38,13 @@ namespace WebCore {
 
 class PlatformCALayer;
 
+using TypedFilterPresentationModifier = std::pair<FilterOperation::Type, RetainPtr<CAPresentationModifier>>;
+
 class PlatformCAFilters {
 public:
     WEBCORE_EXPORT static void setFiltersOnLayer(PlatformLayer*, const FilterOperations&);
-    WEBCORE_EXPORT static RetainPtr<CAPresentationModifierGroup> presentationModifiersForFilters(const FilterOperations& filters, Vector<RetainPtr<CAPresentationModifier>>& presentationModifiers);
-    WEBCORE_EXPORT static void updatePresentationModifiersForFilters(const FilterOperations& filters, const Vector<RetainPtr<CAPresentationModifier>>& presentationModifiers);
+    WEBCORE_EXPORT static RetainPtr<CAPresentationModifierGroup> presentationModifiersForFilters(const FilterOperations& initialFilters, const FilterOperations* canonicalFilters, Vector<TypedFilterPresentationModifier>& presentationModifiers);
+    WEBCORE_EXPORT static void updatePresentationModifiersForFilters(const FilterOperations& filters, const Vector<TypedFilterPresentationModifier>& presentationModifiers);
     WEBCORE_EXPORT static void setBlendingFiltersOnLayer(PlatformLayer*, const BlendMode);
     static bool isAnimatedFilterProperty(FilterOperation::Type);
     static String animatedFilterPropertyName(FilterOperation::Type);

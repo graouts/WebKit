@@ -30,6 +30,7 @@
 #include <WebCore/AcceleratedEffect.h>
 #include <WebCore/AcceleratedEffectStack.h>
 #include <WebCore/AcceleratedEffectValues.h>
+#include <WebCore/PlatformCAFilters.h>
 #include <WebCore/PlatformLayer.h>
 #include <wtf/RetainPtr.h>
 
@@ -57,6 +58,10 @@ private:
 
     WebCore::AcceleratedEffectValues computeValues(MonotonicTime now) const;
 
+#if PLATFORM(MAC)
+    const WebCore::FilterOperations* longestFilter() const;
+#endif
+
     WebCore::FloatRect m_bounds;
     Seconds m_acceleratedTimelineTimeOrigin;
 
@@ -65,7 +70,8 @@ private:
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
 
     RetainPtr<CAPresentationModifierGroup> m_filterPresentationModifierGroup;
-    Vector<RetainPtr<CAPresentationModifier>> m_filterPresentationModifiers;
+
+    Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
 };
 
 } // namespace WebKit
