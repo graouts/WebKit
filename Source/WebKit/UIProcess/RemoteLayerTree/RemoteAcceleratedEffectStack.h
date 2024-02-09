@@ -74,8 +74,6 @@ private:
     RetainPtr<CAPresentationModifierGroup> m_presentationModifierGroup;
     RetainPtr<CAPresentationModifier> m_opacityPresentationModifier;
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
-
-    RetainPtr<CAPresentationModifierGroup> m_filterPresentationModifierGroup;
     Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
 };
 

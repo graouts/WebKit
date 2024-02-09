@@ -67,9 +67,9 @@ static unsigned keyValueCountForFilter(const FilterOperation& filterOperation)
     return 0;
 }
 
-static unsigned keyValueCountForFilters(const FilterOperations& filters)
+size_t PlatformCAFilters::presentationModifierCountForFilters(const FilterOperations& filters)
 {
-    unsigned count = 0;
+    size_t count = 0;
     for (const auto& filter : filters.operations())
         count += keyValueCountForFilter(*filter.get());
     return count;
@@ -115,15 +115,13 @@ static const FilterOperation& passthroughFilter(const FilterOperation::Type type
     }
 }
 
-RetainPtr<CAPresentationModifierGroup> PlatformCAFilters::presentationModifiersForFilters(const FilterOperations& initialFilters, const FilterOperations* canonicalFilters, Vector<TypedFilterPresentationModifier>& presentationModifiers)
+void PlatformCAFilters::presentationModifiersForFilters(const FilterOperations& initialFilters, const FilterOperations* canonicalFilters, Vector<TypedFilterPresentationModifier>& presentationModifiers, RetainPtr<CAPresentationModifierGroup>& group)
 {
     if (!canonicalFilters || canonicalFilters->isEmpty())
-        return nullptr;
+        return;
 
     ASSERT(canonicalFilters->size() >= initialFilters.size());
-    ASSERT(keyValueCountForFilters(*canonicalFilters));
-
-    RetainPtr<CAPresentationModifierGroup> group = adoptNS([CAPresentationModifierGroup groupWithCapacity:keyValueCountForFilters(*canonicalFilters)]);
+    ASSERT(presentationModifierCountForFilters(*canonicalFilters));
 
     auto& canonicalFilterOperations = canonicalFilters->operations();
     auto& initialFilterOperations = initialFilters.operations();
@@ -171,13 +169,12 @@ RetainPtr<CAPresentationModifierGroup> PlatformCAFilters::presentationModifiersF
         break;
     }
 
-    ASSERT(keyValueCountForFilters(*canonicalFilters) == presentationModifiers.size());
-    return group;
+    ASSERT(presentationModifierCountForFilters(*canonicalFilters) == presentationModifiers.size());
 }
 
 void PlatformCAFilters::updatePresentationModifiersForFilters(const FilterOperations& filters, const Vector<TypedFilterPresentationModifier>& presentationModifiers)
 {
-    ASSERT(keyValueCountForFilters(filters) <= presentationModifiers.size());
+    ASSERT(presentationModifierCountForFilters(filters) <= presentationModifiers.size());
 
     size_t filterIndex = 0;
     auto numberOfFilters = filters.size();

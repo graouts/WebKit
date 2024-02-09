@@ -64,6 +64,9 @@ void RemoteAcceleratedEffectStack::setEffects(AcceleratedEffects&& effects) {
 #if PLATFORM(MAC)
 const WebCore::FilterOperations* RemoteAcceleratedEffectStack::longestFilter() const
 {
+    if (!m_animatesFilter)
+        return nullptr;
+
     auto isBackdrop = !m_backdropLayerEffects.isEmpty();
     auto filterProperty = isBackdrop ? AcceleratedEffectProperty::BackdropFilter : AcceleratedEffectProperty::Filter;
     auto& effects = isBackdrop ? m_backdropLayerEffects : m_primaryLayerEffects;
@@ -92,65 +95,75 @@ const WebCore::FilterOperations* RemoteAcceleratedEffectStack::longestFilter() c
 
 void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
 {
+    ASSERT(m_filterPresentationModifiers.isEmpty());
     ASSERT(!m_opacityPresentationModifier);
     ASSERT(!m_transformPresentationModifier);
     ASSERT(!m_presentationModifierGroup);
 
-    ASSERT(m_filterPresentationModifiers.isEmpty());
-    ASSERT(!m_filterPresentationModifierGroup);
-
     auto computedValues = computeValues(now);
+
+    auto* canonicalFilters = longestFilter();
+
+    auto numberOfPresentationModifiers = [&]() {
+        size_t count = 0;
+        if (m_animatesFilter) {
+            ASSERT(canonicalFilters);
+            count += PlatformCAFilters::presentationModifierCountForFilters(*canonicalFilters);
+        }
+        if (m_animatesOpacity)
+            count++;
+        if (m_animatesTransform)
+            count++;
+        return count;
+    }();
+
+    m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:numberOfPresentationModifiers];
 
     if (m_animatesFilter) {
         // FIXME: is this necessary? We don't do that for other properties, only relying on the initialValue set on the modifiers.
         PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
-        m_filterPresentationModifierGroup = PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, longestFilter(), m_filterPresentationModifiers);
+        PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, longestFilter(), m_filterPresentationModifiers, m_presentationModifierGroup);
         for (auto& filterPresentationModifier : m_filterPresentationModifiers)
             [layer addPresentationModifier:filterPresentationModifier.second.get()];
-        [m_filterPresentationModifierGroup flushWithTransaction];
     }
 
-    if (m_animatesOpacity || m_animatesTransform) {
-        auto numberOfModifiers = m_animatesOpacity && m_animatesTransform ? 2 : 1;
-        m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:numberOfModifiers];
-        if (m_animatesOpacity) {
-            auto *opacity = @(computedValues.opacity);
-            m_opacityPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"opacity" initialValue:opacity additive:NO group:m_presentationModifierGroup.get()]);
-            [layer addPresentationModifier:m_opacityPresentationModifier.get()];
-        }
-        if (m_animatesTransform) {
-            auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
-            auto *transform = [NSValue valueWithCATransform3D:computedTransform];
-            m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform additive:NO group:m_presentationModifierGroup.get()]);
-            [layer addPresentationModifier:m_transformPresentationModifier.get()];
-        }
-        [m_presentationModifierGroup flushWithTransaction];
+    if (m_animatesOpacity) {
+        auto *opacity = @(computedValues.opacity);
+        m_opacityPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"opacity" initialValue:opacity additive:NO group:m_presentationModifierGroup.get()]);
+        [layer addPresentationModifier:m_opacityPresentationModifier.get()];
     }
+
+    if (m_animatesTransform) {
+        auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+        auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+        m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform additive:NO group:m_presentationModifierGroup.get()]);
+        [layer addPresentationModifier:m_transformPresentationModifier.get()];
+    }
+
+    [m_presentationModifierGroup flushWithTransaction];
 }
 
 void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
 {
-    ASSERT(m_filterPresentationModifierGroup || m_presentationModifierGroup);
+    ASSERT(m_presentationModifierGroup);
 
     auto computedValues = computeValues(now);
 
-    if (m_filterPresentationModifierGroup) {
+    if (!m_filterPresentationModifiers.isEmpty())
         PlatformCAFilters::updatePresentationModifiersForFilters(computedValues.filter, m_filterPresentationModifiers);
-        [m_filterPresentationModifierGroup flush];
+
+    if (m_opacityPresentationModifier) {
+        auto *opacity = @(computedValues.opacity);
+        [m_opacityPresentationModifier setValue:opacity];
     }
 
-    if (m_presentationModifierGroup) {
-        if (m_opacityPresentationModifier) {
-            auto *opacity = @(computedValues.opacity);
-            [m_opacityPresentationModifier setValue:opacity];
-        }
-        if (m_transformPresentationModifier) {
-            auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
-            auto *transform = [NSValue valueWithCATransform3D:computedTransform];
-            [m_transformPresentationModifier setValue:transform];
-        }
-        [m_presentationModifierGroup flush];
+    if (m_transformPresentationModifier) {
+        auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+        auto *transform = [NSValue valueWithCATransform3D:computedTransform];
+        [m_transformPresentationModifier setValue:transform];
     }
+
+    [m_presentationModifierGroup flush];
 }
 #endif
 
@@ -181,34 +194,21 @@ AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTim
 
 void RemoteAcceleratedEffectStack::clear(PlatformLayer *layer)
 {
-    if (m_presentationModifierGroup) {
-        ASSERT(m_opacityPresentationModifier || m_transformPresentationModifier);
+    ASSERT(m_presentationModifierGroup);
 
-        if (m_opacityPresentationModifier)
-            [layer removePresentationModifier:m_opacityPresentationModifier.get()];
-        if (m_transformPresentationModifier)
-            [layer removePresentationModifier:m_transformPresentationModifier.get()];
-        [m_presentationModifierGroup flushWithTransaction];
+    for (auto& filterPresentationModifier : m_filterPresentationModifiers)
+        [layer removePresentationModifier:filterPresentationModifier.second.get()];
+    if (m_opacityPresentationModifier)
+        [layer removePresentationModifier:m_opacityPresentationModifier.get()];
+    if (m_transformPresentationModifier)
+        [layer removePresentationModifier:m_transformPresentationModifier.get()];
 
-        m_opacityPresentationModifier = nil;
-        m_transformPresentationModifier = nil;
-        m_presentationModifierGroup = nil;
-    } else {
-        ASSERT(!m_opacityPresentationModifier);
-        ASSERT(!m_transformPresentationModifier);
-    }
+    [m_presentationModifierGroup flushWithTransaction];
 
-    if (m_filterPresentationModifierGroup) {
-        ASSERT(!m_filterPresentationModifiers.isEmpty());
-
-        for (auto& filterPresentationModifier : m_filterPresentationModifiers)
-            [layer removePresentationModifier:filterPresentationModifier.second.get()];
-        [m_filterPresentationModifierGroup flushWithTransaction];
-
-        m_filterPresentationModifiers.clear();
-        m_filterPresentationModifierGroup = nil;
-    } else
-        ASSERT(!m_filterPresentationModifiers.isEmpty());
+    m_filterPresentationModifiers.clear();
+    m_opacityPresentationModifier = nil;
+    m_transformPresentationModifier = nil;
+    m_presentationModifierGroup = nil;
 }
 
 } // namespace WebKit
