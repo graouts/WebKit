@@ -120,8 +120,6 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:numberOfPresentationModifiers];
 
     if (m_animatesFilter) {
-        // FIXME: is this necessary? We don't do that for other properties, only relying on the initialValue set on the modifiers.
-        PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter);
         PlatformCAFilters::presentationModifiersForFilters(computedValues.filter, longestFilter(), m_filterPresentationModifiers, m_presentationModifierGroup);
         for (auto& filterPresentationModifier : m_filterPresentationModifiers)
             [layer addPresentationModifier:filterPresentationModifier.second.get()];
