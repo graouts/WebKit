@@ -44,6 +44,8 @@ class RemoteAcceleratedEffectStack final : public WebCore::AcceleratedEffectStac
 public:
     static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect, Seconds);
 
+    void setEffects(WebCore::AcceleratedEffects&&) final;
+
 #if PLATFORM(MAC)
     void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now);
     void applyEffectsFromScrollingThread(MonotonicTime now) const;
@@ -62,6 +64,10 @@ private:
     const WebCore::FilterOperations* longestFilter() const;
 #endif
 
+    bool m_animatesFilter { false };
+    bool m_animatesOpacity { false };
+    bool m_animatesTransform { false };
+
     WebCore::FloatRect m_bounds;
     Seconds m_acceleratedTimelineTimeOrigin;
 
@@ -70,7 +76,6 @@ private:
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
 
     RetainPtr<CAPresentationModifierGroup> m_filterPresentationModifierGroup;
-
     Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
 };
 
