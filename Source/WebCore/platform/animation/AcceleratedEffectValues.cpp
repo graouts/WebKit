@@ -165,11 +165,11 @@ AcceleratedEffectValues::AcceleratedEffectValues(const RenderStyle& style, const
         rotate = srcRotate->selfOrCopyWithResolvedCalculatedValues(borderBoxSize);
     transformOrigin = nonCalculatedLengthPoint(style.transformOriginXY(), borderBoxSize);
 
+    offsetAnchor = nonCalculatedLengthPoint(style.offsetAnchor(), borderBoxSize);
+    offsetDistance = style.offsetDistance();
     offsetPath = style.offsetPath();
     offsetPosition = nonCalculatedLengthPoint(style.offsetPosition(), borderBoxSize);
-    offsetAnchor = nonCalculatedLengthPoint(style.offsetAnchor(), borderBoxSize);
     offsetRotate = style.offsetRotate();
-    offsetDistance = style.offsetDistance();
     if (offsetDistance.isCalculated() && offsetPath) {
         auto anchor = borderBoxRect.location() + floatPointForLengthPoint(transformOrigin, borderBoxSize);
         if (!offsetAnchor.x().isAuto())

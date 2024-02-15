@@ -4972,14 +4972,14 @@ static String acceleratedEffectPropertyIDAsString(AcceleratedEffectProperty prop
         return "rotate"_s;
     case AcceleratedEffectProperty::Scale:
         return "scale"_s;
-    case AcceleratedEffectProperty::OffsetPath:
-        return "offset-path"_s;
-    case AcceleratedEffectProperty::OffsetDistance:
-        return "offset-distance"_s;
-    case AcceleratedEffectProperty::OffsetPosition:
-        return "offset-position"_s;
     case AcceleratedEffectProperty::OffsetAnchor:
         return "offset-anchor"_s;
+    case AcceleratedEffectProperty::OffsetDistance:
+        return "offset-distance"_s;
+    case AcceleratedEffectProperty::OffsetPath:
+        return "offset-path"_s;
+    case AcceleratedEffectProperty::OffsetPosition:
+        return "offset-position"_s;
     case AcceleratedEffectProperty::OffsetRotate:
         return "offset-rotate"_s;
     case AcceleratedEffectProperty::Filter:
@@ -5058,12 +5058,12 @@ void GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(AcceleratedEffects&& ef
     if (auto* effectsStack = acceleratedEffectStack()) {
         auto& primaryLayerEffects = effectsStack->primaryLayerEffects();
         hasEffectsTargetingPrimaryLayer = !primaryLayerEffects.isEmpty();
-        layer->setAcceleratedEffectsAndBaseValues(primaryLayerEffects, baseValues);
+        layer->setAcceleratedEffectsAndBaseValues(primaryLayerEffects, effectsStack->baseValues());
 
         auto& backdropLayerEffects = effectsStack->backdropLayerEffects();
         hasEffectsTargetingBackdropLayer = !backdropLayerEffects.isEmpty();
         if (m_backdropLayer)
-            m_backdropLayer->setAcceleratedEffectsAndBaseValues(backdropLayerEffects, baseValues);
+            m_backdropLayer->setAcceleratedEffectsAndBaseValues(backdropLayerEffects, effectsStack->baseValues());
     }
 
     if (!hasEffectsTargetingPrimaryLayer)

@@ -5934,10 +5934,10 @@ class WebCore::OffsetRotation {
     Translate,
     Rotate,
     Scale,
-    OffsetPath,
-    OffsetDistance,
-    OffsetPosition,
     OffsetAnchor,
+    OffsetDistance,
+    OffsetPath,
+    OffsetPosition,
     OffsetRotate,
     Filter,
     BackdropFilter

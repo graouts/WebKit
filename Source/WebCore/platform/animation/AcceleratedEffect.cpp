@@ -114,14 +114,14 @@ static AcceleratedEffectProperty acceleratedPropertyFromCSSProperty(AnimatableCS
         return AcceleratedEffectProperty::Rotate;
     case CSSPropertyScale:
         return AcceleratedEffectProperty::Scale;
-    case CSSPropertyOffsetPath:
-        return AcceleratedEffectProperty::OffsetPath;
-    case CSSPropertyOffsetDistance:
-        return AcceleratedEffectProperty::OffsetDistance;
-    case CSSPropertyOffsetPosition:
-        return AcceleratedEffectProperty::OffsetPosition;
     case CSSPropertyOffsetAnchor:
         return AcceleratedEffectProperty::OffsetAnchor;
+    case CSSPropertyOffsetDistance:
+        return AcceleratedEffectProperty::OffsetDistance;
+    case CSSPropertyOffsetPath:
+        return AcceleratedEffectProperty::OffsetPath;
+    case CSSPropertyOffsetPosition:
+        return AcceleratedEffectProperty::OffsetPosition;
     case CSSPropertyOffsetRotate:
         return AcceleratedEffectProperty::OffsetRotate;
     case CSSPropertyFilter:
@@ -148,14 +148,14 @@ static CSSPropertyID cssPropertyFromAcceleratedProperty(AcceleratedEffectPropert
         return CSSPropertyRotate;
     case AcceleratedEffectProperty::Scale:
         return CSSPropertyScale;
-    case AcceleratedEffectProperty::OffsetPath:
-        return CSSPropertyOffsetPath;
-    case AcceleratedEffectProperty::OffsetDistance:
-        return CSSPropertyOffsetDistance;
-    case AcceleratedEffectProperty::OffsetPosition:
-        return CSSPropertyOffsetPosition;
     case AcceleratedEffectProperty::OffsetAnchor:
         return CSSPropertyOffsetAnchor;
+    case AcceleratedEffectProperty::OffsetDistance:
+        return CSSPropertyOffsetDistance;
+    case AcceleratedEffectProperty::OffsetPath:
+        return CSSPropertyOffsetPath;
+    case AcceleratedEffectProperty::OffsetPosition:
+        return CSSPropertyOffsetPosition;
     case AcceleratedEffectProperty::OffsetRotate:
         return CSSPropertyOffsetRotate;
     case AcceleratedEffectProperty::Filter:

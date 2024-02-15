@@ -80,10 +80,10 @@ enum class AcceleratedEffectProperty : uint16_t {
     Translate = 1 << 3,
     Rotate = 1 << 4,
     Scale = 1 << 5,
-    OffsetPath = 1 << 6,
+    OffsetAnchor = 1 << 6,
     OffsetDistance = 1 << 7,
-    OffsetPosition = 1 << 8,
-    OffsetAnchor = 1 << 9,
+    OffsetPath = 1 << 8,
+    OffsetPosition = 1 << 9,
     OffsetRotate = 1 << 10,
     Filter = 1 << 11,
     BackdropFilter = 1 << 12
