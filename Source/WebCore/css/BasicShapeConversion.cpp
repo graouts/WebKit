@@ -80,7 +80,8 @@ static SVGPathByteStream copySVGPathByteStream(const SVGPathByteStream& source, 
 Ref<CSSValue> valueForSVGPath(const BasicShapePath& path, SVGPathConversion conversion)
 {
     ASSERT(path.pathData());
-    return CSSPathValue::create(copySVGPathByteStream(*path.pathData(), conversion), path.windRule());
+    auto pathDataCopy = copySVGPathByteStream(*path.pathData(), conversion);
+    return CSSPathValue::create(WTFMove(pathDataCopy), path.windRule());
 }
 
 Ref<CSSValue> valueForBasicShape(const RenderStyle& style, const BasicShape& basicShape, SVGPathConversion conversion)

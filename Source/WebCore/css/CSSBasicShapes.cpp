@@ -336,22 +336,34 @@ String CSSRectShapeValue::customCSSText() const
 
 // MARK: -
 
-CSSPathValue::CSSPathValue(SVGPathByteStream data, WindRule rule)
+CSSPathValue::CSSPathValue(std::variant<SVGPathByteStream, SingleThreadWeakPtr<SVGPathByteStream>> data, WindRule rule)
     : CSSValue(PathClass)
-    , m_pathData(WTFMove(data))
+    , m_pathData(data)
     , m_windRule(rule)
 {
 }
 
-Ref<CSSPathValue> CSSPathValue::create(SVGPathByteStream data, WindRule rule)
+Ref<CSSPathValue> CSSPathValue::create(SVGPathByteStream&& data, WindRule rule)
 {
     return adoptRef(*new CSSPathValue(WTFMove(data), rule));
+}
+
+Ref<CSSPathValue> CSSPathValue::create(const SVGPathByteStream& data, WindRule rule)
+{
+    return adoptRef(*new CSSPathValue(&data, rule));
+}
+
+const SVGPathByteStream& CSSPathValue::pathData() const
+{
+    if (std::holds_alternative<SVGPathByteStream>(m_pathData))
+        return std::get<SVGPathByteStream>(m_pathData);
+    return *std::get<SingleThreadWeakPtr<SVGPathByteStream>>(m_pathData);
 }
 
 String CSSPathValue::customCSSText() const
 {
     String pathString;
-    buildStringFromByteStream(m_pathData, pathString, UnalteredParsing);
+    buildStringFromByteStream(pathData(), pathString, UnalteredParsing);
     StringBuilder result;
     if (m_windRule == WindRule::EvenOdd)
         result.append("path(evenodd, "_s);
@@ -364,7 +376,7 @@ String CSSPathValue::customCSSText() const
 
 bool CSSPathValue::equals(const CSSPathValue& other) const
 {
-    return m_pathData == other.m_pathData && m_windRule == other.m_windRule;
+    return pathData() == other.pathData() && m_windRule == other.m_windRule;
 }
 
 // MARK: -

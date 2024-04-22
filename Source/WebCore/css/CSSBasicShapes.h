@@ -345,18 +345,19 @@ private:
 
 class CSSPathValue final : public CSSValue {
 public:
-    static Ref<CSSPathValue> create(SVGPathByteStream, WindRule);
+    static Ref<CSSPathValue> create(SVGPathByteStream&&, WindRule);
+    static Ref<CSSPathValue> create(const SVGPathByteStream&, WindRule);
 
-    const SVGPathByteStream& pathData() const { return m_pathData; }
+    const SVGPathByteStream& pathData() const;
     WindRule windRule() const { return m_windRule; }
 
     String customCSSText() const;
     bool equals(const CSSPathValue&) const;
 
 private:
-    CSSPathValue(SVGPathByteStream, WindRule);
+    CSSPathValue(std::variant<SVGPathByteStream, SingleThreadWeakPtr<SVGPathByteStream>>, WindRule);
 
-    SVGPathByteStream m_pathData;
+    std::variant<SVGPathByteStream, SingleThreadWeakPtr<SVGPathByteStream>> m_pathData;
     WindRule m_windRule { };
 };
 
