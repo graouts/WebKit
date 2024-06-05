@@ -222,8 +222,11 @@ RenderPtr<RenderElement> SVGPathElement::createElementRenderer(RenderStyle&& sty
 Path SVGPathElement::path() const
 {
     if (auto* renderer = this->renderer()) {
-        if (auto* basicShapePath = renderer->style().d())
-            return basicShapePath->path({ });
+        if (auto* basicShapePath = renderer->style().d()) {
+            if (!m_cachedPathFromStyle)
+                m_cachedPathFromStyle = basicShapePath->path({ });
+            return *m_cachedPathFromStyle;
+        }
     }
 
     return m_pathSegList->currentPath();

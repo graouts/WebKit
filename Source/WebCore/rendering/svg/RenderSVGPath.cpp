@@ -292,4 +292,26 @@ bool RenderSVGPath::isRenderingDisabled() const
     return !hasPath() || path().isEmpty();
 }
 
+void RenderSVGPath::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle)
+{
+    auto pathDidChange = [&]() {
+        if (!oldStyle)
+            return true;
+
+        auto* oldBasicShape = oldStyle->d();
+        auto* newBasicShape = style().d();
+        if (oldBasicShape && newBasicShape)
+            return oldBasicShape->pathData() != newBasicShape->pathData();
+
+        return !oldBasicShape != !newBasicShape;
+    };
+
+    if (auto* pathElement = dynamicDowncast<SVGPathElement>(graphicsElement())) {
+        if (pathDidChange())
+            pathElement->pathDataDidChangeFromStyle();
+    }
+
+    RenderSVGShape::styleDidChange(diff, oldStyle);
+}
+
 }

@@ -102,6 +102,8 @@ public:
 
     static void clearCache();
 
+    void pathDataDidChangeFromStyle() { m_cachedPathFromStyle = std::nullopt; }
+
 private:
     SVGPathElement(const QualifiedName&, Document&);
 
@@ -124,6 +126,7 @@ private:
 
 private:
     Ref<SVGAnimatedPathSegList> m_pathSegList { SVGAnimatedPathSegList::create(this) };
+    mutable std::optional<Path> m_cachedPathFromStyle;
 };
 
 } // namespace WebCore
