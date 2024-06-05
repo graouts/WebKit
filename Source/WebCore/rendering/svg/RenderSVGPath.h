@@ -63,6 +63,8 @@ private:
 
     bool isRenderingDisabled() const override;
 
+    void styleDidChange(StyleDifference, const RenderStyle* oldStyle) override;
+
     Vector<FloatPoint> m_zeroLengthLinecapLocations;
     Vector<MarkerPosition> m_markerPositions;
 };

@@ -294,9 +294,21 @@ bool RenderSVGPath::isRenderingDisabled() const
 
 void RenderSVGPath::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle)
 {
+    auto pathDidChange = [&]() {
+        if (!oldStyle)
+            return true;
+
+        auto* oldBasicShape = oldStyle->d();
+        auto* newBasicShape = style().d();
+        if (oldBasicShape && newBasicShape)
+            return oldBasicShape->pathData() != newBasicShape->pathData();
+
+        return !oldBasicShape != !newBasicShape;
+    };
+
     if (RefPtr pathElement = dynamicDowncast<SVGPathElement>(graphicsElement())) {
-        if (!oldStyle || style().d() != oldStyle->d())
-            pathElement->pathDidChange();
+        if (pathDidChange())
+            pathElement->pathDataDidChangeFromStyle();
     }
 
     RenderSVGShape::styleDidChange(diff, oldStyle);

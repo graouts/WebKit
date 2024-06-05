@@ -251,8 +251,11 @@ Path SVGPathElement::path() const
 {
     if (document().settings().cssDPropertyEnabled()) {
         if (CheckedPtr renderer = this->renderer()) {
-            if (RefPtr basicShapePath = renderer->style().d())
-                return basicShapePath->path({ });
+            if (RefPtr basicShapePath = renderer->style().d()) {
+                if (!m_cachedPathFromStyle)
+                    m_cachedPathFromStyle = basicShapePath->path({ });
+                return *m_cachedPathFromStyle;
+            }
             return { };
         }
     }
