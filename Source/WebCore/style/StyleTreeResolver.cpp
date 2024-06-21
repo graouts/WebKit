@@ -191,8 +191,6 @@ static bool affectsRenderedSubtree(Element& element, const RenderStyle& newStyle
 {
     if (newStyle.display() != DisplayType::None)
         return true;
-    if (element.hasDisplayNone())
-        return true;
     if (element.renderOrDisplayContentsStyle())
         return true;
     if (element.rendererIsNeeded(newStyle))
@@ -267,6 +265,8 @@ auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingS
 
     if (!affectsRenderedSubtree(element, *update.style)) {
         styleable.setLastStyleChangeEventStyle(nullptr);
+        if (update.style->display() == DisplayType::None && element.hasDisplayNone())
+            return { WTFMove(update), DescendantsToResolve::None };
         return { };
     }
 
