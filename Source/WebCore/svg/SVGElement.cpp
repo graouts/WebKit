@@ -870,6 +870,8 @@ CSSPropertyID SVGElement::cssPropertyIdForSVGAttributeName(const QualifiedName& 
         return CSSPropertyCx;
     case AttributeNames::cyAttr:
         return CSSPropertyCy;
+    case AttributeNames::dAttr:
+        return CSSPropertyD;
     case AttributeNames::directionAttr:
         return CSSPropertyDirection;
     case AttributeNames::displayAttr:
