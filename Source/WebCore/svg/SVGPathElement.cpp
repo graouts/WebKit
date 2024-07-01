@@ -231,7 +231,7 @@ Path SVGPathElement::path() const
 
 void SVGPathElement::collectPresentationalHintsForAttribute(const QualifiedName& name, const AtomString& value, MutableStyleProperties& style)
 {
-    if (name == SVGNames::dAttr) {
+    if (name == SVGNames::dAttr && document().settings().cssDPropertyEnabled()) {
         // In the case of the `d` property, we want to avoid providing a string value since it will require
         // the path data to be parsed again and path data can be unwieldy.
         auto property = cssPropertyIdForSVGAttributeName(name);
