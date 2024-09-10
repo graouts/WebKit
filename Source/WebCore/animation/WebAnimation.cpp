@@ -50,6 +50,7 @@
 #include "KeyframeEffectStack.h"
 #include "Logging.h"
 #include "RenderElement.h"
+#include "ScrollTimeline.h"
 #include "StyleOriginatedAnimation.h"
 #include "StylePropertyShorthand.h"
 #include "StyleResolver.h"
@@ -1557,6 +1558,11 @@ bool WebAnimation::computeRelevance()
     // - its replace state is not removed.
     if (m_replaceState == ReplaceState::Removed)
         return false;
+
+    // FIXME: this should be much finer-tuned. For instance this isn't true if the source
+    // is not scrolling or if the subject is not visible.
+    if (is<ScrollTimeline>(m_timeline))
+        return true;
 
     auto timing = m_effect->getBasicTiming();
 
