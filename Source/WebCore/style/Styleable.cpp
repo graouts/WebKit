@@ -30,6 +30,7 @@
 #include "AnimationEffect.h"
 #include "AnimationList.h"
 #include "AnimationTimeline.h"
+#include "AnimationTimelinesController.h"
 #include "CSSAnimation.h"
 #include "CSSCustomPropertyValue.h"
 #include "CSSPropertyAnimation.h"
@@ -855,17 +856,34 @@ void Styleable::updateCSSTransitions(const RenderStyle& currentStyle, const Rend
 
 void Styleable::updateCSSScrollDrivenTimelines(const RenderStyle* currentStyle, const RenderStyle& afterChangeStyle) const
 {
-    auto& currentTimelines = afterChangeStyle.scrollTimelines();
-    for (auto& currentTimeline : currentTimelines)
-        currentTimeline->setSource(&element);
+    auto updateAnonymousScrollTimelines = [&]() {
+        // FIXME: return early if nothing's changed.
+        auto& currentTimelines = afterChangeStyle.scrollTimelines();
+        for (auto& currentTimeline : currentTimelines)
+            currentTimeline->setSource(&element);
 
-    if (!currentStyle)
-        return;
+        if (!currentStyle)
+            return;
 
-    for (auto& previousTimeline : currentStyle->scrollTimelines()) {
-        if (!currentTimelines.contains(previousTimeline) && previousTimeline->source() == &element)
-            previousTimeline->setSource(nullptr);
-    }
+        for (auto& previousTimeline : currentStyle->scrollTimelines()) {
+            if (!currentTimelines.contains(previousTimeline) && previousTimeline->source() == &element)
+                previousTimeline->setSource(nullptr);
+        }
+    };
+
+    auto updateNamedScrollTimelines = [&]() {
+        // FIXME: return early if nothing's changed.
+        auto& timelinesController = element.document().ensureTimelinesController();
+
+        auto& currentTimelineNames = afterChangeStyle.scrollTimelineNames();
+        for (auto& currentTimelineName : currentTimelineNames)
+            timelinesController.registerNamedScrollTimeline(currentTimelineName, element);
+
+        // FIXME: do something with the previous value.
+    };
+
+    updateAnonymousScrollTimelines();
+    updateNamedScrollTimelines();
 };
 
 void Styleable::queryContainerDidChange() const

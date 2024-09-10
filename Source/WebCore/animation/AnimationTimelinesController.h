@@ -36,9 +36,10 @@
 
 namespace WebCore {
 
+class AnimationTimeline;
 class CSSTransition;
 class Document;
-class AnimationTimeline;
+class ScrollTimeline;
 class WebAnimation;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AnimationTimelinesController);
@@ -62,12 +63,16 @@ public:
     WEBCORE_EXPORT void resumeAnimations();
     bool animationsAreSuspended() const { return m_isSuspended; }
 
+    void registerNamedScrollTimeline(const AtomString&, Element&);
+    ScrollTimeline* scrollTimelineForName(const AtomString& name) { return m_nameToScrollTimelineMap.get(name); }
+
 private:
     ReducedResolutionSeconds liveCurrentTime() const;
     void cacheCurrentTime(ReducedResolutionSeconds);
     void maybeClearCachedCurrentTime();
 
     HashMap<FramesPerSecond, ReducedResolutionSeconds> m_animationFrameRateToLastTickTimeMap;
+    HashMap<AtomString, Ref<ScrollTimeline>> m_nameToScrollTimelineMap;
     WeakHashSet<AnimationTimeline> m_timelines;
     TaskCancellationGroup m_currentTimeClearingTaskCancellationGroup;
     Document& m_document;

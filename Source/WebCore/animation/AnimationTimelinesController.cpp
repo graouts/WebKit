@@ -308,5 +308,22 @@ void AnimationTimelinesController::maybeClearCachedCurrentTime()
         m_cachedCurrentTime = std::nullopt;
 }
 
+void AnimationTimelinesController::registerNamedScrollTimeline(const AtomString& name, Element& source)
+{
+    auto createTimeline = [&]() {
+        auto scrollTimeline = ScrollTimeline::create(name, ScrollAxis::Block);
+        scrollTimeline->setSource(&source);
+        return scrollTimeline;
+    };
+
+    auto it = m_nameToScrollTimelineMap.find(name);
+    if (it != m_nameToScrollTimelineMap.end()) {
+        auto& scrollTimeline = it->value;
+        if (scrollTimeline->source() != &source)
+            it->value = createTimeline();
+    } else
+        m_nameToScrollTimelineMap.set(name, createTimeline());
+}
+
 } // namespace WebCore
 

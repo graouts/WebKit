@@ -672,7 +672,8 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
         if ((oldStyle && oldStyle->hasAnimations()) || resolvedStyle.style->hasAnimations())
             styleable.updateCSSAnimations(oldStyle, *resolvedStyle.style, resolutionContext, newStyleOriginatedAnimations, isInDisplayNoneTree);
 
-        if ((oldStyle && oldStyle->scrollTimelines().size()) || resolvedStyle.style->scrollTimelines().size())
+        if (((oldStyle && oldStyle->scrollTimelines().size()) || resolvedStyle.style->scrollTimelines().size()) ||
+            ((oldStyle && oldStyle->scrollTimelineNames().size()) || resolvedStyle.style->scrollTimelineNames().size()))
             styleable.updateCSSScrollDrivenTimelines(oldStyle, *resolvedStyle.style);
     };
 
