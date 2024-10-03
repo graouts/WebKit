@@ -1234,10 +1234,7 @@ void KeyframeEffect::animationTimingDidChange()
 
 void KeyframeEffect::animationRelevancyDidChange()
 {
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    if (threadedAnimationResolutionEnabled())
-        updateEffectStackMembership();
-#endif
+    updateEffectStackMembership();
 }
 
 void KeyframeEffect::updateEffectStackMembership()

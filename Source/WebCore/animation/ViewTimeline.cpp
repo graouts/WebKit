@@ -43,6 +43,9 @@
 #include "RenderBox.h"
 #include "ScrollAnchoringController.h"
 #include "StyleBuilderConverter.h"
+#include "RenderBox.h"
+#include "RenderView.h"
+#include "RenderLayerScrollableArea.h"
 
 namespace WebCore {
 

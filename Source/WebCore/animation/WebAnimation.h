@@ -197,7 +197,7 @@ private:
     ExceptionOr<void> silentlySetCurrentTime(std::optional<CSSNumberishTime>);
     void finishNotificationSteps();
     bool hasPendingPauseTask() const { return m_timeToRunPendingPauseTask != TimeToRunPendingTask::NotScheduled; }
-    bool hasPendingPlayTask() const { return m_timeToRunPendingPlayTask != TimeToRunPendingTask::NotScheduled; }
+    bool hasPendingPlayTask() const;
     ExceptionOr<void> play(AutoRewind);
     void runPendingPauseTask();
     void runPendingPlayTask();
@@ -210,6 +210,7 @@ private:
     void applyPendingPlaybackRate();
     void setEffectiveFrameRate(std::optional<FramesPerSecond>);
     CSSNumberishTime timeEpsilon() const;
+    void autoAlignStartTime();
 
     // ActiveDOMObject.
     void suspend(ReasonForSuspension) final;

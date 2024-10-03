@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hello Scroll-driven Animations</title>
+<style>
+
+p {
+    font-size: 36pt;
+}
+
+#progress {
+	position: fixed;
+	left: 0;
+    top: 0;
+	width: 0;
+    height: 1em;
+	background: red;
+}
+
+button {
+    position: fixed;
+    top: 2em;
+    left: 2em;
+}
+
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<button>Dump Current Time</button>
+<script>
+
+const scrollTimeline = new ScrollTimeline({
+	source: document.documentElement
+});
+
+
+const animation = document.querySelector('#progress').animate(
+	{ width: ['0%', '100%'] },
+	{ fill: 'forwards', timeline: scrollTimeline }
+);
+
+const dump = label => {
+    console.group(label);
+    console.log(`scrollTimeline.currentTime = ${scrollTimeline.currentTime}`);
+    console.log(`animation.startTime = ${animation.startTime}`);
+    console.log(`animation.pending = ${animation.pending}`);
+    console.log(`animation.currentTime = ${animation.currentTime}`);
+    console.log(`animation.playState = ${animation.playState}`);
+    console.log(`animation.effect.getTiming().duration = ${animation.effect.getTiming().duration}`);
+    console.log(`animation.effect.getComputedTiming().activeDuration = ${animation.effect.getComputedTiming().activeDuration}`);
+    console.log(`animation.effect.getComputedTiming().endTime = ${animation.effect.getComputedTiming().endTime}`);
+    console.groupEnd();
+};
+
+document.querySelector("button").addEventListener("click", () =>{
+    console.log(`scroll timeline time = ${scrollTimeline.currentTime.toString()}`);
+    console.log(`animation time = ${animation.currentTime.toString()}`);
+});
+
+dump("initial load");
+
+(async function() {
+    await animation.ready;
+    dump("animation.ready resolved");
+})();
+
+(async function() {
+    await new Promise(requestAnimationFrame);
+    dump("animation frame fired");
+})();
+
+// (async function() {
+//     await Promise.all([animation.ready, new Promise(requestAnimationFrame)]);
+//     dump("animation.ready and animation frame resolved");
+// })();
+
+</script>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+<p>
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</p>
+</body>
+</html>

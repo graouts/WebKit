@@ -61,6 +61,10 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(std::optional<CSSNumberi
     // to each other a fair bit, so rather than implementing them as individual methods, it's more efficient
     // to return them all as a single BasicEffectTiming.
 
+    // FIXME: do we need to account for the playback rate here?
+    if (localTime && localTime->percentage())
+        return { localTime, localTime, endTime, activeDuration, AnimationEffectPhase::Active };
+
     auto phase = [this, localTime, playbackRate]() -> AnimationEffectPhase {
         // 3.5.5. Animation effect phases and states
         // https://drafts.csswg.org/web-animations-1/#animation-effect-phases-and-states

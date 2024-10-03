@@ -896,7 +896,7 @@ ExceptionOr<void> WebAnimation::finish()
     // An animation can be advanced to the natural end of its current playback direction by using the procedure to finish an animation for animation defined below:
     //
     // 1. If animation's effective playback rate is zero, or if animation's effective playback rate > 0 and target effect end is infinity, throw an InvalidStateError and abort these steps.
-    if (!effectivePlaybackRate() || (effectivePlaybackRate() > 0 && effectEndTime() == Seconds::infinity()))
+    if (!effectivePlaybackRate() || (effectivePlaybackRate() > 0 && effectEndTime().isInfinity()))
         return Exception { ExceptionCode::InvalidStateError };
 
     // 2. Apply any pending playback rate to animation.
@@ -1397,6 +1397,54 @@ void WebAnimation::runPendingPauseTask()
     invalidateEffect();
 }
 
+void WebAnimation::autoAlignStartTime()
+{
+    // https://drafts.csswg.org/web-animations-2/#auto-aligning-start-time
+
+    // When attached to a non-monotonic timeline, the start time of the animation may be layout dependent.
+    // In this case, we defer calculation of the start time until the timeline has been updated post layout.
+    // When updating timeline current time, the start time of any attached animation is conditionally updated.
+    // The procedure for calculating an auto-aligned start time is as follows:
+
+    // 1. If the auto-align start time flag is false, abort this procedure.
+    if (!m_autoAlignStartTime)
+        return;
+
+    // 2. If the timeline is inactive, abort this procedure.
+    if (!m_timeline || !m_timeline->currentTime())
+        return;
+
+    auto playState = this->playState();
+
+    // 3. If play state is idle, abort this procedure.
+    if (playState == PlayState::Idle)
+        return;
+
+    // 4. If play state is paused, and hold time is resolved, abort this procedure.
+    if (playState == PlayState::Paused && !m_holdTime)
+        return;
+
+    // 7. Set start time to start offset if effective playback rate ≥ 0, and end offset otherwise.
+    m_startTime = [&]() {
+        ASSERT(m_timeline->currentTime() && m_timeline->currentTime()->percentage());
+        // 5. Let start offset be the resolved timeline time corresponding to the start of the animation attachment range.
+        // In the case of view timelines, it requires a calculation based on the proportion of the cover range.
+        if (effectivePlaybackRate() >= 0)
+            return *m_timeline->currentTime();
+        // 6. Let end offset be the resolved timeline time corresponding to the end of the animation attachment range.
+        // In the case of view timelines, it requires a calculation based on the proportion of the cover range.
+        // FIXME: implement this correctly.
+        ASSERT(m_timeline->currentTime()->percentage());
+        return CSSNumberishTime::fromPercentage(100 - *m_timeline->currentTime()->percentage());
+    }();
+
+    // 8. Clear hold time.
+    m_holdTime = std::nullopt;
+
+    // FIXME: not in spec, but makes sense, right?
+    m_autoAlignStartTime = false;
+}
+
 bool WebAnimation::needsTick() const
 {
     return pending() || playState() == PlayState::Running || m_hasScheduledEventsDuringTick;
@@ -1404,11 +1452,22 @@ bool WebAnimation::needsTick() const
 
 void WebAnimation::tick()
 {
+    // https://drafts.csswg.org/scroll-animations-1/#event-loop
+    autoAlignStartTime();
+
     m_hasScheduledEventsDuringTick = false;
     updateFinishedState(DidSeek::No, SynchronouslyNotify::Yes);
     m_shouldSkipUpdatingFinishedStateWhenResolving = true;
 
-    if (!m_effect || !m_effect->preventsAnimationReadiness()) {
+    // https://drafts.csswg.org/web-animations-2/#ready
+    // An animation is ready at the first moment where all of the following conditions are true:
+    //     - the user agent has completed any setup required to begin the playback of each inclusive
+    //       descendant of the animation’s associated effect including rendering the first frame of
+    //       any keyframe effect or executing any custom effects associated with an animation effect.
+    //     - the animation is associated with a timeline that is not inactive.
+    //     - the animation’s hold time or start time is resolved.
+    auto isReady = m_timeline && m_timeline->currentTime() && (m_holdTime || m_startTime);
+    if (isReady && (!m_effect || !m_effect->preventsAnimationReadiness())) {
         if (hasPendingPauseTask())
             runPendingPauseTask();
         if (hasPendingPlayTask())
@@ -1752,6 +1811,13 @@ std::optional<double> WebAnimation::progress() const
 
     // Otherwise, progress = min(max(current time / animation’s associated effect end, 0), 1)
     return std::min(std::max(*currentTime / endTime, 0.0), 1.0);
+}
+
+bool WebAnimation::hasPendingPlayTask() const
+{
+    if (m_autoAlignStartTime && !m_startTime)
+        return true;
+    return m_timeToRunPendingPlayTask != TimeToRunPendingTask::NotScheduled;
 }
 
 } // namespace WebCore

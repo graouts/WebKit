@@ -853,6 +853,21 @@ void Styleable::updateCSSTransitions(const RenderStyle& currentStyle, const Rend
         updateCSSTransitionsForStyleableAndProperty(*this, customProperty, currentStyle, newStyle, generationTime, newStyleOriginatedAnimations);
 }
 
+void Styleable::updateCSSScrollDrivenTimelines(const RenderStyle* currentStyle, const RenderStyle& afterChangeStyle) const
+{
+    auto& currentTimelines = afterChangeStyle.scrollTimelines();
+    for (auto& currentTimeline : currentTimelines)
+        currentTimeline->setSource(&element);
+
+    if (!currentStyle)
+        return;
+
+    for (auto& previousTimeline : currentStyle->scrollTimelines()) {
+        if (!currentTimelines.contains(previousTimeline) && previousTimeline->source() == &element)
+            previousTimeline->setSource(nullptr);
+    }
+};
+
 void Styleable::queryContainerDidChange() const
 {
     auto* animations = this->animations();

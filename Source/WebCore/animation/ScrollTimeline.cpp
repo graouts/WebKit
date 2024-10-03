@@ -35,6 +35,7 @@
 #include "Element.h"
 #include "RenderLayerScrollableArea.h"
 #include "RenderView.h"
+#include "RenderLayerScrollableArea.h"
 
 namespace WebCore {
 
@@ -100,6 +101,28 @@ ScrollTimeline::ScrollTimeline(Scroller scroller, ScrollAxis axis)
 {
     m_axis = axis;
     m_scroller = scroller;
+}
+
+void ScrollTimeline::setSource(Element* source)
+{
+    if (source == m_source)
+        return;
+
+    RefPtr previousSource = m_source.get();
+    m_source = source;
+    RefPtr newSource = m_source.get();
+
+    if (previousSource && newSource && &previousSource->document() == &newSource->document())
+        return;
+
+    if (previousSource) {
+        Ref previousDocument = previousSource->document();
+        if (CheckedPtr timelinesController = previousDocument->timelinesController())
+            timelinesController->removeTimeline(*this);
+    }
+
+    if (newSource)
+        Ref { newSource->document() }->ensureTimelinesController().addTimeline(*this);
 }
 
 void ScrollTimeline::dump(TextStream& ts) const
