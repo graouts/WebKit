@@ -359,7 +359,15 @@ void AcceleratedEffect::apply(Seconds currentTime, AcceleratedEffectValues& valu
         return (currentTime - *m_startTime) * m_playbackRate;
     }();
 
-    auto resolvedTiming = m_timing.resolve(localTime, m_playbackRate);
+    AnimationEffectTiming::ResolutionData data = {
+        std::nullopt,
+        std::nullopt,
+        { m_holdTime ? *m_holdTime : *m_startTime },
+        { localTime },
+        m_playbackRate
+    };
+
+    auto resolvedTiming = m_timing.resolve(data);
     if (!resolvedTiming.transformedProgress)
         return;
 
