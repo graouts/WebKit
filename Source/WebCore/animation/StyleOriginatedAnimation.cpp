@@ -193,29 +193,38 @@ void StyleOriginatedAnimation::flushPendingStyleChanges() const
     }
 }
 
-void StyleOriginatedAnimation::setTimeline(RefPtr<AnimationTimeline>&& newTimeline)
+void StyleOriginatedAnimation::performDOMEventsInvalidationIfNeeded(const Function<void()>& function)
 {
-    if (timeline() && !newTimeline)
-        cancel();
-
-    WebAnimation::setTimeline(WTFMove(newTimeline));
-}
-
-void StyleOriginatedAnimation::cancel(WebAnimation::Silently silently)
-{
-    WebAnimationTime cancelationTime = 0_s;
-
+    WebAnimationTime elapsedTime { 0_s };
     auto shouldFireEvents = shouldFireDOMEvents();
     if (shouldFireEvents != ShouldFireEvents::No) {
         if (auto* animationEffect = effect()) {
             if (auto activeTime = animationEffect->getBasicTiming().activeTime)
-                cancelationTime = *activeTime;
+                elapsedTime = *activeTime;
         }
     }
 
-    WebAnimation::cancel(silently);
+    function();
 
-    invalidateDOMEvents(shouldFireEvents, cancelationTime);
+    if (shouldFireEvents != ShouldFireEvents::No)
+        invalidateDOMEvents(shouldFireEvents, elapsedTime);
+}
+
+void StyleOriginatedAnimation::setTimeline(RefPtr<AnimationTimeline>&& newTimeline)
+{
+    if (timeline() && !newTimeline) {
+        performDOMEventsInvalidationIfNeeded([&] {
+            WebAnimation::setTimeline(WTFMove(newTimeline));
+        });
+    } else
+        WebAnimation::setTimeline(WTFMove(newTimeline));
+}
+
+void StyleOriginatedAnimation::cancel(WebAnimation::Silently silently)
+{
+    performDOMEventsInvalidationIfNeeded([&] {
+        WebAnimation::cancel(silently);
+    });
 }
 
 void StyleOriginatedAnimation::cancelFromStyle(WebAnimation::Silently silently)

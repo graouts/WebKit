@@ -854,6 +854,8 @@ void WebAnimation::enqueueAnimationEvent(Ref<AnimationEventBase>&& event)
             if (RefPtr source = scrollTimeline->source())
                 return Ref { source->document() }->existingTimeline();
         }
+        if (RefPtr eventTargetNode = dynamicDowncast<Node>(event->target()))
+            return eventTargetNode->document().existingTimeline();
         return nullptr;
     };
 
