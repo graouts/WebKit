@@ -1231,9 +1231,9 @@ void KeyframeEffect::animationTimelineDidChange(const AnimationTimeline* timelin
     StackMembershipMutationScope stackMembershipMutationScope(*this);
 #endif
 
-    if (timeline)
+    if (timeline && !m_inTargetEffectStack)
         target->ensureKeyframeEffectStack().addEffect(*this);
-    else
+    else if (m_inTargetEffectStack)
         target->ensureKeyframeEffectStack().removeEffect(*this);
 }
 
