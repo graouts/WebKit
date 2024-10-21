@@ -130,6 +130,8 @@ void CSSAnimation::syncPropertiesWithBackingAnimation()
                 CheckedRef timelinesController = document->ensureTimelinesController();
                 if (RefPtr timeline = timelinesController->timelineForName(name, target))
                     setTimeline(WTFMove(timeline));
+                else
+                    setTimeline(nullptr);
             }, [&] (Ref<ScrollTimeline> anonymousTimeline) {
                 if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(anonymousTimeline))
                     viewTimeline->setSubject(target.ptr());
