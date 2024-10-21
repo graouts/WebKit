@@ -396,7 +396,7 @@ void AnimationEffect::animationTimelineDidChange(const AnimationTimeline*)
             normalizeSpecifiedTiming(*percentage);
         else {
             ASSERT(iterationDuration().time());
-            normalizeSpecifiedTiming(iterationDuration().time()->seconds());
+            normalizeSpecifiedTiming(iterationDuration().time()->milliseconds());
         }
     }
 
