@@ -54,6 +54,25 @@ CSSAnimation::CSSAnimation(const Styleable& element, const Animation& backingAni
 {
 }
 
+void CSSAnimation::syncNamedTimeline(const AtomString& name)
+{
+    if (m_overriddenProperties.contains(Property::Timeline))
+        return;
+
+    ASSERT(owningElement());
+    Ref target = owningElement()->element;
+    Ref document = target->document();
+
+    // FIXME: we should account for timeline-scope here.
+    CheckedRef timelinesController = document->ensureTimelinesController();
+    if (RefPtr scrollTimeline = timelinesController->scrollTimelineForName(name))
+        setTimeline(WTFMove(scrollTimeline));
+    else if (RefPtr viewTimeline = timelinesController->viewTimelineForNameAndSubject(name, target))
+        setTimeline(WTFMove(viewTimeline));
+    else
+        setTimeline(nullptr);
+}
+
 void CSSAnimation::syncPropertiesWithBackingAnimation()
 {
     StyleOriginatedAnimation::syncPropertiesWithBackingAnimation();
@@ -118,20 +137,12 @@ void CSSAnimation::syncPropertiesWithBackingAnimation()
 
     if (!m_overriddenProperties.contains(Property::Timeline)) {
         ASSERT(owningElement());
-        Ref target = owningElement()->element;
-        Ref document = owningElement()->element.document();
         WTF::switchOn(animation.timeline(),
             [&] (Animation::TimelineKeyword keyword) {
+                Ref document = owningElement()->element.document();
                 setTimeline(keyword == Animation::TimelineKeyword::None ? nullptr : RefPtr { document->existingTimeline() });
             }, [&] (const AtomString& name) {
-                // FIXME: we should account for timeline-scope here.
-                CheckedRef timelinesController = document->ensureTimelinesController();
-                if (RefPtr scrollTimeline = timelinesController->scrollTimelineForName(name))
-                    setTimeline(WTFMove(scrollTimeline));
-                else if (RefPtr viewTimeline = timelinesController->viewTimelineForNameAndSubject(name, target))
-                    setTimeline(WTFMove(viewTimeline));
-                else
-                    setTimeline(nullptr);
+                syncNamedTimeline(name);
             }, [&] (Ref<ScrollTimeline> anonymousTimeline) {
                 setTimeline(RefPtr { anonymousTimeline.ptr() });
             }
@@ -326,6 +337,16 @@ void CSSAnimation::updateKeyframesIfNeeded(const RenderStyle* oldStyle, const Re
 Ref<StyleOriginatedAnimationEvent> CSSAnimation::createEvent(const AtomString& eventType, std::optional<Seconds> scheduledTime, double elapsedTime, const std::optional<Style::PseudoElementIdentifier>& pseudoElementIdentifier)
 {
     return CSSAnimationEvent::create(eventType, this, scheduledTime, elapsedTime, pseudoElementIdentifier, m_animationName);
+}
+
+OptionSet<AnimationImpact> CSSAnimation::resolve(RenderStyle& targetStyle, const Style::ResolutionContext& resolutionContext, std::optional<Seconds> startTime)
+{
+    if (m_shouldInvalidateNamedTimeline) {
+        if (auto* timelineName = std::get_if<AtomString>(&backingAnimation().timeline()))
+            syncNamedTimeline(*timelineName);
+        m_shouldInvalidateNamedTimeline = false;
+    }
+    return StyleOriginatedAnimation::resolve(targetStyle, resolutionContext, startTime);
 }
 
 } // namespace WebCore
