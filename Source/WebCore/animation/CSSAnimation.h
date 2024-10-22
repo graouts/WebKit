@@ -50,11 +50,14 @@ public:
     void keyframesRuleDidChange();
     void updateKeyframesIfNeeded(const RenderStyle* oldStyle, const RenderStyle& newStyle, const Style::ResolutionContext&);
 
+    void setShouldInvalidateNamedTimeline() { m_shouldInvalidateNamedTimeline = true; }
+
 private:
     CSSAnimation(const Styleable&, const Animation&);
 
     void syncPropertiesWithBackingAnimation() final;
     Ref<StyleOriginatedAnimationEvent> createEvent(const AtomString& eventType, std::optional<Seconds> scheduledTime, double elapsedTime, const std::optional<Style::PseudoElementIdentifier>&) final;
+    OptionSet<AnimationImpact> resolve(RenderStyle& targetStyle, const Style::ResolutionContext&, std::optional<Seconds>) final;
 
     AnimationTimeline* bindingsTimeline() const final;
     void setBindingsTimeline(RefPtr<AnimationTimeline>&&) final;
@@ -65,6 +68,8 @@ private:
     ExceptionOr<void> bindingsReverse() final;
     void setBindingsRangeStart(TimelineRangeValue&&) final;
     void setBindingsRangeEnd(TimelineRangeValue&&) final;
+
+    void syncNamedTimeline(const AtomString&);
 
     enum class Property : uint16_t {
         Name = 1 << 0,
@@ -83,6 +88,7 @@ private:
 
     String m_animationName;
     OptionSet<Property> m_overriddenProperties;
+    bool m_shouldInvalidateNamedTimeline { false };
 };
 
 } // namespace WebCore

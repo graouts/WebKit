@@ -68,6 +68,8 @@ public:
     std::optional<WebAnimationTime> currentTime(const TimelineRange&) override;
     TimelineRange defaultRange() const override;
 
+    void wasUnregisteredFromStyle();
+
 protected:
     explicit ScrollTimeline(const AtomString&, ScrollAxis);
 

@@ -367,11 +367,18 @@ void AnimationTimelinesController::unregisterNamedTimeline(const AtomString& nam
         return;
 
     auto& timelines = it->value;
-    timelines.removeFirstMatching([&] (auto& entry) {
+    auto existingTimelineIndex = timelines.findIf([&] (auto& entry) {
         if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(entry))
             return viewTimeline->subject() == &element;
         return entry->source() == &element;
     });
+
+    if (existingTimelineIndex == notFound)
+        return;
+
+    timelines[existingTimelineIndex]->wasUnregisteredFromStyle();
+    timelines.remove(existingTimelineIndex);
+
     if (timelines.isEmpty())
         m_nameToTimelineMap.remove(it);
 }

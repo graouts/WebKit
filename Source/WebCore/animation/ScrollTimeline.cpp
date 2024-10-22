@@ -27,6 +27,7 @@
 #include "ScrollTimeline.h"
 
 #include "AnimationTimelinesController.h"
+#include "CSSAnimation.h"
 #include "CSSPrimitiveValueMappings.h"
 #include "CSSScrollValue.h"
 #include "CSSValuePool.h"
@@ -261,6 +262,18 @@ void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
 
     if (RefPtr page = m_source->protectedDocument()->page())
         page->scheduleRenderingUpdate(RenderingUpdateStep::Animations);
+}
+
+void ScrollTimeline::wasUnregisteredFromStyle()
+{
+    // We make sure to copy m_animations here since its content will change
+    // as we set the timeline of each animations in it to null.
+    auto animations = m_animations;
+    for (auto& animation : animations) {
+        ASSERT(animation->timeline() == this);
+        if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation))
+            cssAnimation->setShouldInvalidateNamedTimeline();
+    }
 }
 
 } // namespace WebCore
