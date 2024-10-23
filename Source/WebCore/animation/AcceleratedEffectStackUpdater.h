@@ -37,10 +37,10 @@ class Document;
 class Element;
 struct Styleable;
 
-class AcceleratedTimeline {
+class AcceleratedEffectStackUpdater {
     WTF_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(Animation);
 public:
-    AcceleratedTimeline(Document&);
+    AcceleratedEffectStackUpdater(Document&);
 
     void updateEffectStacks();
     void updateEffectStackForTarget(const Styleable&);

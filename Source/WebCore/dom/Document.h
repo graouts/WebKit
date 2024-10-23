@@ -270,7 +270,7 @@ class DOMTimerHoldingTank;
 #endif
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-class AcceleratedTimeline;
+class AcceleratedEffectStackUpdater;
 #endif
 
 struct ApplicationManifest;
@@ -1803,8 +1803,8 @@ public:
     void keyframesRuleDidChange(const String& name);
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    AcceleratedTimeline* existingAcceleratedTimeline() const { return m_acceleratedTimeline.get(); }
-    AcceleratedTimeline& acceleratedTimeline();
+    AcceleratedEffectStackUpdater* existingAcceleratedEffectStackUpdater() const { return m_acceleratedEffectStackUpdater.get(); }
+    AcceleratedEffectStackUpdater& acceleratedEffectStackUpdater();
 #endif
 
     void addTopLayerElement(Element&);
@@ -2633,7 +2633,7 @@ private:
     bool m_updateTitleTaskScheduled { false };
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    std::unique_ptr<AcceleratedTimeline> m_acceleratedTimeline;
+    std::unique_ptr<AcceleratedEffectStackUpdater> m_acceleratedEffectStackUpdater;
 #endif
 
     bool m_isRunningUserScripts { false };

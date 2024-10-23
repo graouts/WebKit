@@ -49,7 +49,7 @@
 #include "WebAnimationTypes.h"
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#include "AcceleratedTimeline.h"
+#include "AcceleratedEffectStackUpdater.h"
 #endif
 
 namespace WebCore {
@@ -412,8 +412,8 @@ void DocumentTimeline::applyPendingAcceleratedAnimations()
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     if (m_document && m_document->settings().threadedAnimationResolutionEnabled()) {
         m_acceleratedAnimationsPendingRunningStateChange.clear();
-        if (auto* acceleratedTimeline = m_document->existingAcceleratedTimeline())
-            acceleratedTimeline->updateEffectStacks();
+        if (auto* acceleratedEffectStackUpdater = m_document->existingAcceleratedEffectStackUpdater())
+            acceleratedEffectStackUpdater->updateEffectStacks();
         return;
     }
 #endif

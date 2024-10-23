@@ -458,7 +458,7 @@
 #endif
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#import <WebCore/AcceleratedTimeline.h>
+#import <WebCore/AcceleratedEffectStackUpdater.h>
 #endif
 
 #if ENABLE(PDF_HUD)
@@ -4943,8 +4943,8 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     if (auto* document = localRootFrame->document()) {
-        if (auto* acceleratedTimeline = document->existingAcceleratedTimeline())
-            layerTransaction.setAcceleratedTimelineTimeOrigin(acceleratedTimeline->timeOrigin());
+        if (auto* acceleratedEffectStackUpdater = document->existingAcceleratedEffectStackUpdater())
+            layerTransaction.setAcceleratedTimelineTimeOrigin(acceleratedEffectStackUpdater->timeOrigin());
     }
 #endif
 
