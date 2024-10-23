@@ -44,6 +44,10 @@ class ScrollTimeline;
 class ViewTimeline;
 class WebAnimation;
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+class AcceleratedEffectStackUpdater;
+#endif
+
 struct ViewTimelineInsets;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AnimationTimelinesController);
@@ -75,10 +79,19 @@ public:
     void unregisterNamedViewTimelineForSubject(const AtomString&, const Element&);
     ViewTimeline* viewTimelineForNameAndSubject(const AtomString&, const Element&) const;
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    AcceleratedEffectStackUpdater* existingAcceleratedEffectStackUpdater() const { return m_acceleratedEffectStackUpdater.get(); }
+    AcceleratedEffectStackUpdater& acceleratedEffectStackUpdater();
+#endif
+
 private:
     ReducedResolutionSeconds liveCurrentTime() const;
     void cacheCurrentTime(ReducedResolutionSeconds);
     void maybeClearCachedCurrentTime();
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    std::unique_ptr<AcceleratedEffectStackUpdater> m_acceleratedEffectStackUpdater;
+#endif
 
     UncheckedKeyHashMap<FramesPerSecond, ReducedResolutionSeconds> m_animationFrameRateToLastTickTimeMap;
     UncheckedKeyHashMap<AtomString, Ref<ScrollTimeline>> m_nameToScrollTimelineMap;

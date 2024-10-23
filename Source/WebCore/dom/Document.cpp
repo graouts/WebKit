@@ -396,10 +396,6 @@
 #include "HTMLVideoElement.h"
 #endif
 
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#include "AcceleratedEffectStackUpdater.h"
-#endif
-
 #define DOCUMENT_RELEASE_LOG(channel, fmt, ...) RELEASE_LOG(channel, "%p - [pageID=%" PRIu64 ", frameID=%" PRIu64 ", isMainFrame=%d] Document::" fmt, this, pageID() ? pageID()->toUInt64() : 0, frameID() ? frameID()->object().toUInt64() : 0, this == &topDocument(), ##__VA_ARGS__)
 #define DOCUMENT_RELEASE_LOG_ERROR(channel, fmt, ...) RELEASE_LOG_ERROR(channel, "%p - [pageID=%" PRIu64 ", frameID=%" PRIu64 ", isMainFrame=%d] Document::" fmt, this, pageID() ? pageID()->toUInt64() : 0, frameID() ? frameID()->object().toUInt64() : 0, this == &topDocument(), ##__VA_ARGS__)
 
@@ -9966,15 +9962,6 @@ DocumentTimeline& Document::timeline()
 
     return *m_timeline;
 }
-
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-AcceleratedEffectStackUpdater& Document::acceleratedEffectStackUpdater()
-{
-    if (!m_acceleratedEffectStackUpdater)
-        m_acceleratedEffectStackUpdater = makeUnique<AcceleratedEffectStackUpdater>(*this);
-    return *m_acceleratedEffectStackUpdater;
-}
-#endif
 
 Vector<RefPtr<WebAnimation>> Document::getAnimations()
 {

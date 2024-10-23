@@ -27,6 +27,8 @@
 #include "KeyframeEffect.h"
 
 #include "Animation.h"
+#include "AcceleratedEffectStackUpdater.h"
+#include "AnimationTimelinesController.h"
 #include "CSSAnimation.h"
 #include "CSSKeyframeRule.h"
 #include "CSSPropertyAnimation.h"
@@ -2852,7 +2854,8 @@ void KeyframeEffect::updateAssociatedThreadedEffectStack(const std::optional<con
     if (!document()->page())
         return;
 
-    auto& acceleratedEffectStackUpdater = document()->acceleratedEffectStackUpdater();
+    ASSERT(document()->timelinesController());
+    auto& acceleratedEffectStackUpdater = CheckedPtr { document()->timelinesController() }->acceleratedEffectStackUpdater();
     if (previousTarget)
         acceleratedEffectStackUpdater.updateEffectStackForTarget(*previousTarget);
     if (auto currentTarget = targetStyleable())

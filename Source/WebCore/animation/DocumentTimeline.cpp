@@ -27,6 +27,7 @@
 #include "DocumentTimeline.h"
 
 #include "AnimationEventBase.h"
+#include "AcceleratedEffectStackUpdater.h"
 #include "AnimationTimelinesController.h"
 #include "CSSProperty.h"
 #include "CSSTransition.h"
@@ -412,8 +413,10 @@ void DocumentTimeline::applyPendingAcceleratedAnimations()
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     if (m_document && m_document->settings().threadedAnimationResolutionEnabled()) {
         m_acceleratedAnimationsPendingRunningStateChange.clear();
-        if (auto* acceleratedEffectStackUpdater = m_document->existingAcceleratedEffectStackUpdater())
-            acceleratedEffectStackUpdater->updateEffectStacks();
+        if (CheckedPtr timelinesController = m_document->timelinesController()) {
+            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater())
+                acceleratedEffectStackUpdater->updateEffectStacks();
+        }
         return;
     }
 #endif

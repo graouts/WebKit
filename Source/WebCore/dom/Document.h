@@ -269,10 +269,6 @@ class ContentChangeObserver;
 class DOMTimerHoldingTank;
 #endif
 
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-class AcceleratedEffectStackUpdater;
-#endif
-
 struct ApplicationManifest;
 struct BoundaryPoint;
 struct CSSParserContext;
@@ -1802,11 +1798,6 @@ public:
     WEBCORE_EXPORT AnimationTimelinesController& ensureTimelinesController();
     void keyframesRuleDidChange(const String& name);
 
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    AcceleratedEffectStackUpdater* existingAcceleratedEffectStackUpdater() const { return m_acceleratedEffectStackUpdater.get(); }
-    AcceleratedEffectStackUpdater& acceleratedEffectStackUpdater();
-#endif
-
     void addTopLayerElement(Element&);
     void removeTopLayerElement(Element&);
     const ListHashSet<Ref<Element>>& topLayerElements() const { return m_topLayerElements; }
@@ -2631,10 +2622,6 @@ private:
     bool m_hasEverHadSelectionInsideTextFormControl { false };
 
     bool m_updateTitleTaskScheduled { false };
-
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    std::unique_ptr<AcceleratedEffectStackUpdater> m_acceleratedEffectStackUpdater;
-#endif
 
     bool m_isRunningUserScripts { false };
     bool m_shouldPreventEnteringBackForwardCacheForTesting { false };

@@ -174,6 +174,8 @@
 #include <JavaScriptCore/JSLock.h>
 #include <JavaScriptCore/ProfilerDatabase.h>
 #include <JavaScriptCore/SamplingProfiler.h>
+#include <WebCore/AcceleratedEffectStackUpdater.h>
+#include <WebCore/AnimationTimelinesController.h>
 #include <WebCore/AppHighlight.h>
 #include <WebCore/ArchiveResource.h>
 #include <WebCore/BackForwardCache.h>
@@ -4943,8 +4945,10 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     if (auto* document = localRootFrame->document()) {
-        if (auto* acceleratedEffectStackUpdater = document->existingAcceleratedEffectStackUpdater())
-            layerTransaction.setAcceleratedTimelineTimeOrigin(acceleratedEffectStackUpdater->timeOrigin());
+        if (CheckedPtr timelinesController = document->timelinesController()) {
+            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater())
+                layerTransaction.setAcceleratedTimelineTimeOrigin(acceleratedEffectStackUpdater->timeOrigin());
+        }
     }
 #endif
 

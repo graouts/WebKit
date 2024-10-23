@@ -42,6 +42,10 @@
 #include <JavaScriptCore/VM.h>
 #include <wtf/text/TextStream.h>
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "AcceleratedEffectStackUpdater.h"
+#endif
+
 namespace WebCore {
 DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(AnimationTimelinesController);
 
@@ -385,6 +389,15 @@ ViewTimeline* AnimationTimelinesController::viewTimelineForNameAndSubject(const 
         return timelines[existingTimelineIndex].ptr();
     return nullptr;
 }
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+AcceleratedEffectStackUpdater& AnimationTimelinesController::acceleratedEffectStackUpdater()
+{
+    if (!m_acceleratedEffectStackUpdater)
+        m_acceleratedEffectStackUpdater = makeUnique<AcceleratedEffectStackUpdater>(m_document);
+    return *m_acceleratedEffectStackUpdater;
+}
+#endif
 
 } // namespace WebCore
 
