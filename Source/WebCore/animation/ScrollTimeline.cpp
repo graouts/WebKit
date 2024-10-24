@@ -345,6 +345,7 @@ TextStream& operator<<(TextStream& ts, Scroller scroller)
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void ScrollTimeline::updateAcceleratedRepresentation()
 {
+    // FIXME: associate that representation with the source graphics layer.
     m_acceleratedTimeline = AcceleratedTimeline::create(*this);
 }
 #endif
