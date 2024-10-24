@@ -46,12 +46,14 @@ public:
     enum class Type : uint8_t { Document, Scroll, View };
 
     // Encoding support.
-    static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
+    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
     Type type() const { return m_type; }
     const WTF::UUID& identifier() const { return m_identifier; }
     const std::optional<WebAnimationTime> duration() const { return m_duration; }
     const std::optional<Seconds> originTime() const { return m_originTime; }
     ScrollAxis axis() const { return m_axis; }
+
+    virtual ~AcceleratedTimeline() = default;
 
 private:
     AcceleratedTimeline(Type);
