@@ -291,4 +291,11 @@ void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
         page->scheduleRenderingUpdate(RenderingUpdateStep::Animations);
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void ScrollTimeline::updateAcceleratedRepresentation()
+{
+    m_acceleratedTimeline = AcceleratedTimeline::create(*this);
+}
+#endif
+
 } // namespace WebCore
