@@ -6544,20 +6544,26 @@ struct WebCore::AnimationEffectTiming {
     WebCore::WebAnimationTime endTime;
 };
 
-[RefCounted] class WebCore::AcceleratedTimeline subclasses {
-    WebCore::AcceleratedDocumentTimeline,
-    WebCore::AcceleratedScrollTimeline,
-    WebCore::AcceleratedViewTimeline
-}
-
-[RefCounted] class WebCore::AcceleratedDocumentTimeline {
-    WebCore::WebAnimationTime originTime();
+enum class WebCore::ScrollAxis : uint8_t {
+    Block,
+    Inline,
+    X,
+    Y
 };
 
-[RefCounted] class WebCore::AcceleratedScrollTimeline {
+header: <WebCore/AcceleratedTimeline.h>
+[CustomHeader, Nested] enum class WebCore::AcceleratedTimeline::Type : uint8_t {
+    Document,
+    Scroll,
+    View
 };
 
-[RefCounted] class WebCore::AcceleratedViewTimeline {
+[RefCounted] class WebCore::AcceleratedTimeline {
+    WebCore::AcceleratedTimeline::Type type();
+    WTF::UUID identifier();
+    std::optional<WebCore::WebAnimationTime> duration();
+    std::optional<Seconds> originTime();
+    WebCore::ScrollAxis axis();
 };
 
 header: <WebCore/AcceleratedEffect.h>
