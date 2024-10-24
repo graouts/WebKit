@@ -538,4 +538,11 @@ Seconds DocumentTimeline::convertTimelineTimeToOriginRelativeTime(Seconds timeli
     return timelineTime + m_originTime;
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void DocumentTimeline::updateAcceleratedRepresentation()
+{
+    m_acceleratedTimeline = AcceleratedTimeline::create(m_originTime);
+}
+#endif
+
 } // namespace WebCore

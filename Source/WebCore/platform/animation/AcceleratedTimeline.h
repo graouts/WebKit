@@ -27,12 +27,15 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
+#include "ScrollAxis.h"
 #include "WebAnimationTime.h"
 #include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
 #include <wtf/UUID.h>
 
 namespace WebCore {
+
+class ScrollTimeline;
 
 class AcceleratedTimeline : public RefCounted<AcceleratedTimeline> {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(AcceleratedTimeline);

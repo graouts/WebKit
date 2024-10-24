@@ -232,4 +232,11 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(const TimelineRange&
     return WebAnimationTime::fromPercentage(progress * 100);
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void ScrollTimeline::updateAcceleratedRepresentation()
+{
+    m_acceleratedTimeline = AcceleratedTimeline::create(*this);
+}
+#endif
+
 } // namespace WebCore

@@ -32,6 +32,10 @@
 #include <wtf/RefCounted.h>
 #include <wtf/WeakPtr.h>
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "AcceleratedTimeline.h"
+#endif
+
 namespace WebCore {
 
 class AnimationTimelinesController;
@@ -69,10 +73,19 @@ public:
 
     virtual TimelineRange defaultRange() const { return { }; }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    virtual void updateAcceleratedRepresentation() { };
+    const AcceleratedTimeline* acceleratedRepresentation() const { return m_acceleratedTimeline.get(); }
+#endif
+
 protected:
     AnimationTimeline(std::optional<WebAnimationTime> = std::nullopt);
 
     AnimationCollection m_animations;
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    RefPtr<AcceleratedTimeline> m_acceleratedTimeline;
+#endif
 
 private:
     void updateGlobalPosition(WebAnimation&);
