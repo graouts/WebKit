@@ -105,6 +105,7 @@
 #include "AcceleratedEffect.h"
 #include "AcceleratedEffectStack.h"
 #include "AcceleratedEffectValues.h"
+#include "AcceleratedTimeline.h"
 #include "KeyframeEffect.h"
 #include "KeyframeEffectStack.h"
 #include <wtf/WeakListHashSet.h>
@@ -4153,7 +4154,7 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const Animation& anim
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
+bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<AcceleratedTimeline>>& acceleratedTimelines)
 {
     auto& renderer = this->renderer();
     OptionSet<AcceleratedEffectProperty> disallowedAcceleratedProperties;
@@ -4182,12 +4183,29 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
         for (const auto& effect : effectStack->sortedEffects()) {
             if (!effect || !effect->canBeAccelerated())
                 continue;
+
+            ASSERT(effect->animation());
+            AcceleratedTimeline* acceleratedTimeline = nullptr;
+            RefPtr timeline = effect->animation()->timeline();
+            if (timeline) {
+                acceleratedTimeline = timeline->acceleratedRepresentation();
+                auto acceleratedTimelineNeedsUpdate = !acceleratedTimeline || acceleratedTimelines.findIf([&](const auto& updatedTimeline) {
+                    return updatedTimeline->identifier() == acceleratedTimeline->identifier();
+                }) == notFound;
+                if (acceleratedTimelineNeedsUpdate) {
+                    timeline->updateAcceleratedRepresentation();
+                    acceleratedTimeline = timeline->acceleratedRepresentation();
+                    if (acceleratedTimeline)
+                        acceleratedTimelines.append(*acceleratedTimeline);
+                }
+            }
+
             if (animatesWidth || animatesHeight) {
                 auto& blendingKeyframes = effect->blendingKeyframes();
                 if ((animatesWidth && blendingKeyframes.hasWidthDependentTransform()) || (animatesHeight && blendingKeyframes.hasHeightDependentTransform()))
                     disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
             }
-            auto acceleratedEffect = AcceleratedEffect::create(*effect, borderBoxRect, baseValues, disallowedAcceleratedProperties);
+            auto acceleratedEffect = AcceleratedEffect::create(*effect, acceleratedTimeline, borderBoxRect, baseValues, disallowedAcceleratedProperties);
             if (!acceleratedEffect)
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())

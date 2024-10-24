@@ -294,6 +294,7 @@ void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void ScrollTimeline::updateAcceleratedRepresentation()
 {
+    // FIXME: associate that representation with the source graphics layer.
     m_acceleratedTimeline = AcceleratedTimeline::create(*this);
 }
 #endif
