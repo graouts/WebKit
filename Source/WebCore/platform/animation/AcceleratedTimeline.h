@@ -28,35 +28,41 @@
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
 #include "WebAnimationTime.h"
-#include <wtf/Ref.h>
+#include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
-#include <wtf/WeakPtr.h>
+#include <wtf/UUID.h>
 
 namespace WebCore {
 
-class AcceleratedTimeline : public RefCounted<AcceleratedTimeline>, public CanMakeWeakPtr<AcceleratedTimeline> {
+class AcceleratedTimeline : public RefCounted<AcceleratedTimeline> {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(AcceleratedTimeline);
 public:
-    virtual ~AcceleratedTimeline() = default;
+    static Ref<AcceleratedTimeline> create(Seconds originTime);
+    static Ref<AcceleratedTimeline> create(const ScrollTimeline&);
 
-    WEBCORE_EXPORT virtual bool isDocumentTimeline() const { return false; }
-    WEBCORE_EXPORT virtual bool isScrollTimeline() const { return false; }
-    WEBCORE_EXPORT virtual bool isViewTimeline() const { return false; }
+    enum class Type : uint8_t { Document, Scroll, View };
 
-    WEBCORE_EXPORT virtual std::optional<WebAnimationTime> currentTime() { return std::nullopt; }
-
-protected:
-    AcceleratedTimeline(std::optional<WebAnimationTime> duration);
+    // Encoding support.
+    static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
+    Type type() const { return m_type; }
+    const WTF::UUID& identifier() const { return m_identifier; }
+    const std::optional<WebAnimationTime> duration() const { return m_duration; }
+    const std::optional<Seconds> originTime() const { return m_originTime; }
+    ScrollAxis axis() const { return m_axis; }
 
 private:
+    AcceleratedTimeline(Type);
+    AcceleratedTimeline(Seconds originTime);
+    AcceleratedTimeline(Type, std::optional<WebAnimationTime> duration, ScrollAxis);
+    AcceleratedTimeline(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
+
+    Type m_type;
+    WTF::UUID m_identifier;
     std::optional<WebAnimationTime> m_duration;
+    std::optional<Seconds> m_originTime;
+    ScrollAxis m_axis { ScrollAxis::Block };
 };
 
 } // namespace WebCore
-
-#define SPECIALIZE_TYPE_TRAITS_ACCELERATED_TIMELINE(ToValueTypeName, predicate) \
-SPECIALIZE_TYPE_TRAITS_BEGIN(WebCore::ToValueTypeName) \
-static bool isType(const WebCore::AcceleratedTimeline& value) { return value.predicate; } \
-SPECIALIZE_TYPE_TRAITS_END()
 
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)
