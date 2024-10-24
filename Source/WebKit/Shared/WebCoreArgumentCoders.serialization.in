@@ -6544,6 +6544,22 @@ struct WebCore::AnimationEffectTiming {
     WebCore::WebAnimationTime endTime;
 };
 
+[RefCounted] class WebCore::AcceleratedTimeline subclasses {
+    WebCore::AcceleratedDocumentTimeline,
+    WebCore::AcceleratedScrollTimeline,
+    WebCore::AcceleratedViewTimeline
+}
+
+[RefCounted] class WebCore::AcceleratedDocumentTimeline {
+    WebCore::WebAnimationTime originTime();
+};
+
+[RefCounted] class WebCore::AcceleratedScrollTimeline {
+};
+
+[RefCounted] class WebCore::AcceleratedViewTimeline {
+};
+
 header: <WebCore/AcceleratedEffect.h>
 [CustomHeader, Nested] class WebCore::AcceleratedEffect::Keyframe {
     double offset();
