@@ -98,6 +98,9 @@ private:
     explicit ScrollTimeline(Scroller, ScrollAxis);
 
     bool isScrollTimeline() const final { return true; }
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void updateAcceleratedRepresentation() final;
+#endif
 
     void animationTimingDidChange(WebAnimation&) override;
 

@@ -25,7 +25,6 @@
 
 #include "config.h"
 #include "AcceleratedTimeline.h"
-#include "DocumentTimeline.h"
 #include "ScrollTimeline.h"
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
