@@ -342,4 +342,11 @@ TextStream& operator<<(TextStream& ts, Scroller scroller)
     return ts;
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void ScrollTimeline::updateAcceleratedRepresentation()
+{
+    m_acceleratedTimeline = AcceleratedTimeline::create(*this);
+}
+#endif
+
 } // namespace WebCore
