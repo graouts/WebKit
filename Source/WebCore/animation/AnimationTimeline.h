@@ -76,7 +76,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     virtual void updateAcceleratedRepresentation() { };
-    const AcceleratedTimeline* acceleratedRepresentation() const { return m_acceleratedTimeline.get(); }
+    AcceleratedTimeline* acceleratedRepresentation() const { return m_acceleratedTimeline.get(); }
 #endif
 
 protected:
