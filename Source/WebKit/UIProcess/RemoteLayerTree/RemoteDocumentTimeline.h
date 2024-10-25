@@ -27,47 +27,26 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include "ScrollAxis.h"
-#include "WebAnimationTime.h"
+#include "RemoteAnimationTimeline.h"
+#include <wtf/RetainPtr.h>
 #include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
-#include <wtf/UUID.h>
 
-namespace WebCore {
+namespace WebKit {
 
-class ScrollTimeline;
-
-class AcceleratedTimeline : public RefCounted<AcceleratedTimeline> {
-    WTF_MAKE_TZONE_OR_ISO_ALLOCATED(AcceleratedTimeline);
+class RemoteDocumentTimeline final : public RemoteAnimationTimeline {
+    WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteDocumentTimeline);
 public:
-    static Ref<AcceleratedTimeline> create(Seconds originTime);
-    static Ref<AcceleratedTimeline> create(const ScrollTimeline&);
-
-    enum class Type : uint8_t { Document, Scroll, View };
-
-    // Encoding support.
-    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
-    Type type() const { return m_type; }
-    const WTF::UUID& identifier() const { return m_identifier; }
-    const std::optional<WebAnimationTime> duration() const { return m_duration; }
-    const std::optional<Seconds> originTime() const { return m_originTime; }
-    ScrollAxis axis() const { return m_axis; }
-
-    virtual ~AcceleratedTimeline() = default;
+    static Ref<RemoteDocumentTimeline> create(const WebCore::AcceleratedTimeline&);
 
 private:
-    AcceleratedTimeline(Type);
-    AcceleratedTimeline(Seconds originTime);
-    AcceleratedTimeline(Type, std::optional<WebAnimationTime> duration, ScrollAxis);
-    AcceleratedTimeline(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
+    explicit RemoteDocumentTimeline(const WebCore::AcceleratedTimeline&);
 
-    Type m_type;
-    WTF::UUID m_identifier;
-    std::optional<WebAnimationTime> m_duration;
-    std::optional<Seconds> m_originTime;
-    ScrollAxis m_axis { ScrollAxis::Block };
+    std::optional<WebCore::WebAnimationTime> currentTime(MonotonicTime) const override;
+
+    Seconds m_originTime;
 };
 
-} // namespace WebCore
+} // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)

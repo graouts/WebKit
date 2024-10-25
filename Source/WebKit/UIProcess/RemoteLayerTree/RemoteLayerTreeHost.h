@@ -26,7 +26,7 @@
 #pragma once
 
 #include "PlaybackSessionContextIdentifier.h"
-#include "RemoteAcceleratedTimeline.h"
+#include "RemoteAnimationTimeline.h"
 #include "RemoteLayerTreeNode.h"
 #include "RemoteLayerTreeTransaction.h"
 #include <WebCore/PlatformCALayer.h>
@@ -83,8 +83,9 @@ public:
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
     void clearTimelines();
-    void registerTimelineWithNode(const RefPtr<WebCore::AcceleratedTimeline>& timeline, RemoteLayerTreeNode&);
-    const RemoteAcceleratedTimeline* timelineForIdentifier(const WTF::UUID&);
+    void registerDocumentTimeline(const WebCore::AcceleratedTimeline&);
+    void registerScrollTimelineWithNode(const WebCore::AcceleratedTimeline&, RemoteLayerTreeNode&);
+    const RemoteAnimationTimeline* timelineForIdentifier(const WTF::UUID&) const;
 #endif
 
     void detachFromDrawingArea();
@@ -131,7 +132,7 @@ private:
     HashMap<WebCore::PlatformLayerIdentifier, PlaybackSessionContextIdentifier> m_videoLayers;
 #endif
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    UncheckedKeyHashMap<WTF::UUID, Ref<RemoteAcceleratedTimeline>> m_timelines;
+    UncheckedKeyHashMap<WTF::UUID, Ref<RemoteAnimationTimeline>> m_timelines;
 #endif
 #if ENABLE(OVERLAY_REGIONS_IN_EVENT_REGION)
     HashSet<WebCore::PlatformLayerIdentifier> m_overlayRegionIDs;
