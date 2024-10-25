@@ -24,7 +24,7 @@
  */
 
 #import "config.h"
-#import "RemoteAcceleratedTimeline.h"
+#import "RemoteScrollTimeline.h"
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
@@ -32,16 +32,11 @@
 
 namespace WebKit {
 
-WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(RemoteAcceleratedTimeline);
+WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(RemoteAnimationTimeline);
 
-Ref<RemoteAcceleratedTimeline> RemoteAcceleratedTimeline::create(const AcceleratedTimeline& sourceTimeline, RemoteLayerTreeNode& sourceNode)
-{
-    return adoptRef(*new RemoteAcceleratedTimeline(sourceTimeline, sourceNode));
-}
-
-RemoteAcceleratedTimeline::RemoteAcceleratedTimeline(const AcceleratedTimeline& sourceTimeline, RemoteLayerTreeNode& sourceNode)
-    : WebCore::AcceleratedTimeline(sourceTimeline)
-    , m_sourceNode(&sourceNode)
+RemoteAnimationTimeline::RemoteAnimationTimeline(const AcceleratedTimeline& sourceTimeline)
+    : m_identifier(sourceTimeline.identifier())
+    , m_duration(sourceTimeline.duration())
 {
 }
 

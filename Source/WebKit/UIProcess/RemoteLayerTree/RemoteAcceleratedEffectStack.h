@@ -41,26 +41,28 @@ OBJC_CLASS CAPresentationModifier;
 
 namespace WebKit {
 
+class RemoteLayerTreeHost;
+
 class RemoteAcceleratedEffectStack final : public WebCore::AcceleratedEffectStack {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteAcceleratedEffectStack);
 public:
     static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect);
 
-    void setEffects(WebCore::AcceleratedEffects&&) final;
+    void setEffects(WebCore::AcceleratedEffects&&, RemoteLayerTreeHost&);
 
 #if PLATFORM(MAC)
-    void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now);
-    void applyEffectsFromScrollingThread(MonotonicTime now) const;
+    void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now, const RemoteLayerTreeHost&);
+    void applyEffectsFromScrollingThread(MonotonicTime now, const RemoteLayerTreeHost&) const;
 #endif
 
-    void applyEffectsFromMainThread(PlatformLayer*, MonotonicTime now, bool backdropRootIsOpaque) const;
+    void applyEffectsFromMainThread(PlatformLayer*, MonotonicTime now, const RemoteLayerTreeHost&, bool backdropRootIsOpaque) const;
 
     void clear(PlatformLayer*);
 
 private:
     explicit RemoteAcceleratedEffectStack(WebCore::FloatRect);
 
-    WebCore::AcceleratedEffectValues computeValues(MonotonicTime now) const;
+    WebCore::AcceleratedEffectValues computeValues(MonotonicTime now, const RemoteLayerTreeHost&) const;
 
 #if PLATFORM(MAC)
     const WebCore::FilterOperations* longestFilterList() const;
