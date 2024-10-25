@@ -51,16 +51,6 @@ Ref<AcceleratedTimeline> AcceleratedTimeline::create(Type type, WTF::UUID&& iden
     return adoptRef(*new AcceleratedTimeline(type, WTFMove(identifier), WTFMove(duration), WTFMove(originTime), axis));
 }
 
-AcceleratedTimeline::AcceleratedTimeline(const AcceleratedTimeline& source)
-    : m_type(source.m_type)
-    , m_identifier(source.m_identifier)
-    , m_duration(source.m_duration)
-    , m_originTime(std::nullopt)
-    , m_axis(source.m_axis)
-{
-    ASSERT(source.m_type != Type::Document);
-}
-
 AcceleratedTimeline::AcceleratedTimeline(Type type)
     : m_type(type)
     , m_identifier(WTF::UUID::createVersion4Weak())

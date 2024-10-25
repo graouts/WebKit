@@ -53,6 +53,11 @@
 #import <UIKit/UIView.h>
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#import "RemoteDocumentTimeline.h"
+#import "RemoteScrollTimeline.h"
+#endif
+
 namespace WebKit {
 using namespace WebCore;
 
@@ -501,17 +506,30 @@ void RemoteLayerTreeHost::clearTimelines()
     m_timelines.clear();
 }
 
-void RemoteLayerTreeHost::registerTimelineWithNode(const RefPtr<AcceleratedTimeline>& timeline, RemoteLayerTreeNode& node)
+void RemoteLayerTreeHost::registerDocumentTimeline(const WebCore::AcceleratedTimeline& timeline)
 {
-    if (!timeline || timeline->type() == AcceleratedTimeline::Type::Document)
+    if (timeline.type() != WebCore::AcceleratedTimeline::Type::Document)
         return;
 
-    auto remoteTimeline = RemoteAcceleratedTimeline::create(*timeline, node);
-    ASSERT(!m_timelines.contains(remoteTimeline->identifier()));
-    m_timelines.set(remoteTimeline->identifier(), WTFMove(remoteTimeline));
+    auto identifier = timeline.identifier();
+    auto it = m_timelines.find(identifier);
+    if (it != m_timelines.end())
+        return;
+
+    m_timelines.set(identifier, RemoteDocumentTimeline::create(timeline));
 }
 
-const RemoteAcceleratedTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier)
+void RemoteLayerTreeHost::registerScrollTimelineWithNode(const WebCore::AcceleratedTimeline& timeline, RemoteLayerTreeNode& node)
+{
+    if (timeline.type() == WebCore::AcceleratedTimeline::Type::Document)
+        return;
+
+    auto identifier = timeline.identifier();
+    ASSERT(!m_timelines.contains(identifier));
+    m_timelines.set(identifier, RemoteScrollTimeline::create(timeline, node));
+}
+
+const RemoteAnimationTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier) const
 {
     auto it = m_timelines.find(identifier);
     if (it != m_timelines.end())
