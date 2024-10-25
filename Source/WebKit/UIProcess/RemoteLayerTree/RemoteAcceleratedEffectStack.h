@@ -41,14 +41,12 @@ OBJC_CLASS CAPresentationModifier;
 
 namespace WebKit {
 
-class RemoteLayerTreeHost;
-
 class RemoteAcceleratedEffectStack final : public WebCore::AcceleratedEffectStack {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteAcceleratedEffectStack);
 public:
     static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect);
 
-    void setEffects(WebCore::AcceleratedEffects&&, RemoteLayerTreeHost&);
+    void setEffects(WebCore::AcceleratedEffects&&) final;
 
 #if PLATFORM(MAC)
     void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now);

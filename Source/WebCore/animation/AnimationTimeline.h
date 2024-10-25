@@ -33,7 +33,7 @@
 #include <wtf/WeakPtr.h>
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#include "AcceleratedTimelineRepresentation.h"
+#include "AcceleratedTimeline.h"
 #endif
 
 namespace WebCore {
@@ -76,7 +76,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     virtual void updateAcceleratedRepresentation() { };
-    AcceleratedTimelineRepresentation* acceleratedRepresentation() const { return m_acceleratedTimelineRepresentation.get(); }
+    AcceleratedTimeline* acceleratedRepresentation() const { return m_acceleratedTimeline.get(); }
 #endif
 
 protected:
@@ -85,7 +85,7 @@ protected:
     AnimationCollection m_animations;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    RefPtr<AcceleratedTimelineRepresentation> m_acceleratedTimelineRepresentation;
+    RefPtr<AcceleratedTimeline> m_acceleratedTimeline;
 #endif
 
 private:
