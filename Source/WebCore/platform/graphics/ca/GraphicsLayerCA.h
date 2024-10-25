@@ -213,7 +213,6 @@ public:
     WEBCORE_EXPORT void markFrontBufferVolatileForTesting() override;
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     WEBCORE_EXPORT void setAcceleratedEffectsAndBaseValues(AcceleratedEffects&&, AcceleratedEffectValues&&) override;
-    WEBCORE_EXPORT void setAcceleratedTimelineRepresentation(RefPtr<AcceleratedTimelineRepresentation>&&) override;
 #endif
 
     WEBCORE_EXPORT void purgeFrontBufferForTesting() override;

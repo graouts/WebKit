@@ -297,19 +297,13 @@ void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void ScrollTimeline::updateAcceleratedRepresentation()
 {
-    m_acceleratedTimelineRepresentation = AcceleratedTimelineRepresentation::create(*this);
+    m_acceleratedTimeline = AcceleratedTimeline::create(*this);
 
     if (!m_source)
         return;
 
-    RefPtr source = m_source.get();
-    CheckedPtr renderer = dynamicDowncast<RenderLayerModelObject>(source->renderer());
-    if (!renderer || !renderer->isComposited())
-        return;
-
-    auto* renderLayer = renderer->layer();
-    ASSERT(renderLayer && renderLayer->backing());
-    renderLayer->backing()->setAcceleratedTimelineRepresentation(m_acceleratedTimelineRepresentation.copyRef());
+    if (auto* sourceScrollableArea = scrollableAreaForSourceRenderer(m_source->renderer(), m_source->document()))
+        m_acceleratedTimeline->setSource(sourceScrollableArea->scrollingNodeID());
 }
 #endif
 
