@@ -26,6 +26,7 @@
 #pragma once
 
 #include "PlaybackSessionContextIdentifier.h"
+#include "RemoteAcceleratedTimeline.h"
 #include "RemoteLayerTreeNode.h"
 #include "RemoteLayerTreeTransaction.h"
 #include <WebCore/PlatformCALayer.h>
@@ -77,6 +78,9 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
+    void clearTimelines();
+    void registerTimelineWithNode(const RefPtr<WebCore::AcceleratedTimeline>& timeline, RemoteLayerTreeNode&);
+    const RemoteAcceleratedTimeline* timelineForIdentifier(const WTF::UUID&);
 #endif
 
     void detachFromDrawingArea();
@@ -122,6 +126,9 @@ private:
     UncheckedKeyHashMap<WebCore::PlatformLayerIdentifier, RetainPtr<WKAnimationDelegate>> m_animationDelegates;
 #if HAVE(AVKIT)
     UncheckedKeyHashMap<WebCore::PlatformLayerIdentifier, PlaybackSessionContextIdentifier> m_videoLayers;
+#endif
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    UncheckedKeyHashMap<WTF::UUID, Ref<RemoteAcceleratedTimeline>> m_timelines;
 #endif
 #if ENABLE(OVERLAY_REGIONS_IN_EVENT_REGION)
     HashSet<WebCore::PlatformLayerIdentifier> m_overlayRegionIDs;
