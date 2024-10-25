@@ -234,6 +234,10 @@ void PlatformCALayer::clearAcceleratedEffectsAndBaseValues()
 void PlatformCALayer::setAcceleratedEffectsAndBaseValues(const AcceleratedEffects&, const AcceleratedEffectValues&)
 {
 }
+
+void PlatformCALayer::setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&&)
+{
+}
 #endif
 
 void PlatformCALayer::dumpAdditionalProperties(TextStream&, OptionSet<PlatformLayerTreeAsTextFlags>)
