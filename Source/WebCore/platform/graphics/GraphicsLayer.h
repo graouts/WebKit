@@ -88,7 +88,7 @@ class ModelContext;
 #endif
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-class AcceleratedTimeline;
+class AcceleratedTimelineRepresentation;
 struct AcceleratedEffectValues;
 String acceleratedEffectPropertyIDAsString(AcceleratedEffectProperty);
 #endif
@@ -725,7 +725,7 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     AcceleratedEffectStack* acceleratedEffectStack() const { return m_effectStack.get(); }
     WEBCORE_EXPORT virtual void setAcceleratedEffectsAndBaseValues(AcceleratedEffects&&, AcceleratedEffectValues&&);
-    WEBCORE_EXPORT virtual void setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&&) { };
+    WEBCORE_EXPORT virtual void setAcceleratedTimelineRepresentation(RefPtr<AcceleratedTimelineRepresentation>&&) { };
 #endif
 
     virtual void purgeFrontBufferForTesting() { }

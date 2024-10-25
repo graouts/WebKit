@@ -158,7 +158,7 @@ struct LayerProperties {
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
         Vector<Ref<WebCore::AcceleratedEffect>> effects;
         WebCore::AcceleratedEffectValues baseValues;
-        RefPtr<WebCore::AcceleratedTimeline> timeline;
+        RefPtr<WebCore::AcceleratedTimelineRepresentation> timeline;
 #endif
     } animationChanges;
 

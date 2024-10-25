@@ -27,47 +27,31 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include "ScrollAxis.h"
+#include "AcceleratedTimelineRepresentation.h"
 #include "WebAnimationTime.h"
-#include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
 #include <wtf/UUID.h>
 
 namespace WebCore {
 
-class ScrollTimeline;
-
 class AcceleratedTimeline : public RefCounted<AcceleratedTimeline> {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(AcceleratedTimeline);
 public:
-    static Ref<AcceleratedTimeline> create(Seconds originTime);
-    static Ref<AcceleratedTimeline> create(const ScrollTimeline&);
-
-    enum class Type : uint8_t { Document, Scroll, View };
-
-    // Encoding support.
-    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
-    Type type() const { return m_type; }
     const WTF::UUID& identifier() const { return m_identifier; }
-    const std::optional<WebAnimationTime> duration() const { return m_duration; }
-    const std::optional<Seconds> originTime() const { return m_originTime; }
-    ScrollAxis axis() const { return m_axis; }
+    std::optional<WebAnimationTime> duration() const { return m_duration; }
+
+    virtual std::optional<WebAnimationTime> currentTime(MonotonicTime) const { return std::nullopt; }
 
     virtual ~AcceleratedTimeline() = default;
 
-private:
-    AcceleratedTimeline(Type);
-    AcceleratedTimeline(Seconds originTime);
-    AcceleratedTimeline(Type, std::optional<WebAnimationTime> duration, ScrollAxis);
-    AcceleratedTimeline(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis);
+protected:
+    WEBCORE_EXPORT explicit AcceleratedTimeline(const WebCore::AcceleratedTimelineRepresentation&);
 
-    Type m_type;
+private:
     WTF::UUID m_identifier;
     std::optional<WebAnimationTime> m_duration;
-    std::optional<Seconds> m_originTime;
-    ScrollAxis m_axis { ScrollAxis::Block };
 };
 
-} // namespace WebCore
+} // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)

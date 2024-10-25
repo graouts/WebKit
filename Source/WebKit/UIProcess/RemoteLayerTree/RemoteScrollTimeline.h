@@ -27,21 +27,21 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include "RemoteAnimationTimeline.h"
 #include "RemoteLayerTreeNode.h"
+#include <WebCore/AcceleratedTimeline.h>
 #include <WebCore/ScrollAxis.h>
 #include <wtf/RetainPtr.h>
 #include <wtf/TZoneMalloc.h>
 
 namespace WebKit {
 
-class RemoteScrollTimeline final : public RemoteAnimationTimeline {
+class RemoteScrollTimeline final : public WebCore::AcceleratedTimeline {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteScrollTimeline);
 public:
-    static Ref<RemoteScrollTimeline> create(const WebCore::AcceleratedTimeline&, RemoteLayerTreeNode&);
+    static Ref<RemoteScrollTimeline> create(const WebCore::AcceleratedTimelineRepresentation&, RemoteLayerTreeNode&);
 
 private:
-    explicit RemoteScrollTimeline(const WebCore::AcceleratedTimeline&, RemoteLayerTreeNode&);
+    explicit RemoteScrollTimeline(const WebCore::AcceleratedTimelineRepresentation&, RemoteLayerTreeNode&);
 
     std::optional<WebCore::WebAnimationTime> currentTime(MonotonicTime) const override;
 

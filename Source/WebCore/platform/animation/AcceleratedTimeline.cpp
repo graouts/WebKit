@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,62 +23,23 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "AcceleratedTimeline.h"
-#include "ScrollTimeline.h"
+#import "config.h"
+#import "AcceleratedTimeline.h"
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include <wtf/TZoneMallocInlines.h>
+#import <wtf/TZoneMallocInlines.h>
 
-namespace WebCore {
+namespace WebKit {
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(AcceleratedTimeline);
 
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(Seconds originTime)
-{
-    return adoptRef(*new AcceleratedTimeline(originTime));
-}
-
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(const ScrollTimeline& source)
-{
-    // FIXME: process ViewTimeline as well.
-    return adoptRef(*new AcceleratedTimeline(Type::Scroll, source.duration(), source.axis()));
-}
-
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(Type type, WTF::UUID&& identifier, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis axis)
-{
-    return adoptRef(*new AcceleratedTimeline(type, WTFMove(identifier), WTFMove(duration), WTFMove(originTime), axis));
-}
-
-AcceleratedTimeline::AcceleratedTimeline(Type type)
-    : m_type(type)
-    , m_identifier(WTF::UUID::createVersion4Weak())
+AcceleratedTimeline::AcceleratedTimeline(const AcceleratedTimelineRepresentation& sourceTimeline)
+    : m_identifier(sourceTimeline.identifier())
+    , m_duration(sourceTimeline.duration())
 {
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Seconds originTime)
-    : AcceleratedTimeline(Type::Document)
-{
-    m_originTime = originTime;
-}
-
-AcceleratedTimeline::AcceleratedTimeline(Type type, std::optional<WebAnimationTime> duration, ScrollAxis axis)
-    : AcceleratedTimeline(type)
-{
-    m_duration = duration;
-    m_axis = axis;
-}
-
-AcceleratedTimeline::AcceleratedTimeline(Type type, WTF::UUID&& identifier, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, ScrollAxis axis)
-    : m_type(type)
-    , m_identifier(WTFMove(identifier))
-    , m_duration(WTFMove(duration))
-    , m_originTime(WTFMove(originTime))
-    , m_axis(axis)
-{
-}
-
-} // namespace WebCore
+} // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)
