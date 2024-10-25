@@ -34,17 +34,17 @@ namespace WebKit {
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(RemoteScrollTimeline);
 
-Ref<RemoteScrollTimeline> RemoteScrollTimeline::create(const WebCore::AcceleratedTimeline& sourceTimeline, RemoteLayerTreeNode& sourceNode)
+Ref<RemoteScrollTimeline> RemoteScrollTimeline::create(const WebCore::AcceleratedTimelineRepresentation& sourceTimeline, RemoteLayerTreeNode& sourceNode)
 {
     return adoptRef(*new RemoteScrollTimeline(sourceTimeline, sourceNode));
 }
 
-RemoteScrollTimeline::RemoteScrollTimeline(const WebCore::AcceleratedTimeline& sourceTimeline, RemoteLayerTreeNode& sourceNode)
-    : RemoteAnimationTimeline(sourceTimeline)
+RemoteScrollTimeline::RemoteScrollTimeline(const WebCore::AcceleratedTimelineRepresentation& sourceTimeline, RemoteLayerTreeNode& sourceNode)
+    : WebCore::AcceleratedTimeline(sourceTimeline)
     , m_sourceNode(&sourceNode)
     , m_axis(sourceTimeline.axis())
 {
-    ASSERT(sourceTimeline.type() != WebCore::AcceleratedTimeline::Type::Document);
+    ASSERT(sourceTimeline.type() != WebCore::AcceleratedTimelineRepresentation::Type::Document);
 }
 
 std::optional<WebCore::WebAnimationTime> RemoteScrollTimeline::currentTime(MonotonicTime) const

@@ -510,9 +510,9 @@ void RemoteLayerTreeHost::clearTimelines()
     m_timelines.clear();
 }
 
-void RemoteLayerTreeHost::registerDocumentTimeline(const WebCore::AcceleratedTimeline& timeline)
+void RemoteLayerTreeHost::registerDocumentTimeline(const WebCore::AcceleratedTimelineRepresentation& timeline)
 {
-    if (timeline.type() != WebCore::AcceleratedTimeline::Type::Document)
+    if (timeline.type() != WebCore::AcceleratedTimelineRepresentation::Type::Document)
         return;
 
     auto identifier = timeline.identifier();
@@ -523,9 +523,9 @@ void RemoteLayerTreeHost::registerDocumentTimeline(const WebCore::AcceleratedTim
     m_timelines.set(identifier, RemoteDocumentTimeline::create(timeline));
 }
 
-void RemoteLayerTreeHost::registerScrollTimelineWithNode(const WebCore::AcceleratedTimeline& timeline, RemoteLayerTreeNode& node)
+void RemoteLayerTreeHost::registerScrollTimelineWithNode(const WebCore::AcceleratedTimelineRepresentation& timeline, RemoteLayerTreeNode& node)
 {
-    if (timeline.type() == WebCore::AcceleratedTimeline::Type::Document)
+    if (timeline.type() == WebCore::AcceleratedTimelineRepresentation::Type::Document)
         return;
 
     auto identifier = timeline.identifier();
@@ -533,7 +533,7 @@ void RemoteLayerTreeHost::registerScrollTimelineWithNode(const WebCore::Accelera
     m_timelines.set(identifier, RemoteScrollTimeline::create(timeline, node));
 }
 
-const RemoteAnimationTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier) const
+const WebCore::AcceleratedTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier) const
 {
     auto it = m_timelines.find(identifier);
     if (it != m_timelines.end())

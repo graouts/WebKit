@@ -235,7 +235,7 @@ void PlatformCALayer::setAcceleratedEffectsAndBaseValues(const AcceleratedEffect
 {
 }
 
-void PlatformCALayer::setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&&)
+void PlatformCALayer::setAcceleratedTimelineRepresentation(RefPtr<AcceleratedTimelineRepresentation>&&)
 {
 }
 #endif

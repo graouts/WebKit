@@ -1566,7 +1566,6 @@
 		71BAA73325FFD09800D7CD5D /* WKModelView.h in Headers */ = {isa = PBXBuildFile; fileRef = 71BAA73125FFCCBA00D7CD5D /* WKModelView.h */; };
 		71E29A342B20610C0010F3C9 /* RemoteAcceleratedEffectStack.h in Headers */ = {isa = PBXBuildFile; fileRef = 71371D1E2B1F89C00092C32D /* RemoteAcceleratedEffectStack.h */; };
 		71F0B1CE2CCB7B930030E30B /* RemoteScrollTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1CC2CCB7B830030E30B /* RemoteScrollTimeline.h */; };
-		71F0B1D12CCBB8400030E30B /* RemoteAnimationTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */; };
 		71F0B1D52CCBBE080030E30B /* RemoteDocumentTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */; };
 		71FB810B2260627E00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h in Headers */ = {isa = PBXBuildFile; fileRef = 71FB810A2260627A00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h */; };
 		726952E02B7F4636009E5F0C /* WebExtensionAPIWebPageRuntime.h in Headers */ = {isa = PBXBuildFile; fileRef = 726952DF2B7F4636009E5F0C /* WebExtensionAPIWebPageRuntime.h */; };
@@ -6360,8 +6359,6 @@
 		71E9650F2745682E00ADCF43 /* ModelIdentifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ModelIdentifier.h; sourceTree = "<group>"; };
 		71F0B1CC2CCB7B830030E30B /* RemoteScrollTimeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteScrollTimeline.h; sourceTree = "<group>"; };
 		71F0B1CD2CCB7B830030E30B /* RemoteScrollTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteScrollTimeline.cpp; sourceTree = "<group>"; };
-		71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RemoteAnimationTimeline.h; sourceTree = "<group>"; };
-		71F0B1D22CCBBAD80030E30B /* RemoteAnimationTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteAnimationTimeline.cpp; sourceTree = "<group>"; };
 		71F0B1D32CCBBC6A0030E30B /* RemoteDocumentTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteDocumentTimeline.cpp; sourceTree = "<group>"; };
 		71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RemoteDocumentTimeline.h; sourceTree = "<group>"; };
 		71FB810A2260627A00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebsiteSimulatedMouseEventsDispatchPolicy.h; sourceTree = "<group>"; };
@@ -10563,8 +10560,6 @@
 				E404906F21DE65D70037F0DB /* mac */,
 				71371D1E2B1F89C00092C32D /* RemoteAcceleratedEffectStack.h */,
 				71371D1F2B1F89C10092C32D /* RemoteAcceleratedEffectStack.mm */,
-				71F0B1D22CCBBAD80030E30B /* RemoteAnimationTimeline.cpp */,
-				71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */,
 				71F0B1D32CCBBC6A0030E30B /* RemoteDocumentTimeline.cpp */,
 				71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */,
 				1AB16AE01648656D00290D62 /* RemoteLayerTreeDrawingAreaProxy.h */,
@@ -16823,7 +16818,6 @@
 				950FECF4285027200002DE4E /* RecurringPaymentRequest.h in Headers */,
 				57FD318222B3515E008D0E8B /* RedirectSOAuthorizationSession.h in Headers */,
 				71E29A342B20610C0010F3C9 /* RemoteAcceleratedEffectStack.h in Headers */,
-				71F0B1D12CCBB8400030E30B /* RemoteAnimationTimeline.h in Headers */,
 				9B1229D223FF2BCC008CA751 /* RemoteAudioDestinationIdentifier.h in Headers */,
 				9B1229CD23FF25F2008CA751 /* RemoteAudioDestinationManager.h in Headers */,
 				9B5BEC2A240101580070C6EF /* RemoteAudioDestinationProxy.h in Headers */,

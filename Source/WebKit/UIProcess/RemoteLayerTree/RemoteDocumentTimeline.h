@@ -27,20 +27,20 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#include "RemoteAnimationTimeline.h"
+#include <WebCore/AcceleratedTimeline.h>
 #include <wtf/RetainPtr.h>
 #include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
 
 namespace WebKit {
 
-class RemoteDocumentTimeline final : public RemoteAnimationTimeline {
+class RemoteDocumentTimeline final : public WebCore::AcceleratedTimeline {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteDocumentTimeline);
 public:
-    static Ref<RemoteDocumentTimeline> create(const WebCore::AcceleratedTimeline&);
+    static Ref<RemoteDocumentTimeline> create(const WebCore::AcceleratedTimelineRepresentation&);
 
 private:
-    explicit RemoteDocumentTimeline(const WebCore::AcceleratedTimeline&);
+    explicit RemoteDocumentTimeline(const WebCore::AcceleratedTimelineRepresentation&);
 
     std::optional<WebCore::WebAnimationTime> currentTime(MonotonicTime) const override;
 

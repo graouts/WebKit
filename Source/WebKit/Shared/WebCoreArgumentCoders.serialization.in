@@ -6546,15 +6546,15 @@ enum class WebCore::ScrollAxis : uint8_t {
     Y
 };
 
-header: <WebCore/AcceleratedTimeline.h>
-[CustomHeader, Nested] enum class WebCore::AcceleratedTimeline::Type : uint8_t {
+header: <WebCore/AcceleratedTimelineRepresentation.h>
+[CustomHeader, Nested] enum class WebCore::AcceleratedTimelineRepresentation::Type : uint8_t {
     Document,
     Scroll,
     View
 };
 
-[RefCounted] class WebCore::AcceleratedTimeline {
-    WebCore::AcceleratedTimeline::Type type();
+[RefCounted] class WebCore::AcceleratedTimelineRepresentation {
+    WebCore::AcceleratedTimelineRepresentation::Type type();
     WTF::UUID identifier();
     std::optional<WebCore::WebAnimationTime> duration();
     std::optional<Seconds> originTime();
@@ -6572,7 +6572,7 @@ header: <WebCore/AcceleratedEffect.h>
 
 [RefCounted] class WebCore::AcceleratedEffect {
     WebCore::AnimationEffectTiming timing();
-    RefPtr<WebCore::AcceleratedTimeline> timeline();
+    RefPtr<WebCore::AcceleratedTimelineRepresentation> timelineRepresentation();
     Vector<WebCore::AcceleratedEffect::Keyframe> keyframes();
     WebCore::WebAnimationType animationType();
     WebCore::CompositeOperation compositeOperation();
@@ -6582,6 +6582,7 @@ header: <WebCore/AcceleratedEffect.h>
     double playbackRate();
     std::optional<WebCore::WebAnimationTime> startTime();
     std::optional<WebCore::WebAnimationTime> holdTime();
+    [NotSerialized] RefPtr<WebCore::AcceleratedTimeline> timeline();
 };
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)
 
