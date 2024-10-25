@@ -55,6 +55,9 @@ public:
 
     virtual ~AcceleratedTimeline() = default;
 
+protected:
+    WEBCORE_EXPORT AcceleratedTimeline(const AcceleratedTimeline&);
+
 private:
     AcceleratedTimeline(Type);
     AcceleratedTimeline(Seconds originTime);
