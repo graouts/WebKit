@@ -4270,6 +4270,11 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<Accele
 
     return hasInterpolatingEffect;
 }
+
+void RenderLayerBacking::setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&& timeline)
+{
+    m_graphicsLayer->setAcceleratedTimeline(WTFMove(timeline));
+}
 #endif
 
 void RenderLayerBacking::animationPaused(double timeOffset, const String& animationName)
