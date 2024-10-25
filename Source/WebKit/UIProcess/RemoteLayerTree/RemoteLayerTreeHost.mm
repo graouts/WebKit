@@ -500,6 +500,29 @@ MonotonicTime RemoteLayerTreeHost::animationCurrentTime(WebCore::ProcessIdentifi
 {
     return m_drawingArea->animationCurrentTime(processIdentifier);
 }
+
+void RemoteLayerTreeHost::clearTimelines()
+{
+    m_timelines.clear();
+}
+
+void RemoteLayerTreeHost::registerTimelineWithNode(const RefPtr<AcceleratedTimeline>& timeline, RemoteLayerTreeNode& node)
+{
+    if (!timeline || timeline->type() == AcceleratedTimeline::Type::Document)
+        return;
+
+    auto remoteTimeline = RemoteAcceleratedTimeline::create(*timeline, node);
+    ASSERT(!m_timelines.contains(remoteTimeline->identifier()));
+    m_timelines.set(remoteTimeline->identifier(), WTFMove(remoteTimeline));
+}
+
+const RemoteAcceleratedTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier)
+{
+    auto it = m_timelines.find(identifier);
+    if (it != m_timelines.end())
+        return it->value.ptr();
+    return nullptr;
+}
 #endif
 
 void RemoteLayerTreeHost::remotePageProcessDidTerminate(WebCore::ProcessIdentifier processIdentifier)

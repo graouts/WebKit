@@ -341,6 +341,7 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
     };
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    m_remoteLayerTreeHost->clearTimelines();
     state.acceleratedTimelineTimeOrigin = layerTreeTransaction.acceleratedTimelineTimeOrigin();
     state.animationCurrentTime = MonotonicTime::now();
 #endif
