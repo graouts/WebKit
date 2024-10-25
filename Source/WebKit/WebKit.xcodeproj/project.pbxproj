@@ -1565,7 +1565,9 @@
 		71A676A622C62325007D6295 /* WKTouchActionGestureRecognizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 71A676A422C62318007D6295 /* WKTouchActionGestureRecognizer.h */; };
 		71BAA73325FFD09800D7CD5D /* WKModelView.h in Headers */ = {isa = PBXBuildFile; fileRef = 71BAA73125FFCCBA00D7CD5D /* WKModelView.h */; };
 		71E29A342B20610C0010F3C9 /* RemoteAcceleratedEffectStack.h in Headers */ = {isa = PBXBuildFile; fileRef = 71371D1E2B1F89C00092C32D /* RemoteAcceleratedEffectStack.h */; };
-		71F0B1CE2CCB7B930030E30B /* RemoteAcceleratedTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1CC2CCB7B830030E30B /* RemoteAcceleratedTimeline.h */; };
+		71F0B1CE2CCB7B930030E30B /* RemoteScrollTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1CC2CCB7B830030E30B /* RemoteScrollTimeline.h */; };
+		71F0B1D12CCBB8400030E30B /* RemoteAnimationTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */; };
+		71F0B1D52CCBBE080030E30B /* RemoteDocumentTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */; };
 		71FB810B2260627E00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h in Headers */ = {isa = PBXBuildFile; fileRef = 71FB810A2260627A00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h */; };
 		726952E02B7F4636009E5F0C /* WebExtensionAPIWebPageRuntime.h in Headers */ = {isa = PBXBuildFile; fileRef = 726952DF2B7F4636009E5F0C /* WebExtensionAPIWebPageRuntime.h */; };
 		728E86F11795188C0087879E /* WebColorPickerMac.h in Headers */ = {isa = PBXBuildFile; fileRef = 728E86EF1795188C0087879E /* WebColorPickerMac.h */; };
@@ -6356,8 +6358,12 @@
 		71BAA73125FFCCBA00D7CD5D /* WKModelView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WKModelView.h; path = ios/WKModelView.h; sourceTree = "<group>"; };
 		71BAA73225FFCCBA00D7CD5D /* WKModelView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WKModelView.mm; path = ios/WKModelView.mm; sourceTree = "<group>"; };
 		71E9650F2745682E00ADCF43 /* ModelIdentifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ModelIdentifier.h; sourceTree = "<group>"; };
-		71F0B1CC2CCB7B830030E30B /* RemoteAcceleratedTimeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteAcceleratedTimeline.h; sourceTree = "<group>"; };
-		71F0B1CD2CCB7B830030E30B /* RemoteAcceleratedTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteAcceleratedTimeline.cpp; sourceTree = "<group>"; };
+		71F0B1CC2CCB7B830030E30B /* RemoteScrollTimeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteScrollTimeline.h; sourceTree = "<group>"; };
+		71F0B1CD2CCB7B830030E30B /* RemoteScrollTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteScrollTimeline.cpp; sourceTree = "<group>"; };
+		71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RemoteAnimationTimeline.h; sourceTree = "<group>"; };
+		71F0B1D22CCBBAD80030E30B /* RemoteAnimationTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteAnimationTimeline.cpp; sourceTree = "<group>"; };
+		71F0B1D32CCBBC6A0030E30B /* RemoteDocumentTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteDocumentTimeline.cpp; sourceTree = "<group>"; };
+		71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RemoteDocumentTimeline.h; sourceTree = "<group>"; };
 		71FB810A2260627A00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebsiteSimulatedMouseEventsDispatchPolicy.h; sourceTree = "<group>"; };
 		7203449A26A6C44C000A5F54 /* MonotonicObjectIdentifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MonotonicObjectIdentifier.h; sourceTree = "<group>"; };
 		7203449B26A6C476000A5F54 /* RenderingUpdateID.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RenderingUpdateID.h; sourceTree = "<group>"; };
@@ -10557,8 +10563,10 @@
 				E404906F21DE65D70037F0DB /* mac */,
 				71371D1E2B1F89C00092C32D /* RemoteAcceleratedEffectStack.h */,
 				71371D1F2B1F89C10092C32D /* RemoteAcceleratedEffectStack.mm */,
-				71F0B1CD2CCB7B830030E30B /* RemoteAcceleratedTimeline.cpp */,
-				71F0B1CC2CCB7B830030E30B /* RemoteAcceleratedTimeline.h */,
+				71F0B1D22CCBBAD80030E30B /* RemoteAnimationTimeline.cpp */,
+				71F0B1D02CCBB8400030E30B /* RemoteAnimationTimeline.h */,
+				71F0B1D32CCBBC6A0030E30B /* RemoteDocumentTimeline.cpp */,
+				71F0B1D42CCBBE080030E30B /* RemoteDocumentTimeline.h */,
 				1AB16AE01648656D00290D62 /* RemoteLayerTreeDrawingAreaProxy.h */,
 				0FF24A2F1879E4FE003ABF0C /* RemoteLayerTreeDrawingAreaProxy.messages.in */,
 				1AB16ADF1648656D00290D62 /* RemoteLayerTreeDrawingAreaProxy.mm */,
@@ -10574,6 +10582,8 @@
 				0F594795187B3B6000437857 /* RemoteScrollingCoordinatorProxy.h */,
 				0F594796187B3B6000437857 /* RemoteScrollingTree.cpp */,
 				0F594797187B3B6000437857 /* RemoteScrollingTree.h */,
+				71F0B1CD2CCB7B830030E30B /* RemoteScrollTimeline.cpp */,
+				71F0B1CC2CCB7B830030E30B /* RemoteScrollTimeline.h */,
 			);
 			path = RemoteLayerTree;
 			sourceTree = "<group>";
@@ -16813,7 +16823,7 @@
 				950FECF4285027200002DE4E /* RecurringPaymentRequest.h in Headers */,
 				57FD318222B3515E008D0E8B /* RedirectSOAuthorizationSession.h in Headers */,
 				71E29A342B20610C0010F3C9 /* RemoteAcceleratedEffectStack.h in Headers */,
-				71F0B1CE2CCB7B930030E30B /* RemoteAcceleratedTimeline.h in Headers */,
+				71F0B1D12CCBB8400030E30B /* RemoteAnimationTimeline.h in Headers */,
 				9B1229D223FF2BCC008CA751 /* RemoteAudioDestinationIdentifier.h in Headers */,
 				9B1229CD23FF25F2008CA751 /* RemoteAudioDestinationManager.h in Headers */,
 				9B5BEC2A240101580070C6EF /* RemoteAudioDestinationProxy.h in Headers */,
@@ -16830,6 +16840,7 @@
 				CDAC20C923FC2F750021DEE3 /* RemoteCDMInstanceSessionIdentifier.h in Headers */,
 				0F6E7C532C4C386800F1DB85 /* RemoteDisplayListRecorderMessages.h in Headers */,
 				F451C0FE2703B263002BA03B /* RemoteDisplayListRecorderProxy.h in Headers */,
+				71F0B1D52CCBBE080030E30B /* RemoteDocumentTimeline.h in Headers */,
 				A78A5FE42B0EB39E005036D3 /* RemoteImageBufferSetIdentifier.h in Headers */,
 				2D47B56D1810714E003A3AEE /* RemoteLayerBackingStore.h in Headers */,
 				2DDF731518E95060004F5A66 /* RemoteLayerBackingStoreCollection.h in Headers */,
@@ -16860,6 +16871,7 @@
 				0F59479B187B3B6000437857 /* RemoteScrollingCoordinatorProxy.h in Headers */,
 				0F5947A4187B3B7D00437857 /* RemoteScrollingCoordinatorTransaction.h in Headers */,
 				0F59479D187B3B6000437857 /* RemoteScrollingTree.h in Headers */,
+				71F0B1CE2CCB7B930030E30B /* RemoteScrollTimeline.h in Headers */,
 				1DD2A68625633C7200FF7B6F /* RemoteSourceBufferProxyMessages.h in Headers */,
 				460A4BA22AFEC9EF00240DB8 /* RemoteVideoFrameProxyProperties.h in Headers */,
 				A55BA8171BA23E12007CD33D /* RemoteWebInspectorUI.h in Headers */,

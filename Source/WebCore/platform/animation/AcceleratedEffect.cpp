@@ -353,28 +353,24 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-void AcceleratedEffect::apply(MonotonicTime now, AcceleratedEffectValues& values, const FloatRect& bounds)
+void AcceleratedEffect::apply(std::optional<WebAnimationTime> timelineTime, std::optional<WebAnimationTime> timelineDuration, AcceleratedEffectValues& values, const FloatRect& bounds)
 {
-    // FIXME: extend this to cover scroll timelines.
-    ASSERT(m_timeline && m_timeline->originTime());
-    WebAnimationTime currentTime = now.secondsSinceEpoch() - *m_timeline->originTime();
-
+    ASSERT(timelineTime);
     auto localTime = [&]() -> WebAnimationTime {
         ASSERT(m_holdTime || m_startTime);
         if (m_holdTime)
             return *m_holdTime;
-        return (currentTime - *m_startTime) * m_playbackRate;
+        return (*timelineTime - *m_startTime) * m_playbackRate;
     }();
 
-    // FIXME: when we add threaded animaiton support support for scroll-driven animations,
-    // pass in the associated timeline's current time and duration.
     auto resolvedTiming = m_timing.resolve({
-        std::nullopt,
-        std::nullopt,
-        { m_holdTime ? *m_holdTime : *m_startTime },
-        { localTime },
+        timelineTime,
+        timelineDuration,
+        m_holdTime ? *m_holdTime : *m_startTime,
+        localTime,
         m_playbackRate
     });
+
     if (!resolvedTiming.transformedProgress)
         return;
 
