@@ -81,7 +81,6 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
-    Seconds acceleratedTimelineTimeOrigin(WebCore::ProcessIdentifier) const;
     MonotonicTime animationCurrentTime(WebCore::ProcessIdentifier) const;
 #endif
 
@@ -111,7 +110,6 @@ protected:
         TransactionID pendingLayerTreeTransactionID;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-        Seconds acceleratedTimelineTimeOrigin;
         MonotonicTime animationCurrentTime;
 #endif
     };

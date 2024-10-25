@@ -101,7 +101,6 @@ public:
     bool cssUnprefixedBackdropFilterEnabled() const;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    Seconds acceleratedTimelineTimeOrigin(WebCore::ProcessIdentifier) const;
     MonotonicTime animationCurrentTime(WebCore::ProcessIdentifier) const;
 #endif
 
