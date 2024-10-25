@@ -349,6 +349,10 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
     commitLayerAndScrollingTrees();
     webPageProxy->scrollingCoordinatorProxy()->didCommitLayerAndScrollingTrees();
 
+//#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+//    m_remoteLayerTreeHost->clearTimelines();
+//#endif
+
     webPageProxy->didCommitLayerTree(layerTreeTransaction);
     didCommitLayerTree(connection, layerTreeTransaction, scrollingTreeTransaction);
 

@@ -105,7 +105,7 @@
 #include "AcceleratedEffect.h"
 #include "AcceleratedEffectStack.h"
 #include "AcceleratedEffectValues.h"
-#include "AcceleratedTimeline.h"
+#include "AcceleratedTimelineRepresentation.h"
 #include "KeyframeEffect.h"
 #include "KeyframeEffectStack.h"
 #include <wtf/WeakListHashSet.h>
@@ -4154,7 +4154,7 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const Animation& anim
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<AcceleratedTimeline>>& acceleratedTimelines)
+bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<AcceleratedTimelineRepresentation>>& acceleratedTimelineRepresentations)
 {
     auto& renderer = this->renderer();
     OptionSet<AcceleratedEffectProperty> disallowedAcceleratedProperties;
@@ -4185,18 +4185,18 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<Accele
                 continue;
 
             ASSERT(effect->animation());
-            AcceleratedTimeline* acceleratedTimeline = nullptr;
+            AcceleratedTimelineRepresentation* acceleratedTimelineRepresentation = nullptr;
             RefPtr timeline = effect->animation()->timeline();
             if (timeline) {
-                acceleratedTimeline = timeline->acceleratedRepresentation();
-                auto acceleratedTimelineNeedsUpdate = !acceleratedTimeline || acceleratedTimelines.findIf([&](const auto& updatedTimeline) {
-                    return updatedTimeline->identifier() == acceleratedTimeline->identifier();
+                acceleratedTimelineRepresentation = timeline->acceleratedRepresentation();
+                auto acceleratedTimelineRepresentationNeedsUpdate = !acceleratedTimelineRepresentation || acceleratedTimelineRepresentations.findIf([&](const auto& updatedTimeline) {
+                    return updatedTimeline->identifier() == acceleratedTimelineRepresentation->identifier();
                 }) == notFound;
-                if (acceleratedTimelineNeedsUpdate) {
+                if (acceleratedTimelineRepresentationNeedsUpdate) {
                     timeline->updateAcceleratedRepresentation();
-                    acceleratedTimeline = timeline->acceleratedRepresentation();
-                    if (acceleratedTimeline)
-                        acceleratedTimelines.append(*acceleratedTimeline);
+                    acceleratedTimelineRepresentation = timeline->acceleratedRepresentation();
+                    if (acceleratedTimelineRepresentation)
+                        acceleratedTimelineRepresentations.append(*acceleratedTimelineRepresentation);
                 }
             }
 
@@ -4205,7 +4205,7 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<Accele
                 if ((animatesWidth && blendingKeyframes.hasWidthDependentTransform()) || (animatesHeight && blendingKeyframes.hasHeightDependentTransform()))
                     disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
             }
-            auto acceleratedEffect = AcceleratedEffect::create(*effect, acceleratedTimeline, borderBoxRect, baseValues, disallowedAcceleratedProperties);
+            auto acceleratedEffect = AcceleratedEffect::create(*effect, acceleratedTimelineRepresentation, borderBoxRect, baseValues, disallowedAcceleratedProperties);
             if (!acceleratedEffect)
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())
@@ -4231,9 +4231,9 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(Vector<Ref<Accele
     return hasInterpolatingEffect;
 }
 
-void RenderLayerBacking::setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&& timeline)
+void RenderLayerBacking::setAcceleratedTimelineRepresentation(RefPtr<AcceleratedTimelineRepresentation>&& timeline)
 {
-    m_graphicsLayer->setAcceleratedTimeline(WTFMove(timeline));
+    m_graphicsLayer->setAcceleratedTimelineRepresentation(WTFMove(timeline));
 }
 #endif
 
