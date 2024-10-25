@@ -342,7 +342,6 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     m_remoteLayerTreeHost->clearTimelines();
-    state.acceleratedTimelineTimeOrigin = layerTreeTransaction.acceleratedTimelineTimeOrigin();
     state.animationCurrentTime = MonotonicTime::now();
 #endif
 
@@ -699,12 +698,6 @@ void RemoteLayerTreeDrawingAreaProxy::animationsWereAddedToNode(RemoteLayerTreeN
 void RemoteLayerTreeDrawingAreaProxy::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
 {
     protectedWebPageProxy()->scrollingCoordinatorProxy()->animationsWereRemovedFromNode(node);
-}
-
-Seconds RemoteLayerTreeDrawingAreaProxy::acceleratedTimelineTimeOrigin(WebCore::ProcessIdentifier processIdentifier) const
-{
-    const auto& state = processStateForIdentifier(processIdentifier);
-    return state.acceleratedTimelineTimeOrigin;
 }
 
 MonotonicTime RemoteLayerTreeDrawingAreaProxy::animationCurrentTime(WebCore::ProcessIdentifier processIdentifier) const

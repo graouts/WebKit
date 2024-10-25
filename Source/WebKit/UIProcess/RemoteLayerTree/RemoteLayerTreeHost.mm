@@ -491,11 +491,6 @@ void RemoteLayerTreeHost::animationsWereRemovedFromNode(RemoteLayerTreeNode& nod
     m_drawingArea->animationsWereRemovedFromNode(node);
 }
 
-Seconds RemoteLayerTreeHost::acceleratedTimelineTimeOrigin(WebCore::ProcessIdentifier processIdentifier) const
-{
-    return m_drawingArea->acceleratedTimelineTimeOrigin(processIdentifier);
-}
-
 MonotonicTime RemoteLayerTreeHost::animationCurrentTime(WebCore::ProcessIdentifier processIdentifier) const
 {
     return m_drawingArea->animationCurrentTime(processIdentifier);

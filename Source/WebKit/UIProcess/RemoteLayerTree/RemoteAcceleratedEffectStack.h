@@ -44,7 +44,7 @@ namespace WebKit {
 class RemoteAcceleratedEffectStack final : public WebCore::AcceleratedEffectStack {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteAcceleratedEffectStack);
 public:
-    static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect, Seconds);
+    static Ref<RemoteAcceleratedEffectStack> create(WebCore::FloatRect);
 
     void setEffects(WebCore::AcceleratedEffects&&) final;
 
@@ -58,7 +58,7 @@ public:
     void clear(PlatformLayer*);
 
 private:
-    explicit RemoteAcceleratedEffectStack(WebCore::FloatRect, Seconds);
+    explicit RemoteAcceleratedEffectStack(WebCore::FloatRect);
 
     WebCore::AcceleratedEffectValues computeValues(MonotonicTime now) const;
 
@@ -75,7 +75,6 @@ private:
     OptionSet<LayerProperty> m_affectedLayerProperties;
 
     WebCore::FloatRect m_bounds;
-    Seconds m_acceleratedTimelineTimeOrigin;
 
 #if PLATFORM(MAC)
     RetainPtr<CAPresentationModifierGroup> m_presentationModifierGroup;
