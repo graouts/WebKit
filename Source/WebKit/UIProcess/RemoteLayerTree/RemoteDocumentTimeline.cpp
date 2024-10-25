@@ -34,15 +34,15 @@ namespace WebKit {
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(RemoteDocumentTimeline);
 
-Ref<RemoteDocumentTimeline> RemoteDocumentTimeline::create(const WebCore::AcceleratedTimeline& sourceTimeline)
+Ref<RemoteDocumentTimeline> RemoteDocumentTimeline::create(const WebCore::AcceleratedTimelineRepresentation& sourceTimeline)
 {
     return adoptRef(*new RemoteDocumentTimeline(sourceTimeline));
 }
 
-RemoteDocumentTimeline::RemoteDocumentTimeline(const WebCore::AcceleratedTimeline& sourceTimeline)
-    : RemoteAnimationTimeline(sourceTimeline)
+RemoteDocumentTimeline::RemoteDocumentTimeline(const WebCore::AcceleratedTimelineRepresentation& sourceTimeline)
+    : WebCore::AcceleratedTimeline(sourceTimeline)
 {
-    ASSERT(sourceTimeline.type() == WebCore::AcceleratedTimeline::Type::Document);
+    ASSERT(sourceTimeline.type() == WebCore::AcceleratedTimelineRepresentation::Type::Document);
     ASSERT(sourceTimeline.originTime());
 
     m_originTime = *sourceTimeline.originTime();

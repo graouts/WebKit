@@ -61,8 +61,8 @@ void RemoteAcceleratedEffectStack::setEffects(WebCore::AcceleratedEffects&& effe
         affectsOpacity = affectsOpacity || properties.contains(WebCore::AcceleratedEffectProperty::Opacity);
         affectsTransform = affectsTransform || properties.containsAny(WebCore::transformRelatedAcceleratedProperties);
 
-        if (RefPtr timeline = effect->timeline())
-            host.registerDocumentTimeline(*timeline);
+        if (RefPtr timelineRepresentation = effect->timelineRepresentation())
+            host.registerDocumentTimeline(*timelineRepresentation);
     }
 
     ASSERT(affectsFilter || affectsOpacity || affectsTransform);
@@ -107,14 +107,14 @@ const WebCore::FilterOperations* RemoteAcceleratedEffectStack::longestFilterList
     return longestFilterList && !longestFilterList->isEmpty() ? longestFilterList : nullptr;
 }
 
-void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now, const RemoteLayerTreeHost& host)
+void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
 {
     ASSERT(m_filterPresentationModifiers.isEmpty());
     ASSERT(!m_opacityPresentationModifier);
     ASSERT(!m_transformPresentationModifier);
     ASSERT(!m_presentationModifierGroup);
 
-    auto computedValues = computeValues(now, host);
+    auto computedValues = computeValues(now);
 
     auto* canonicalFilters = longestFilterList();
 
@@ -155,11 +155,11 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     [m_presentationModifierGroup flushWithTransaction];
 }
 
-void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now, const RemoteLayerTreeHost& host) const
+void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
 {
     ASSERT(m_presentationModifierGroup);
 
-    auto computedValues = computeValues(now, host);
+    auto computedValues = computeValues(now);
 
     if (!m_filterPresentationModifiers.isEmpty())
         WebCore::PlatformCAFilters::updatePresentationModifiers(computedValues.filter, m_filterPresentationModifiers);
@@ -179,9 +179,9 @@ void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime
 }
 #endif
 
-void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now, const RemoteLayerTreeHost& host, bool backdropRootIsOpaque) const
+void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now, bool backdropRootIsOpaque) const
 {
-    auto computedValues = computeValues(now, host);
+    auto computedValues = computeValues(now);
 
     if (m_affectedLayerProperties.contains(LayerProperty::Filter))
         WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
@@ -195,20 +195,11 @@ void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *lay
     }
 }
 
-WebCore::AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now, const RemoteLayerTreeHost& host) const
+WebCore::AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now) const
 {
     auto values = m_baseValues;
-    for (auto& effect : m_backdropLayerEffects.isEmpty() ? m_primaryLayerEffects : m_backdropLayerEffects) {
-        std::optional<WebAnimationTime> timelineTime;
-        std::optional<WebAnimationTime> timelineDuration;
-        if (RefPtr timeline = effect->timeline()) {
-            if (RefPtr remoteTimeline = host.timelineForIdentifier(timeline->identifier())) {
-                timelineTime = remoteTimeline->currentTime(now);
-                timelineDuration = remoteTimeline->duration();
-            }
-        }
-        effect->apply(timelineTime, timelineDuration, values, m_bounds);
-    }
+    for (auto& effect : m_backdropLayerEffects.isEmpty() ? m_primaryLayerEffects : m_backdropLayerEffects)
+        effect->apply(now, values, m_bounds);
     return values;
 }
 
