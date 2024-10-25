@@ -45,14 +45,12 @@ public:
     void updateEffectStacks();
     void updateEffectStackForTarget(const Styleable&);
 
-    Seconds timeOrigin() const { return m_timeOrigin; }
-
-protected:
+    Seconds originTime() const { return m_originTime; }
 
 private:
     using HashedStyleable = std::pair<Element*, std::optional<Style::PseudoElementIdentifier>>;
     HashSet<HashedStyleable> m_targetsPendingUpdate;
-    Seconds m_timeOrigin;
+    Seconds m_originTime;
 };
 
 } // namespace WebCore

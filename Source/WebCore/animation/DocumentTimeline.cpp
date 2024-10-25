@@ -540,7 +540,14 @@ Seconds DocumentTimeline::convertTimelineTimeToOriginRelativeTime(Seconds timeli
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void DocumentTimeline::updateAcceleratedRepresentation()
 {
-    m_acceleratedTimeline = AcceleratedTimeline::create(m_originTime);
+    ASSERT(m_document);
+    ASSERT(m_document->timelinesController());
+    ASSERT(m_document->timelinesController()->existingAcceleratedEffectStackUpdater());
+
+    CheckedPtr timelinesController = RefPtr { m_document.get() }->timelinesController();
+    auto originTime = timelinesController->existingAcceleratedEffectStackUpdater()->originTime();
+
+    m_acceleratedTimeline = AcceleratedTimeline::create(originTime);
 }
 #endif
 

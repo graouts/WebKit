@@ -294,7 +294,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     if (effects.isEmpty())
         return;
 
-    m_effectStack = RemoteAcceleratedEffectStack::create(layer().bounds, host.acceleratedTimelineTimeOrigin(m_layerID.processIdentifier()));
+    m_effectStack = RemoteAcceleratedEffectStack::create(layer().bounds);
 
     auto clonedEffects = effects;
     auto clonedBaseValues = baseValues.clone();
