@@ -299,7 +299,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     auto clonedEffects = effects;
     auto clonedBaseValues = baseValues.clone();
 
-    m_effectStack->setEffects(WTFMove(clonedEffects), host);
+    m_effectStack->setEffects(WTFMove(clonedEffects));
     m_effectStack->setBaseValues(WTFMove(clonedBaseValues));
 
 #if PLATFORM(IOS_FAMILY)

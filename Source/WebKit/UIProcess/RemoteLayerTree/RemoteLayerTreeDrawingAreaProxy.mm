@@ -338,17 +338,12 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
     };
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    m_remoteLayerTreeHost->clearTimelines();
     state.animationCurrentTime = MonotonicTime::now();
 #endif
 
     webPageProxy->scrollingCoordinatorProxy()->willCommitLayerAndScrollingTrees();
     commitLayerAndScrollingTrees();
     webPageProxy->scrollingCoordinatorProxy()->didCommitLayerAndScrollingTrees();
-
-//#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-//    m_remoteLayerTreeHost->clearTimelines();
-//#endif
 
     webPageProxy->didCommitLayerTree(layerTreeTransaction);
     didCommitLayerTree(connection, layerTreeTransaction, scrollingTreeTransaction);

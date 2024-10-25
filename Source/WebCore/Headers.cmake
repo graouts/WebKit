@@ -1884,7 +1884,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/animation/AcceleratedEffectStack.h
     platform/animation/AcceleratedEffectValues.h
     platform/animation/AcceleratedTimeline.h
-    platform/animation/AcceleratedTimelineRepresentation.h
     platform/animation/Animation.h
     platform/animation/AnimationList.h
     platform/animation/AnimationUtilities.h

@@ -28,7 +28,6 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 
-#import "RemoteLayerTreeHost.h"
 #import <WebCore/AcceleratedEffectStack.h>
 #import <pal/spi/cocoa/QuartzCoreSPI.h>
 #import <wtf/TZoneMallocInlines.h>
@@ -47,7 +46,7 @@ RemoteAcceleratedEffectStack::RemoteAcceleratedEffectStack(WebCore::FloatRect bo
 {
 }
 
-void RemoteAcceleratedEffectStack::setEffects(WebCore::AcceleratedEffects&& effects, RemoteLayerTreeHost& host)
+void RemoteAcceleratedEffectStack::setEffects(WebCore::AcceleratedEffects&& effects)
 {
     WebCore::AcceleratedEffectStack::setEffects(WTFMove(effects));
 
@@ -60,9 +59,8 @@ void RemoteAcceleratedEffectStack::setEffects(WebCore::AcceleratedEffects&& effe
         affectsFilter = affectsFilter || properties.containsAny({ WebCore::AcceleratedEffectProperty::Filter, WebCore::AcceleratedEffectProperty::BackdropFilter });
         affectsOpacity = affectsOpacity || properties.contains(WebCore::AcceleratedEffectProperty::Opacity);
         affectsTransform = affectsTransform || properties.containsAny(WebCore::transformRelatedAcceleratedProperties);
-
-        if (RefPtr timelineRepresentation = effect->timelineRepresentation())
-            host.registerDocumentTimeline(*timelineRepresentation);
+        if (affectsFilter && affectsOpacity && affectsTransform)
+            break;
     }
 
     ASSERT(affectsFilter || affectsOpacity || affectsTransform);
