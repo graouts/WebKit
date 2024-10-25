@@ -621,14 +621,6 @@ void RemoteLayerTreeEventDispatcher::updateAnimations()
     ASSERT(!isMainRunLoop());
     Locker lock { m_effectStacksLock };
 
-    CheckedPtr scrollingCoordinator = this->scrollingCoordinator();
-    if (scrollingCoordinator)
-        return;
-
-    auto* layerTreeHost = scrollingCoordinator->layerTreeHost();
-    if (!layerTreeHost)
-        return;
-
     // FIXME: Rather than using 'now' at the point this is called, we
     // should probably be using the timestamp of the (next?) display
     // link update or vblank refresh.
@@ -636,7 +628,7 @@ void RemoteLayerTreeEventDispatcher::updateAnimations()
 
     auto effectStacks = std::exchange(m_effectStacks, { });
     for (auto& [layerID, effectStack] : effectStacks) {
-        effectStack->applyEffectsFromScrollingThread(now, *layerTreeHost);
+        effectStack->applyEffectsFromScrollingThread(now);
 
         // We can clear the effect stack if it's empty, but the previous
         // call to applyEffects() is important so that the base values

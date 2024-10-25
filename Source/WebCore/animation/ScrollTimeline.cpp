@@ -238,7 +238,7 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(const TimelineRange&
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void ScrollTimeline::updateAcceleratedRepresentation()
 {
-    m_acceleratedTimeline = AcceleratedTimeline::create(*this);
+    m_acceleratedTimelineRepresentation = AcceleratedTimelineRepresentation::create(*this);
 
     if (!m_source)
         return;
@@ -250,7 +250,7 @@ void ScrollTimeline::updateAcceleratedRepresentation()
 
     auto* renderLayer = renderer->layer();
     ASSERT(renderLayer && renderLayer->backing());
-    renderLayer->backing()->setAcceleratedTimeline(m_acceleratedTimeline.copyRef());
+    renderLayer->backing()->setAcceleratedTimelineRepresentation(m_acceleratedTimelineRepresentation.copyRef());
 }
 #endif
 

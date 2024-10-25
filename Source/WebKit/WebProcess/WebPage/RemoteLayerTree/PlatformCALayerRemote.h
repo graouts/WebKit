@@ -99,7 +99,7 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     void clearAcceleratedEffectsAndBaseValues() override;
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&) override;
-    void setAcceleratedTimeline(RefPtr<WebCore::AcceleratedTimeline>&&) override;
+    void setAcceleratedTimelineRepresentation(RefPtr<WebCore::AcceleratedTimelineRepresentation>&&) override;
 #endif
 
     void setMaskLayer(RefPtr<WebCore::PlatformCALayer>&&) override;

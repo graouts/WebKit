@@ -162,7 +162,7 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     virtual void clearAcceleratedEffectsAndBaseValues();
     virtual void setAcceleratedEffectsAndBaseValues(const AcceleratedEffects&, const AcceleratedEffectValues&);
-    virtual void setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&&);
+    virtual void setAcceleratedTimelineRepresentation(RefPtr<AcceleratedTimelineRepresentation>&&);
 #endif
 
     virtual void setMaskLayer(RefPtr<PlatformCALayer>&&);
