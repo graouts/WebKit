@@ -353,8 +353,12 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-void AcceleratedEffect::apply(WebAnimationTime currentTime, AcceleratedEffectValues& values, const FloatRect& bounds)
+void AcceleratedEffect::apply(MonotonicTime now, AcceleratedEffectValues& values, const FloatRect& bounds)
 {
+    // FIXME: extend this to cover scroll timelines.
+    ASSERT(m_timeline && m_timeline->originTime());
+    WebAnimationTime currentTime = now.secondsSinceEpoch() - *m_timeline->originTime();
+
     auto localTime = [&]() -> WebAnimationTime {
         ASSERT(m_holdTime || m_startTime);
         if (m_holdTime)
