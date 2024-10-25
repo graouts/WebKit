@@ -53,11 +53,6 @@
 #import <UIKit/UIView.h>
 #endif
 
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#import "RemoteDocumentTimeline.h"
-#import "RemoteScrollTimeline.h"
-#endif
-
 namespace WebKit {
 using namespace WebCore;
 
@@ -499,42 +494,6 @@ void RemoteLayerTreeHost::animationsWereRemovedFromNode(RemoteLayerTreeNode& nod
 MonotonicTime RemoteLayerTreeHost::animationCurrentTime(WebCore::ProcessIdentifier processIdentifier) const
 {
     return m_drawingArea->animationCurrentTime(processIdentifier);
-}
-
-void RemoteLayerTreeHost::clearTimelines()
-{
-    m_timelines.clear();
-}
-
-void RemoteLayerTreeHost::registerDocumentTimeline(const WebCore::AcceleratedTimelineRepresentation& timeline)
-{
-    if (timeline.type() != WebCore::AcceleratedTimelineRepresentation::Type::Document)
-        return;
-
-    auto identifier = timeline.identifier();
-    auto it = m_timelines.find(identifier);
-    if (it != m_timelines.end())
-        return;
-
-    m_timelines.set(identifier, RemoteDocumentTimeline::create(timeline));
-}
-
-void RemoteLayerTreeHost::registerScrollTimelineWithNode(const WebCore::AcceleratedTimelineRepresentation& timeline, RemoteLayerTreeNode& node)
-{
-    if (timeline.type() == WebCore::AcceleratedTimelineRepresentation::Type::Document)
-        return;
-
-    auto identifier = timeline.identifier();
-    ASSERT(!m_timelines.contains(identifier));
-    m_timelines.set(identifier, RemoteScrollTimeline::create(timeline, node));
-}
-
-const WebCore::AcceleratedTimeline* RemoteLayerTreeHost::timelineForIdentifier(const WTF::UUID& identifier) const
-{
-    auto it = m_timelines.find(identifier);
-    if (it != m_timelines.end())
-        return it->value.ptr();
-    return nullptr;
 }
 #endif
 

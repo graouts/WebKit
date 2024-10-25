@@ -48,7 +48,6 @@
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 #import <WebCore/AcceleratedEffect.h>
 #import <WebCore/AcceleratedEffectValues.h>
-#import <WebCore/AcceleratedTimelineRepresentation.h>
 #endif
 
 namespace WebKit {
@@ -1157,12 +1156,6 @@ void PlatformCALayerRemote::setAcceleratedEffectsAndBaseValues(const Accelerated
     m_properties.animationChanges.effects = effects;
     m_properties.animationChanges.baseValues = baseValues;
 
-    m_properties.notePropertiesChanged(LayerChange::AnimationsChanged);
-}
-
-void PlatformCALayerRemote::setAcceleratedTimelineRepresentation(RefPtr<WebCore::AcceleratedTimelineRepresentation>&& timeline)
-{
-    m_properties.animationChanges.timeline = WTFMove(timeline);
     m_properties.notePropertiesChanged(LayerChange::AnimationsChanged);
 }
 #endif
