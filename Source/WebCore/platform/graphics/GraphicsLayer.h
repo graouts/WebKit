@@ -79,6 +79,7 @@ class TransformationMatrix;
 typedef unsigned TileCoverage;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
+class AcceleratedTimeline;
 struct AcceleratedEffectValues;
 String acceleratedEffectPropertyIDAsString(AcceleratedEffectProperty);
 #endif
@@ -702,6 +703,7 @@ public:
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     AcceleratedEffectStack* acceleratedEffectStack() const { return m_effectStack.get(); }
     WEBCORE_EXPORT virtual void setAcceleratedEffectsAndBaseValues(AcceleratedEffects&&, AcceleratedEffectValues&&);
+    WEBCORE_EXPORT virtual void setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&&) { };
 #endif
 
     virtual void purgeFrontBufferForTesting() { }

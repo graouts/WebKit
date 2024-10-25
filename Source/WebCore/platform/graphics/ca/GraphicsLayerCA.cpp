@@ -5078,6 +5078,14 @@ void GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(AcceleratedEffects&& ef
 
     noteLayerPropertyChanged(AnimationChanged | CoverageRectChanged);
 }
+
+void GraphicsLayerCA::setAcceleratedTimeline(RefPtr<AcceleratedTimeline>&& timeline)
+{
+    // FIXME: should we be able to ASSERT(primaryLayer())?
+    if (RefPtr layer = primaryLayer())
+        layer->setAcceleratedTimeline(WTFMove(timeline));
+    noteLayerPropertyChanged(AnimationChanged);
+}
 #endif
 
 void GraphicsLayerCA::purgeFrontBufferForTesting()

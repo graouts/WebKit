@@ -32,6 +32,9 @@
 #include "CSSValuePool.h"
 #include "Document.h"
 #include "Element.h"
+#include "RenderLayer.h"
+#include "RenderLayerBacking.h"
+#include "RenderLayerModelObject.h"
 #include "RenderLayerScrollableArea.h"
 #include "RenderView.h"
 
@@ -235,8 +238,19 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(const TimelineRange&
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void ScrollTimeline::updateAcceleratedRepresentation()
 {
-    // FIXME: associate that representation with the source graphics layer.
     m_acceleratedTimeline = AcceleratedTimeline::create(*this);
+
+    if (!m_source)
+        return;
+
+    RefPtr source = m_source.get();
+    CheckedPtr renderer = dynamicDowncast<RenderLayerModelObject>(source->renderer());
+    if (!renderer || !renderer->isComposited())
+        return;
+
+    auto* renderLayer = renderer->layer();
+    ASSERT(renderLayer && renderLayer->backing());
+    renderLayer->backing()->setAcceleratedTimeline(m_acceleratedTimeline.copyRef());
 }
 #endif
 
