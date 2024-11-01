@@ -214,8 +214,8 @@ AcceleratedEffect::AcceleratedEffect(const KeyframeEffect& effect, AcceleratedTi
         m_paused = animation->playState() == WebAnimation::PlayState::Paused;
         m_playbackRate = animation->playbackRate();
         ASSERT(animation->holdTime() || animation->startTime());
-        m_holdTime = animation->holdTime() ? animation->holdTime()->time() : std::nullopt;
-        m_startTime = animation->startTime() ? animation->startTime()->time() : std::nullopt;
+        m_holdTime = animation->holdTime();
+        m_startTime = animation->startTime();
         if (auto* styleAnimation = dynamicDowncast<StyleOriginatedAnimation>(*animation)) {
             if (auto* defaultKeyframeTimingFunction = styleAnimation->backingAnimation().timingFunction())
                 m_defaultKeyframeTimingFunction = defaultKeyframeTimingFunction;
