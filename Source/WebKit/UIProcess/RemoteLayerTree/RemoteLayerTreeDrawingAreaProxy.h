@@ -76,6 +76,7 @@ public:
     void viewWillEndLiveResize() final;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void clearAnimationTimelines();
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
     MonotonicTime animationCurrentTime(WebCore::ProcessIdentifier) const;

@@ -607,8 +607,29 @@ void RemoteLayerTreeEventDispatcher::animationsWereAddedToNode(RemoteLayerTreeNo
 {
     ASSERT(isMainRunLoop());
     assertIsHeld(m_effectStacksLock);
+
     auto effectStack = node.takeEffectStack();
     ASSERT(effectStack);
+
+    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
+        for (auto& effect : effects) {
+            auto& timeline = effect->timeline();
+            if (!timeline)
+                continue;
+
+            if (timeline->isMonotonic()) {
+                m_monotonicTimelines.add(*timeline);
+                continue;
+            }
+
+            ASSERT(timeline->isProgressBased());
+            if (auto scrollingTree = this->scrollingTree())
+                scrollingTree->addScrollTimeline(*timeline);
+        }
+    };
+    addEffectTimelines(effectStack->primaryLayerEffects());
+    addEffectTimelines(effectStack->backdropLayerEffects());
+
     m_effectStacks.set(node.layerID(), effectStack.releaseNonNull());
 }
 
@@ -620,6 +641,21 @@ void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTr
         effectStack->clear(node.layer());
 }
 
+void RemoteLayerTreeEventDispatcher::clearAnimationTimelines()
+{
+    m_monotonicTimelines.clear();
+    if (auto scrollingTree = this->scrollingTree())
+        scrollingTree->clearScrollTimelines();
+}
+
+void RemoteLayerTreeEventDispatcher::updateMonotonicTimelines(MonotonicTime now)
+{
+    for (auto& timeline : m_monotonicTimelines) {
+        ASSERT(timeline->isMonotonic());
+        timeline->setMonotonicTime(now);
+    }
+}
+
 void RemoteLayerTreeEventDispatcher::updateAnimations()
 {
     ASSERT(!isMainRunLoop());
@@ -629,6 +665,7 @@ void RemoteLayerTreeEventDispatcher::updateAnimations()
     // should probably be using the timestamp of the (next?) display
     // link update or vblank refresh.
     auto now = MonotonicTime::now();
+    updateMonotonicTimelines(now);
 
     auto effectStacks = std::exchange(m_effectStacks, { });
     for (auto& [layerID, effectStack] : effectStacks) {
