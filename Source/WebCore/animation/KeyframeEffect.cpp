@@ -1675,9 +1675,6 @@ bool KeyframeEffect::canBeAccelerated() const
     if (m_acceleratedPropertiesState == AcceleratedProperties::None)
         return false;
 
-    if (m_isAssociatedWithProgressBasedTimeline)
-        return false;
-
     if (m_hasAcceleratedPropertyOverriddenByCascadeProperty)
         return false;
 
@@ -1694,6 +1691,9 @@ bool KeyframeEffect::canBeAccelerated() const
     if (threadedAnimationResolutionEnabled())
         return true;
 #endif
+
+    if (m_isAssociatedWithProgressBasedTimeline)
+        return false;
 
     if (m_someKeyframesUseStepsTimingFunction || is<StepsTimingFunction>(timingFunction()))
         return false;
