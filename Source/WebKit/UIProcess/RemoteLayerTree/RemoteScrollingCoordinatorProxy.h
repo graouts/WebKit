@@ -137,6 +137,7 @@ public:
     virtual void didCommitLayerAndScrollingTrees() { }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    virtual void clearAnimationTimelines() { }
     virtual void animationsWereAddedToNode(RemoteLayerTreeNode&) { }
     virtual void animationsWereRemovedFromNode(RemoteLayerTreeNode&) { }
 #endif

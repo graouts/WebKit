@@ -44,8 +44,14 @@ public:
     static Ref<AcceleratedTimeline> create(Seconds originTime);
     static Ref<AcceleratedTimeline> create(const ScrollTimeline&);
 
+    bool isMonotonic() const { return !m_duration; }
+    bool isProgressBased() const { return !isMonotonic(); }
+
     void setSource(std::optional<ScrollingNodeID> source) { m_source = source; }
-    WEBCORE_EXPORT std::optional<WebAnimationTime> currentTime(MonotonicTime);
+
+    std::optional<WebAnimationTime> currentTime() const { return m_currentTime; }
+    WEBCORE_EXPORT void setProgress(std::optional<double>);
+    WEBCORE_EXPORT void setMonotonicTime(MonotonicTime);
 
     enum class Type : uint8_t { Document, Scroll, View };
 
@@ -72,6 +78,8 @@ private:
     std::optional<Seconds> m_originTime;
     std::optional<ScrollingNodeID> m_source;
     ScrollAxis m_axis { ScrollAxis::Block };
+
+    std::optional<WebAnimationTime> m_currentTime;
 };
 
 } // namespace WebCore

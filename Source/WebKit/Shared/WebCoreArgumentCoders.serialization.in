@@ -6569,6 +6569,7 @@ header: <WebCore/AcceleratedTimeline.h>
     std::optional<Seconds> originTime();
     std::optional<WebCore::ScrollingNodeID> source();
     WebCore::ScrollAxis axis();
+    [NotSerialized] std::optional<WebCore::WebAnimationTime> currentTime();
 };
 
 header: <WebCore/AcceleratedEffect.h>
