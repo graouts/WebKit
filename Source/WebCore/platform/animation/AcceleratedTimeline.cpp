@@ -80,16 +80,21 @@ AcceleratedTimeline::AcceleratedTimeline(Type type, WTF::UUID&& identifier, std:
 {
 }
 
-std::optional<WebAnimationTime> AcceleratedTimeline::currentTime(MonotonicTime now)
+void AcceleratedTimeline::setProgress(std::optional<double> progress)
 {
-    switch (m_type) {
-    case AcceleratedTimeline::Type::Document:
-        ASSERT(m_originTime);
-        return now.secondsSinceEpoch() - *m_originTime;
-    case AcceleratedTimeline::Type::Scroll:
-    case AcceleratedTimeline::Type::View:
-        return std::nullopt;
-    }
+    ASSERT(isProgressBased());
+    if (progress) {
+        auto normalizedProgress = std::clamp(*progress, 0.0, 1.0);
+        m_currentTime = WebAnimationTime::fromPercentage(normalizedProgress * 100);
+    } else
+        m_currentTime = std::nullopt;
+}
+
+void AcceleratedTimeline::setMonotonicTime(MonotonicTime now)
+{
+    ASSERT(m_originTime);
+    ASSERT(isMonotonic());
+    m_currentTime = now.secondsSinceEpoch() - *m_originTime;
 }
 
 } // namespace WebCore

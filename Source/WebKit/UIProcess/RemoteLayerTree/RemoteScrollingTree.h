@@ -36,6 +36,9 @@
 
 namespace WebCore {
 class PlatformMouseEvent;
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+class ScrollingTreeScrollingNode;
+#endif
 };
 
 namespace WebKit {
@@ -77,6 +80,11 @@ public:
 
     void tryToApplyLayerPositions();
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void clearScrollTimelines();
+    void addScrollTimeline(Ref<WebCore::AcceleratedTimeline>&&);
+#endif
+
 protected:
     explicit RemoteScrollingTree(RemoteScrollingCoordinatorProxy&);
 
@@ -90,6 +98,13 @@ protected:
     // This gets nulled out via invalidate(), since the scrolling thread can hold a ref to the ScrollingTree after the RemoteScrollingCoordinatorProxy has gone away.
     WeakPtr<RemoteScrollingCoordinatorProxy> m_scrollingCoordinatorProxy;
     bool m_hasNodesWithSynchronousScrollingReasons WTF_GUARDED_BY_LOCK(m_treeLock) { false };
+
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    void updateScrollTimelinesForScrollingTreeScrollingNode(WebCore::ScrollingTreeScrollingNode&);
+
+private:
+    UncheckedKeyHashMap<WebCore::ScrollingNodeID, HashSet<Ref<WebCore::AcceleratedTimeline>>> m_progressBasedTimelines;
+#endif
 };
 
 class RemoteLayerTreeHitTestLocker {

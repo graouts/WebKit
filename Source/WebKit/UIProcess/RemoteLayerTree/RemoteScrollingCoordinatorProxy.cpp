@@ -41,6 +41,7 @@
 #include <WebCore/PerformanceLoggingClient.h>
 #include <WebCore/ScrollingStateTree.h>
 #include <WebCore/ScrollingTreeFrameScrollingNode.h>
+#include <WebCore/ScrollingTreeScrollingNode.h>
 #include <wtf/RuntimeApplicationChecks.h>
 #include <wtf/TZoneMallocInlines.h>
 

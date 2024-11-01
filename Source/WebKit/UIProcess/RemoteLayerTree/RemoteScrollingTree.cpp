@@ -31,6 +31,7 @@
 
 #include "RemoteLayerTreeHost.h"
 #include "RemoteScrollingCoordinatorProxy.h"
+#include <WebCore/AcceleratedTimeline.h>
 #include <WebCore/ScrollingTreeFixedNodeCocoa.h>
 #include <WebCore/ScrollingTreeFrameHostingNode.h>
 #include <WebCore/ScrollingTreeFrameScrollingNode.h>
@@ -38,6 +39,7 @@
 #include <WebCore/ScrollingTreePluginHostingNode.h>
 #include <WebCore/ScrollingTreePluginScrollingNode.h>
 #include <WebCore/ScrollingTreePositionedNodeCocoa.h>
+#include <WebCore/ScrollingTreeScrollingNode.h>
 #include <WebCore/ScrollingTreeStickyNodeCocoa.h>
 
 namespace WebKit {
@@ -260,6 +262,43 @@ void RemoteScrollingTree::tryToApplyLayerPositions()
     applyLayerPositionsInternal();
 }
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void RemoteScrollingTree::clearScrollTimelines()
+{
+    m_progressBasedTimelines.clear();
+}
+
+void RemoteScrollingTree::addScrollTimeline(Ref<WebCore::AcceleratedTimeline>&& timeline)
+{
+    ASSERT(timeline->isProgressBased());
+    ASSERT(timeline->source());
+    m_progressBasedTimelines.ensure(*timeline->source(), [] {
+        return HashSet<Ref<WebCore::AcceleratedTimeline>> { };
+    }).iterator->value.add(WTFMove(timeline));
+}
+
+void RemoteScrollingTree::updateScrollTimelinesForScrollingTreeScrollingNode(WebCore::ScrollingTreeScrollingNode& node)
+{
+    auto it = m_progressBasedTimelines.find(node.scrollingNodeID());
+    if (it == m_progressBasedTimelines.end())
+        return;
+
+    auto currentOffset = node.currentScrollOffset();
+    auto maxOffset = node.totalContentsSize() - node.scrollableAreaSize();
+
+    auto progress = [&](const Ref<WebCore::AcceleratedTimeline>& timeline) -> std::optional<double> {
+        if (timeline->axis() == WebCore::ScrollAxis::Block) {
+            if (auto maxHeight = maxOffset.height())
+                return currentOffset.y() / maxHeight;
+        } else if (auto maxWidth = maxOffset.width())
+            return currentOffset.x() / maxWidth;
+        return std::nullopt;
+    };
+
+    for (auto& timeline : it->value)
+        timeline->setProgress(progress(timeline));
+}
+#endif
 
 } // namespace WebKit
 

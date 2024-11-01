@@ -353,11 +353,17 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-void AcceleratedEffect::apply(MonotonicTime now, AcceleratedEffectValues& values, const FloatRect& bounds)
+void AcceleratedEffect::apply(MonotonicTime, AcceleratedEffectValues& values, const FloatRect& bounds)
 {
     ASSERT(m_timeline);
-    auto timelineTime = m_timeline->currentTime(now);
+    auto timelineTime = m_timeline->currentTime();
     auto timelineDuration = m_timeline->duration();
+
+    // FIXME: it would be nice to remove this but it's necessary for when this gets called under RemoteLayerTreeApplier
+    // when layerTreeNode->setAcceleratedEffectsAndBaseValues() is called. I don't know if we can get to a point where
+    // we can query the scrolling tree at that time.
+    if (!timelineTime)
+        return;
 
     auto localTime = [&]() -> WebAnimationTime {
         ASSERT(m_holdTime || m_startTime);
