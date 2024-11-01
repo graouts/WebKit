@@ -75,6 +75,7 @@ private:
     void willCommitLayerAndScrollingTrees() override WTF_ACQUIRES_LOCK(m_eventDispatcher->m_effectStacksLock);
     void didCommitLayerAndScrollingTrees() override WTF_RELEASES_LOCK(m_eventDispatcher->m_effectStacksLock);
 
+    void clearAnimationTimelines() override;
     void animationsWereAddedToNode(RemoteLayerTreeNode&) override;
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&) override;
 #else

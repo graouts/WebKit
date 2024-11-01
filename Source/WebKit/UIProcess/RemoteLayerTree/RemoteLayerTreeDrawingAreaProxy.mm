@@ -716,6 +716,11 @@ void RemoteLayerTreeDrawingAreaProxy::sizeToContentAutoSizeMaximumSizeDidChange(
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
+void RemoteLayerTreeDrawingAreaProxy::clearAnimationTimelines()
+{
+    protectedWebPageProxy()->scrollingCoordinatorProxy()->clearAnimationTimelines();
+}
+
 void RemoteLayerTreeDrawingAreaProxy::animationsWereAddedToNode(RemoteLayerTreeNode& node)
 {
     if (RefPtr page = m_webPageProxy.get())
