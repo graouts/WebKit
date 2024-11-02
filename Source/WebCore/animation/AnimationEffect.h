@@ -107,10 +107,11 @@ public:
 
     virtual bool preventsAnimationReadiness() const { return false; }
 
+    virtual bool ticksContinuouslyWhileActive() const { return false; }
+
 protected:
     explicit AnimationEffect();
 
-    virtual bool ticksContinuouslyWhileActive() const { return false; }
     virtual std::optional<double> progressUntilNextStep(double) const;
 
 private:
