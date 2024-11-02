@@ -1505,8 +1505,14 @@ void WebAnimation::tick()
     // When updating timeline current time, the start time of any attached animation is
     // conditionally updated. For each attached animation, run the procedure for calculating
     // an auto-aligned start time.
-    if (m_timeline && m_timeline->isProgressBased())
+    if (m_timeline && m_timeline->isProgressBased()) {
+        // We don't want to invalidate accelerated progress-based animations.
+        if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(m_effect.get())) {
+            if (keyframeEffect->isRunningAccelerated())
+                return;
+        }
         autoAlignStartTime();
+    }
 
     m_hasScheduledEventsDuringTick = false;
     updateFinishedState(DidSeek::No, SynchronouslyNotify::Yes);
@@ -1806,6 +1812,10 @@ Seconds WebAnimation::timeToNextTick() const
 {
     if (pending())
         return 0_s;
+
+    // Animations associated with a progress-based timeline never need to schedule updates.
+    if (m_timeline && m_timeline->isProgressBased())
+        return Seconds::infinity();
 
     // If we're not running, or time is not advancing for this animation, there's no telling when we'll end.
     auto playbackRate = effectivePlaybackRate();
