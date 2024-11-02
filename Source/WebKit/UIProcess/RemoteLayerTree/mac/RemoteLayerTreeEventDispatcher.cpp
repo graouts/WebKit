@@ -378,7 +378,7 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
 
         {
             Locker lock { m_effectStacksLock };
-            if (!m_effectStacks.isEmpty())
+            if (!m_monotonicTimelines.isEmpty())
                 return true;
         }
 
