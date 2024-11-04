@@ -103,7 +103,7 @@ public:
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
     void updateAnimations();
     void clearAnimationTimelines();
-    void updateMonotonicTimelines(MonotonicTime);
+    void setMonotonicTimelinesCurrentTime(MonotonicTime);
 #endif
 
 private:

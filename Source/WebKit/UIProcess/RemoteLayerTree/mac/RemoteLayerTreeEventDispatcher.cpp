@@ -648,7 +648,7 @@ void RemoteLayerTreeEventDispatcher::clearAnimationTimelines()
         scrollingTree->clearScrollTimelines();
 }
 
-void RemoteLayerTreeEventDispatcher::updateMonotonicTimelines(MonotonicTime now)
+void RemoteLayerTreeEventDispatcher::setMonotonicTimelinesCurrentTime(MonotonicTime now)
 {
     for (auto& timeline : m_monotonicTimelines) {
         ASSERT(timeline->isMonotonic());
@@ -665,11 +665,11 @@ void RemoteLayerTreeEventDispatcher::updateAnimations()
     // should probably be using the timestamp of the (next?) display
     // link update or vblank refresh.
     auto now = MonotonicTime::now();
-    updateMonotonicTimelines(now);
+    setMonotonicTimelinesCurrentTime(now);
 
     auto effectStacks = std::exchange(m_effectStacks, { });
     for (auto& [layerID, effectStack] : effectStacks) {
-        effectStack->applyEffectsFromScrollingThread(now);
+        effectStack->applyEffectsFromScrollingThread();
 
         // We can clear the effect stack if it's empty, but the previous
         // call to applyEffects() is important so that the base values

@@ -80,9 +80,9 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     void clearAnimationTimelines();
+    void setMonotonicTimelinesCurrentTime(MonotonicTime);
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
-    MonotonicTime animationCurrentTime(WebCore::ProcessIdentifier) const;
 #endif
 
     // For testing.
@@ -109,10 +109,6 @@ protected:
         CommitLayerTreeMessageState commitLayerTreeMessageState { Idle };
         TransactionID lastLayerTreeTransactionID;
         TransactionID pendingLayerTreeTransactionID;
-
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-        MonotonicTime animationCurrentTime;
-#endif
     };
 
     ProcessState& processStateForConnection(IPC::Connection&);

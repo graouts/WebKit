@@ -305,6 +305,11 @@ void RemoteScrollingCoordinatorProxyMac::clearAnimationTimelines()
     m_eventDispatcher->clearAnimationTimelines();
 }
 
+void RemoteScrollingCoordinatorProxyMac::setMonotonicTimelinesCurrentTime(MonotonicTime now)
+{
+    m_eventDispatcher->setMonotonicTimelinesCurrentTime(now);
+}
+
 void RemoteScrollingCoordinatorProxyMac::animationsWereAddedToNode(RemoteLayerTreeNode& node)
 {
     m_eventDispatcher->animationsWereAddedToNode(node);
