@@ -49,18 +49,18 @@ public:
     void setEffects(WebCore::AcceleratedEffects&&) final;
 
 #if PLATFORM(MAC)
-    void initEffectsFromMainThread(PlatformLayer*, MonotonicTime now);
-    void applyEffectsFromScrollingThread(MonotonicTime now) const;
+    void initEffectsFromMainThread(PlatformLayer*);
+    void applyEffectsFromScrollingThread() const;
 #endif
 
-    void applyEffectsFromMainThread(PlatformLayer*, MonotonicTime now, bool backdropRootIsOpaque) const;
+    void applyEffectsFromMainThread(PlatformLayer*, bool backdropRootIsOpaque) const;
 
     void clear(PlatformLayer*);
 
 private:
     explicit RemoteAcceleratedEffectStack(WebCore::FloatRect);
 
-    WebCore::AcceleratedEffectValues computeValues(MonotonicTime now) const;
+    WebCore::AcceleratedEffectValues computeValues() const;
 
 #if PLATFORM(MAC)
     const WebCore::FilterOperations* longestFilterList() const;
