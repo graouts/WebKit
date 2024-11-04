@@ -303,10 +303,9 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     m_effectStack->setBaseValues(WTFMove(clonedBaseValues));
 
 #if PLATFORM(IOS_FAMILY)
-    m_effectStack->applyEffectsFromMainThread(layer(), host.animationCurrentTime(m_layerID.processIdentifier()), backdropRootIsOpaque());
+    m_effectStack->applyEffectsFromMainThread(layer(), backdropRootIsOpaque());
 #else
-    // FIXME: need to pass down some scrolling data from the RemoteLayerTreeHost?
-    m_effectStack->initEffectsFromMainThread(layer(), host.animationCurrentTime(m_layerID.processIdentifier()));
+    m_effectStack->initEffectsFromMainThread(layer());
 #endif
 
     host.animationsWereAddedToNode(*this);

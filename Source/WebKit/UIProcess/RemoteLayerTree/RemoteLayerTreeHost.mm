@@ -505,11 +505,6 @@ void RemoteLayerTreeHost::animationsWereRemovedFromNode(RemoteLayerTreeNode& nod
 {
     m_drawingArea->animationsWereRemovedFromNode(node);
 }
-
-MonotonicTime RemoteLayerTreeHost::animationCurrentTime(WebCore::ProcessIdentifier processIdentifier) const
-{
-    return m_drawingArea->animationCurrentTime(processIdentifier);
-}
 #endif
 
 void RemoteLayerTreeHost::remotePageProcessDidTerminate(WebCore::ProcessIdentifier processIdentifier)

@@ -138,6 +138,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     virtual void clearAnimationTimelines() { }
+    virtual void setMonotonicTimelinesCurrentTime(MonotonicTime) { }
     virtual void animationsWereAddedToNode(RemoteLayerTreeNode&) { }
     virtual void animationsWereRemovedFromNode(RemoteLayerTreeNode&) { }
 #endif

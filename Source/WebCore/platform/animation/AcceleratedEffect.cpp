@@ -353,7 +353,7 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-void AcceleratedEffect::apply(MonotonicTime, AcceleratedEffectValues& values, const FloatRect& bounds)
+void AcceleratedEffect::apply(AcceleratedEffectValues& values, const FloatRect& bounds)
 {
     ASSERT(m_timeline);
     auto timelineTime = m_timeline->currentTime();

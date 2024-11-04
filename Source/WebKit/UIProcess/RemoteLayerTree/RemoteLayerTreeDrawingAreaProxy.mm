@@ -353,7 +353,7 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
     };
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    state.animationCurrentTime = MonotonicTime::now();
+    setMonotonicTimelinesCurrentTime(MonotonicTime::now());
 #endif
 
     webPageProxy->scrollingCoordinatorProxy()->willCommitLayerAndScrollingTrees();
@@ -721,6 +721,11 @@ void RemoteLayerTreeDrawingAreaProxy::clearAnimationTimelines()
     protectedWebPageProxy()->scrollingCoordinatorProxy()->clearAnimationTimelines();
 }
 
+void RemoteLayerTreeDrawingAreaProxy::setMonotonicTimelinesCurrentTime(MonotonicTime now)
+{
+    protectedWebPageProxy()->scrollingCoordinatorProxy()->setMonotonicTimelinesCurrentTime(now);
+}
+
 void RemoteLayerTreeDrawingAreaProxy::animationsWereAddedToNode(RemoteLayerTreeNode& node)
 {
     if (RefPtr page = m_webPageProxy.get())
@@ -732,13 +737,6 @@ void RemoteLayerTreeDrawingAreaProxy::animationsWereRemovedFromNode(RemoteLayerT
     if (RefPtr page = m_webPageProxy.get())
         page->scrollingCoordinatorProxy()->animationsWereRemovedFromNode(node);
 }
-
-MonotonicTime RemoteLayerTreeDrawingAreaProxy::animationCurrentTime(WebCore::ProcessIdentifier processIdentifier) const
-{
-    const auto& state = processStateForIdentifier(processIdentifier);
-    return state.animationCurrentTime;
-}
-
 #endif // ENABLE(THREADED_ANIMATION_RESOLUTION)
 
 } // namespace WebKit
