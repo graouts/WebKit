@@ -423,7 +423,8 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimations()
     // FIXME: Rather than using 'now' at the point this is called, we
     // should probably be using the timestamp of the (next?) display
     // link update or vblank refresh.
-    auto now = MonotonicTime::now();
+    // FIXME: set now onto the timelines.
+    // auto now = MonotonicTime::now();
 
     auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
 
@@ -431,7 +432,7 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimations()
     for (auto animatedNodeLayerID : animatedNodeLayerIDs) {
         auto* animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
         auto* effectStack = animatedNode->effectStack();
-        effectStack->applyEffectsFromMainThread(animatedNode->layer(), now, animatedNode->backdropRootIsOpaque());
+        effectStack->applyEffectsFromMainThread(animatedNode->layer(), animatedNode->backdropRootIsOpaque());
 
         // We can clear the effect stack if it's empty, but the previous
         // call to applyEffects() is important so that the base values

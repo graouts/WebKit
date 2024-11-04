@@ -105,14 +105,14 @@ const WebCore::FilterOperations* RemoteAcceleratedEffectStack::longestFilterList
     return longestFilterList && !longestFilterList->isEmpty() ? longestFilterList : nullptr;
 }
 
-void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now)
+void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *layer)
 {
     ASSERT(m_filterPresentationModifiers.isEmpty());
     ASSERT(!m_opacityPresentationModifier);
     ASSERT(!m_transformPresentationModifier);
     ASSERT(!m_presentationModifierGroup);
 
-    auto computedValues = computeValues(now);
+    auto computedValues = computeValues();
 
     auto* canonicalFilters = longestFilterList();
 
@@ -153,11 +153,11 @@ void RemoteAcceleratedEffectStack::initEffectsFromMainThread(PlatformLayer *laye
     [m_presentationModifierGroup flushWithTransaction];
 }
 
-void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime now) const
+void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread() const
 {
     ASSERT(m_presentationModifierGroup);
 
-    auto computedValues = computeValues(now);
+    auto computedValues = computeValues();
 
     if (!m_filterPresentationModifiers.isEmpty())
         WebCore::PlatformCAFilters::updatePresentationModifiers(computedValues.filter, m_filterPresentationModifiers);
@@ -177,9 +177,9 @@ void RemoteAcceleratedEffectStack::applyEffectsFromScrollingThread(MonotonicTime
 }
 #endif
 
-void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, MonotonicTime now, bool backdropRootIsOpaque) const
+void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *layer, bool backdropRootIsOpaque) const
 {
-    auto computedValues = computeValues(now);
+    auto computedValues = computeValues();
 
     if (m_affectedLayerProperties.contains(LayerProperty::Filter))
         WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
@@ -193,11 +193,11 @@ void RemoteAcceleratedEffectStack::applyEffectsFromMainThread(PlatformLayer *lay
     }
 }
 
-WebCore::AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues(MonotonicTime now) const
+WebCore::AcceleratedEffectValues RemoteAcceleratedEffectStack::computeValues() const
 {
     auto values = m_baseValues;
     for (auto& effect : m_backdropLayerEffects.isEmpty() ? m_primaryLayerEffects : m_backdropLayerEffects)
-        effect->apply(now, values, m_bounds);
+        effect->apply(values, m_bounds);
     return values;
 }
 

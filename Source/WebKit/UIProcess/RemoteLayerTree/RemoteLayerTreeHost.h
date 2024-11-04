@@ -100,10 +100,6 @@ public:
 
     bool cssUnprefixedBackdropFilterEnabled() const;
 
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    MonotonicTime animationCurrentTime(WebCore::ProcessIdentifier) const;
-#endif
-
     void remotePageProcessDidTerminate(WebCore::ProcessIdentifier);
 
 private:
