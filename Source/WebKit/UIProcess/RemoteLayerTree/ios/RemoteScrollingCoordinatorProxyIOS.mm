@@ -408,7 +408,23 @@ RemoteLayerTreeDrawingAreaProxyIOS& RemoteScrollingCoordinatorProxyIOS::drawingA
 void RemoteScrollingCoordinatorProxyIOS::animationsWereAddedToNode(RemoteLayerTreeNode& node)
 {
     m_animatedNodeLayerIDs.add(node.layerID());
-    drawingAreaIOS().scheduleDisplayRefreshCallbacksForAnimation();
+
+    RefPtr effectStack = node.effectStack();
+    ASSERT(effectStack);
+
+    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
+        for (auto& effect : effects) {
+            auto& timeline = effect->timeline();
+            if (timeline && timeline->isMonotonic())
+                m_monotonicTimelines.add(*timeline);
+            // FIXME: do something with progress-based timelines.
+        }
+    };
+    addEffectTimelines(effectStack->primaryLayerEffects());
+    addEffectTimelines(effectStack->backdropLayerEffects());
+
+    if (!m_monotonicTimelines.isEmpty())
+        drawingAreaIOS().scheduleDisplayRefreshCallbacksForAnimation();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
@@ -418,13 +434,25 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
         drawingAreaIOS().pauseDisplayRefreshCallbacksForAnimation();
 }
 
+void RemoteScrollingCoordinatorProxyIOS::clearAnimationTimelines()
+{
+    m_monotonicTimelines.clear();
+}
+
+void RemoteScrollingCoordinatorProxyIOS::setMonotonicTimelinesCurrentTime(MonotonicTime now)
+{
+    for (auto& timeline : m_monotonicTimelines) {
+        ASSERT(timeline->isMonotonic());
+        timeline->setMonotonicTime(now);
+    }
+}
+
 void RemoteScrollingCoordinatorProxyIOS::updateAnimations()
 {
     // FIXME: Rather than using 'now' at the point this is called, we
     // should probably be using the timestamp of the (next?) display
     // link update or vblank refresh.
-    // FIXME: set now onto the timelines.
-    // auto now = MonotonicTime::now();
+    setMonotonicTimelinesCurrentTime(MonotonicTime::now());
 
     auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
 
