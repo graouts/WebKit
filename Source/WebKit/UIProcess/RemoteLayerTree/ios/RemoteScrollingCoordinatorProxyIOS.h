@@ -76,6 +76,7 @@ public:
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&) override;
     void clearAnimationTimelines() override;
     void setMonotonicTimelinesCurrentTime(MonotonicTime) override;
+    void scrollTimelineProgressDidChange() override;
     void updateAnimations();
 #endif
 

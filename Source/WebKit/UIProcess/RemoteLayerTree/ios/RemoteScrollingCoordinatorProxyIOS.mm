@@ -412,12 +412,21 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereAddedToNode(RemoteLayerTr
     RefPtr effectStack = node.effectStack();
     ASSERT(effectStack);
 
+    // FIXME: should share this with RemoteLayerTreeEventDispatcher::animationsWereAddedToNode().
     auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
         for (auto& effect : effects) {
             auto& timeline = effect->timeline();
-            if (timeline && timeline->isMonotonic())
+            if (!timeline)
+                continue;
+
+            if (timeline->isMonotonic()) {
                 m_monotonicTimelines.add(*timeline);
-            // FIXME: do something with progress-based timelines.
+                continue;
+            }
+
+            ASSERT(timeline->isProgressBased());
+            if (auto scrollingTree = this->scrollingTree())
+                scrollingTree->addScrollTimeline(*timeline);
         }
     };
     addEffectTimelines(effectStack->primaryLayerEffects());
@@ -425,6 +434,11 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereAddedToNode(RemoteLayerTr
 
     if (!m_monotonicTimelines.isEmpty())
         drawingAreaIOS().scheduleDisplayRefreshCallbacksForAnimation();
+}
+
+void RemoteScrollingCoordinatorProxyIOS::scrollTimelineProgressDidChange()
+{
+    drawingAreaIOS().scheduleDisplayRefreshCallbacksForAnimation();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
@@ -437,6 +451,7 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
 void RemoteScrollingCoordinatorProxyIOS::clearAnimationTimelines()
 {
     m_monotonicTimelines.clear();
+    scrollingTree()->clearScrollTimelines();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::setMonotonicTimelinesCurrentTime(MonotonicTime now)
