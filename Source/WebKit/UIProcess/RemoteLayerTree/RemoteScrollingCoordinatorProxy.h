@@ -141,6 +141,7 @@ public:
     virtual void setMonotonicTimelinesCurrentTime(MonotonicTime) { }
     virtual void animationsWereAddedToNode(RemoteLayerTreeNode&) { }
     virtual void animationsWereRemovedFromNode(RemoteLayerTreeNode&) { }
+    virtual void scrollTimelineProgressDidChange() { }
 #endif
 
     String scrollingTreeAsText() const;
