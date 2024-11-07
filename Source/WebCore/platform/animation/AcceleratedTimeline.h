@@ -32,7 +32,6 @@
 #include "WebAnimationTime.h"
 #include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
-#include <wtf/UUID.h>
 
 namespace WebCore {
 
@@ -56,9 +55,8 @@ public:
     enum class Type : uint8_t { Document, Scroll, View };
 
     // Encoding support.
-    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
+    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
     Type type() const { return m_type; }
-    const WTF::UUID& identifier() const { return m_identifier; }
     const std::optional<WebAnimationTime> duration() const { return m_duration; }
     const std::optional<Seconds> originTime() const { return m_originTime; }
     const std::optional<ScrollingNodeID> source() const { return m_source; }
@@ -70,10 +68,9 @@ private:
     AcceleratedTimeline(Type);
     AcceleratedTimeline(Seconds originTime);
     AcceleratedTimeline(Type, std::optional<WebAnimationTime> duration, ScrollAxis);
-    AcceleratedTimeline(Type, WTF::UUID&&, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
+    AcceleratedTimeline(Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
 
     Type m_type;
-    WTF::UUID m_identifier;
     std::optional<WebAnimationTime> m_duration;
     std::optional<Seconds> m_originTime;
     std::optional<ScrollingNodeID> m_source;

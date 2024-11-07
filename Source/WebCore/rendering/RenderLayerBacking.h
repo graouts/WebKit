@@ -184,7 +184,7 @@ public:
     void resumeAnimations();
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    bool updateAcceleratedEffectsAndBaseValues(Vector<Ref<AcceleratedTimeline>>&);
+    bool updateAcceleratedEffectsAndBaseValues();
 #endif
 
     WEBCORE_EXPORT LayoutRect compositedBounds() const;

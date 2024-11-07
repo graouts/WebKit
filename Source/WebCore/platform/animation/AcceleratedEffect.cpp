@@ -168,9 +168,9 @@ static CSSPropertyID cssPropertyFromAcceleratedProperty(AcceleratedEffectPropert
     }
 }
 
-RefPtr<AcceleratedEffect> AcceleratedEffect::create(const KeyframeEffect& effect, AcceleratedTimeline* timeline, const IntRect& borderBoxRect, const AcceleratedEffectValues& baseValues, OptionSet<AcceleratedEffectProperty>& disallowedProperties)
+RefPtr<AcceleratedEffect> AcceleratedEffect::create(const KeyframeEffect& effect, const IntRect& borderBoxRect, const AcceleratedEffectValues& baseValues, OptionSet<AcceleratedEffectProperty>& disallowedProperties)
 {
-    auto* acceleratedEffect = new AcceleratedEffect(effect, timeline, borderBoxRect, disallowedProperties);
+    auto* acceleratedEffect = new AcceleratedEffect(effect, borderBoxRect, disallowedProperties);
     acceleratedEffect->validateFilters(baseValues, disallowedProperties);
     if (acceleratedEffect->animatedProperties().isEmpty())
         return nullptr;
@@ -202,9 +202,12 @@ Ref<AcceleratedEffect> AcceleratedEffect::copyWithProperties(OptionSet<Accelerat
     return adoptRef(*new AcceleratedEffect(*this, propertyFilter));
 }
 
-AcceleratedEffect::AcceleratedEffect(const KeyframeEffect& effect, AcceleratedTimeline* timeline, const IntRect& borderBoxRect, const OptionSet<AcceleratedEffectProperty>& disallowedProperties)
+AcceleratedEffect::AcceleratedEffect(const KeyframeEffect& effect, const IntRect& borderBoxRect, const OptionSet<AcceleratedEffectProperty>& disallowedProperties)
 {
-    m_timeline = timeline;
+    ASSERT(effect.animation());
+    if (RefPtr timeline = effect.animation()->timeline())
+        m_timeline = timeline->acceleratedRepresentation();
+
     m_timing = effect.timing();
     m_compositeOperation = effect.composite();
     m_animationType = effect.animationType();

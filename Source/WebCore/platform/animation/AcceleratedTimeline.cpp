@@ -46,14 +46,13 @@ Ref<AcceleratedTimeline> AcceleratedTimeline::create(const ScrollTimeline& sourc
     return adoptRef(*new AcceleratedTimeline(Type::Scroll, source.duration(), source.axis()));
 }
 
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(Type type, WTF::UUID&& identifier, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
+Ref<AcceleratedTimeline> AcceleratedTimeline::create(Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
 {
-    return adoptRef(*new AcceleratedTimeline(type, WTFMove(identifier), WTFMove(duration), WTFMove(originTime), WTFMove(source), axis));
+    return adoptRef(*new AcceleratedTimeline(type, WTFMove(duration), WTFMove(originTime), WTFMove(source), axis));
 }
 
 AcceleratedTimeline::AcceleratedTimeline(Type type)
     : m_type(type)
-    , m_identifier(WTF::UUID::createVersion4Weak())
 {
 }
 
@@ -70,9 +69,8 @@ AcceleratedTimeline::AcceleratedTimeline(Type type, std::optional<WebAnimationTi
     m_axis = axis;
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Type type, WTF::UUID&& identifier, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
+AcceleratedTimeline::AcceleratedTimeline(Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
     : m_type(type)
-    , m_identifier(WTFMove(identifier))
     , m_duration(WTFMove(duration))
     , m_originTime(WTFMove(originTime))
     , m_source(WTFMove(source))
