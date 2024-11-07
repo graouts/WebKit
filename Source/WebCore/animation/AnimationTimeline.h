@@ -75,17 +75,21 @@ public:
     static void updateGlobalPosition(WebAnimation&);
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    virtual void updateAcceleratedRepresentation() { };
-    AcceleratedTimeline* acceleratedRepresentation() const { return m_acceleratedTimeline.get(); }
+    void clearAcceleratedRepresentation() { m_acceleratedRepresentation = nullptr; }
+    const RefPtr<AcceleratedTimeline>& acceleratedRepresentation();
 #endif
 
 protected:
     AnimationTimeline(std::optional<WebAnimationTime> = std::nullopt);
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    virtual Ref<AcceleratedTimeline> createAcceleratedRepresentation();
+#endif
+
     AnimationCollection m_animations;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    RefPtr<AcceleratedTimeline> m_acceleratedTimeline;
+    RefPtr<AcceleratedTimeline> m_acceleratedRepresentation;
 #endif
 
 private:

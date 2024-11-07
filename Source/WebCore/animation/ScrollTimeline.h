@@ -92,7 +92,7 @@ private:
 
     bool isScrollTimeline() const final { return true; }
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    void updateAcceleratedRepresentation() final;
+    Ref<AcceleratedTimeline> createAcceleratedRepresentation() override;
 #endif
 
     void animationTimingDidChange(WebAnimation&) override;
