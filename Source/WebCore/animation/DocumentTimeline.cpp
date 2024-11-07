@@ -412,10 +412,8 @@ void DocumentTimeline::applyPendingAcceleratedAnimations()
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     if (m_document && m_document->settings().threadedAnimationResolutionEnabled()) {
         m_acceleratedAnimationsPendingRunningStateChange.clear();
-        if (CheckedPtr timelinesController = m_document->timelinesController()) {
-            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater())
-                acceleratedEffectStackUpdater->updateEffectStacks();
-        }
+        if (CheckedPtr timelinesController = m_document->timelinesController())
+            timelinesController->updateAcceleratedEffectStacks();
         return;
     }
 #endif
@@ -538,16 +536,13 @@ Seconds DocumentTimeline::convertTimelineTimeToOriginRelativeTime(Seconds timeli
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-void DocumentTimeline::updateAcceleratedRepresentation()
+Ref<AcceleratedTimeline> DocumentTimeline::createAcceleratedRepresentation()
 {
     ASSERT(m_document);
     ASSERT(m_document->timelinesController());
-    ASSERT(m_document->timelinesController()->existingAcceleratedEffectStackUpdater());
-
     CheckedPtr timelinesController = RefPtr { m_document.get() }->timelinesController();
-    auto originTime = timelinesController->existingAcceleratedEffectStackUpdater()->originTime();
-
-    m_acceleratedTimeline = AcceleratedTimeline::create(originTime);
+    auto originTime = timelinesController->acceleratedEffectStackUpdater().originTime();
+    return AcceleratedTimeline::create(originTime);
 }
 #endif
 

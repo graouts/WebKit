@@ -74,7 +74,7 @@ public:
         OptionSet<AcceleratedEffectProperty> m_animatedProperties;
     };
 
-    static RefPtr<AcceleratedEffect> create(const KeyframeEffect&, AcceleratedTimeline*, const IntRect&, const AcceleratedEffectValues&, OptionSet<AcceleratedEffectProperty>&);
+    static RefPtr<AcceleratedEffect> create(const KeyframeEffect&, const IntRect&, const AcceleratedEffectValues&, OptionSet<AcceleratedEffectProperty>&);
     WEBCORE_EXPORT static Ref<AcceleratedEffect> create(AnimationEffectTiming, RefPtr<AcceleratedTimeline>&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
 
     virtual ~AcceleratedEffect() = default;
@@ -102,7 +102,7 @@ public:
     bool animatesTransformRelatedProperty() const;
 
 private:
-    AcceleratedEffect(const KeyframeEffect&, AcceleratedTimeline*, const IntRect&, const OptionSet<AcceleratedEffectProperty>&);
+    AcceleratedEffect(const KeyframeEffect&, const IntRect&, const OptionSet<AcceleratedEffectProperty>&);
     explicit AcceleratedEffect(AnimationEffectTiming, RefPtr<AcceleratedTimeline>&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
     explicit AcceleratedEffect(const AcceleratedEffect&, OptionSet<AcceleratedEffectProperty>&);
 
