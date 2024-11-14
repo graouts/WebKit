@@ -67,10 +67,8 @@ void CSSAnimation::syncNamedTimeline(const AtomString& name)
 
     // FIXME: we should account for timeline-scope here.
     CheckedRef timelinesController = document->ensureTimelinesController();
-    if (RefPtr scrollTimeline = timelinesController->scrollTimelineForName(name))
-        setTimeline(WTFMove(scrollTimeline));
-    else if (RefPtr viewTimeline = timelinesController->viewTimelineForNameAndSubject(name, target))
-        setTimeline(WTFMove(viewTimeline));
+    if (RefPtr timeline = timelinesController->timelineForName(name, target))
+        setTimeline(WTFMove(timeline));
     else
         setTimeline(nullptr);
 }
@@ -139,9 +137,10 @@ void CSSAnimation::syncPropertiesWithBackingAnimation()
 
     if (!m_overriddenProperties.contains(Property::Timeline)) {
         ASSERT(owningElement());
+        Ref target = owningElement()->element;
+        Ref document = owningElement()->element.document();
         WTF::switchOn(animation.timeline(),
             [&] (Animation::TimelineKeyword keyword) {
-                Ref document = owningElement()->element.document();
                 setTimeline(keyword == Animation::TimelineKeyword::None ? nullptr : RefPtr { document->existingTimeline() });
             }, [&] (const AtomString& name) {
                 syncNamedTimeline(name);
