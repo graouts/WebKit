@@ -85,8 +85,8 @@ ScrollTimeline::ScrollTimeline(ScrollTimelineOptions&& options)
     , m_axis(options.axis)
 {
     if (m_source) {
-        cacheCurrentTime();
         m_source->protectedDocument()->ensureTimelinesController().addTimeline(*this);
+        cacheCurrentTime();
     }
 }
 
@@ -157,9 +157,6 @@ void ScrollTimeline::setSource(const Element* source)
 
     if (newSource)
         newSource->protectedDocument()->ensureTimelinesController().addTimeline(*this);
-
-    if (!previousSource && newSource)
-        cacheCurrentTime();
 }
 
 void ScrollTimeline::dump(TextStream& ts) const
@@ -224,10 +221,9 @@ void ScrollTimeline::cacheCurrentTime()
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents ScrollTimeline::documentWillUpdateAnimationsAndSendEvents()
 {
-    if (m_source && m_source->isConnected()) {
-        cacheCurrentTime();
+    cacheCurrentTime();
+    if (m_source && m_source->isConnected())
         return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;
-    }
     return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::No;
 }
 
