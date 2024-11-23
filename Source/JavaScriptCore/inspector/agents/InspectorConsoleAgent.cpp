@@ -139,6 +139,10 @@ void InspectorConsoleAgent::addMessageToConsole(std::unique_ptr<ConsoleMessage> 
     if (message->type() == MessageType::Clear)
         clearMessages(Inspector::Protocol::Console::ClearReason::ConsoleAPI);
 
+    if (message->message() == "debug"_s)
+        WTFLogAlways("");
+
+    WTFLogAlways("[GRAOUTS] %s", message->message().ascii().data());
     addConsoleMessage(WTFMove(message));
 }
 

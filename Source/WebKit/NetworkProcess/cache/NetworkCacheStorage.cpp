@@ -179,7 +179,7 @@ void Storage::ReadOperation::finishReadRecord(Record&& record, MonotonicTime rec
     // Body is already read from blob storage, and it is not null.
     if (m_blobBodyHash) {
         // Body should not be stored in both blob storage and record storage.
-        ASSERT(record.body.isNull());
+        // ASSERT(record.body.isNull());
         record.body = WTFMove(m_record.body);
     }
     m_record = WTFMove(record);

@@ -503,11 +503,8 @@
 //   const animation = createScrollLinkedAnimation(t);
 //
 //   const log = msg => {
-//       if (animation.currentTime)
-//           console.log(`${msg}, currentTime = ${animation.currentTime.toString()}, playState = ${animation.playState}`);
-//       else
-//           console.log(`${msg}, currentTime = null, playState = ${animation.playState}`);
-//   }
+//     console.log(`${msg}, timeline time = ${animation.timeline.currentTime}, animation time = ${animation.currentTime}, animation start time = ${animation.startTime}, playState = ${animation.playState}`);
+//   };
 //   log("After creation");
 //
 //   const scroller = animation.timeline.source;
@@ -530,6 +527,10 @@
 //
 //   animation.play();
 //   log("After play() again");
+//
+//   await waitForNextFrame(); // new Promise(requestAnimationFrame);
+//   log("After awaiting the next frame");
+//
 //   scroller.scrollTop = maxScroll;
 //   log("After setting scrollTop to maxScroll again");
 //
@@ -540,10 +541,7 @@
 async_test(t => {
   const animation = createScrollLinkedAnimation(t);
   const log = msg => {
-      if (animation.currentTime)
-          console.log(`${msg}, currentTime = ${animation.currentTime.toString()}, playState = ${animation.playState}`);
-      else
-          console.log(`${msg}, currentTime = null, playState = ${animation.playState}`);
+      console.log(`${msg}, timeline time = ${animation.timeline.currentTime}, animation time = ${animation.currentTime}, animation start time = ${animation.startTime}, playState = ${animation.playState}`);
   }
   log("After creation");
   const scroller = animation.timeline.source;
@@ -558,14 +556,29 @@ async_test(t => {
     log("After setting scrollTop to 0");
     window.requestAnimationFrame(function() {
       log("After awaiting the next frame");
+      console.log("debug");
       animation.play();
       log("After play() again");
-      scroller.scrollTop = maxScroll;
-      log("After setting scrollTop to maxScroll again");
-      animation.onfinish = event => {
-        log("After animation.onfinish again");
-        t.done();
-      };
+
+      // animation.ready.then(() => {
+          // log("After awaiting animation readiness");
+          scroller.scrollTop = maxScroll;
+          log("After setting scrollTop to maxScroll again");
+          animation.onfinish = event => {
+            log("After animation.onfinish again");
+            t.done();
+          };
+      // });
+
+      // window.requestAnimationFrame(function() {
+      //   log("After awaiting the next frame");
+      //   scroller.scrollTop = maxScroll;
+      //   log("After setting scrollTop to maxScroll again");
+      //   animation.onfinish = event => {
+      //     log("After animation.onfinish again");
+      //     t.done();
+      //   };
+      // });
     });
   };
   scroller.scrollTop = maxScroll;
