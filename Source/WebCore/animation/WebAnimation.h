@@ -177,6 +177,8 @@ public:
     ScriptExecutionContext* scriptExecutionContext() const final { return ActiveDOMObject::scriptExecutionContext(); }
     void contextDestroyed() final;
 
+    void timelineWillUpdate();
+
 protected:
     explicit WebAnimation(Document&);
 
@@ -215,6 +217,7 @@ private:
     void setEffectiveFrameRate(std::optional<FramesPerSecond>);
     void autoAlignStartTime();
     bool isTimeValid(const std::optional<WebAnimationTime>&) const;
+    void runPendingTasks();
 
     // ActiveDOMObject.
     void suspend(ReasonForSuspension) final;

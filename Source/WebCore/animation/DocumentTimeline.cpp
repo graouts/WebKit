@@ -185,6 +185,9 @@ AnimationTimeline::ShouldUpdateAnimationsAndSendEvents DocumentTimeline::documen
     if (!wasAnimationResolutionScheduled || animationsAreSuspended() || !shouldRunUpdateAnimationsAndSendEventsIgnoringSuspensionState())
         return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::No;
 
+    for (auto& animation : copyToVector(m_animations))
+        animation->timelineWillUpdate();
+
     m_numberOfAnimationTimelineInvalidationsForTesting++;
 
     // enqueueAnimationEvent() calls scheduleAnimationResolution() to ensure that the "update animations and send events"

@@ -260,6 +260,8 @@ void ViewTimeline::cacheCurrentTime()
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents ViewTimeline::documentWillUpdateAnimationsAndSendEvents()
 {
+    for (auto& animation : copyToVector(m_animations))
+        animation->timelineWillUpdate();
     cacheCurrentTime();
     if (m_subject && m_subject->isConnected())
         return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;

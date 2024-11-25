@@ -1494,20 +1494,7 @@ void WebAnimation::tick()
     updateFinishedState(DidSeek::No, SynchronouslyNotify::Yes);
     m_shouldSkipUpdatingFinishedStateWhenResolving = true;
 
-    // https://drafts.csswg.org/web-animations-2/#ready
-    // An animation is ready at the first moment where all of the following conditions are true:
-    //     - the user agent has completed any setup required to begin the playback of each inclusive
-    //       descendant of the animation’s associated effect including rendering the first frame of
-    //       any keyframe effect or executing any custom effects associated with an animation effect.
-    //     - the animation is associated with a timeline that is not inactive.
-    //     - the animation’s hold time or start time is resolved.
-    auto isReady = m_timeline && m_timeline->currentTime() && (m_holdTime || m_startTime);
-    if (isReady && (!m_effect || !m_effect->preventsAnimationReadiness())) {
-        if (hasPendingPauseTask())
-            runPendingPauseTask();
-        if (hasPendingPlayTask())
-            runPendingPlayTask();
-    }
+    runPendingTasks();
 
     if (!isEffectInvalidationSuspended() && m_effect)
         m_effect->animationDidTick();
@@ -1871,5 +1858,31 @@ void WebAnimation::setBindingsRangeEnd(TimelineRangeValue&& rangeEnd)
         m_timelineRange.end = SingleTimelineRange::parse(WTFMove(rangeEnd), keyframeEffect->target(), SingleTimelineRange::Type::End);
 }
 
+void WebAnimation::timelineWillUpdate()
+{
+    runPendingTasks();
+}
+
+void WebAnimation::runPendingTasks()
+{
+    if (!pending())
+        return;
+
+    // https://drafts.csswg.org/web-animations-2/#ready
+    // An animation is ready at the first moment where all of the following conditions are true:
+    //     - the user agent has completed any setup required to begin the playback of each inclusive
+    //       descendant of the animation’s associated effect including rendering the first frame of
+    //       any keyframe effect or executing any custom effects associated with an animation effect.
+    //     - the animation is associated with a timeline that is not inactive.
+    //     - the animation’s hold time or start time is resolved.
+    auto isReady = m_timeline && m_timeline->currentTime() && (m_holdTime || m_startTime);
+    if (!isReady || (m_effect && m_effect->preventsAnimationReadiness()))
+        return;
+
+    if (hasPendingPauseTask())
+        runPendingPauseTask();
+    if (hasPendingPlayTask())
+        runPendingPlayTask();
+}
 
 } // namespace WebCore

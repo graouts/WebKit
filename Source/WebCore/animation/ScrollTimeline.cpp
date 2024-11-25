@@ -221,6 +221,8 @@ void ScrollTimeline::cacheCurrentTime()
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents ScrollTimeline::documentWillUpdateAnimationsAndSendEvents()
 {
+    for (auto& animation : copyToVector(m_animations))
+        animation->timelineWillUpdate();
     cacheCurrentTime();
     if (m_source && m_source->isConnected())
         return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;
