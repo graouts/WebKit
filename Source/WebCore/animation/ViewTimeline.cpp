@@ -336,11 +336,13 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData(const TimelineRange& rang
 
     auto rangeStart = computeRangeStart() + m_cachedCurrentTimeData.insetEnd.value();
     auto rangeEnd = computeRangeEnd() - m_cachedCurrentTimeData.insetStart.value();
+    auto completeRange = rangeEnd - rangeStart;
 
     return {
         m_cachedCurrentTimeData.scrollOffset,
-        rangeStart + ScrollTimeline::floatValueForOffset(range.start.offset, rangeEnd - rangeStart),
-        rangeStart + ScrollTimeline::floatValueForOffset(range.end.offset, rangeEnd - rangeStart)
+        rangeStart + completeRange,
+        rangeStart + ScrollTimeline::floatValueForOffset(range.start.offset, completeRange),
+        rangeStart + ScrollTimeline::floatValueForOffset(range.end.offset, completeRange)
     };
 }
 

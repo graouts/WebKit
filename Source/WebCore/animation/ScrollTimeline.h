@@ -66,6 +66,7 @@ public:
     AnimationTimelinesController* controller() const override;
 
     std::optional<WebAnimationTime> currentTime(const TimelineRange&) override;
+    std::optional<WebAnimationTime> currentTimeAtRangeEndPoint(const TimelineRange&, SingleTimelineRange::Type);
     TimelineRange defaultRange() const override;
     WeakPtr<Element, WeakPtrImplWithEventTargetData> timelineScopeDeclaredElement() const { return m_timelineScopeElement; }
     void setTimelineScopeElement(const Element&);
@@ -76,6 +77,7 @@ protected:
 
     struct Data {
         float scrollOffset { 0 };
+        float maxScrollOffset { 0 };
         float rangeStart { 0 };
         float rangeEnd { 0 };
     };
