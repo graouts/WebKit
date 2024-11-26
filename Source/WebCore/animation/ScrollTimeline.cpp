@@ -255,7 +255,7 @@ ScrollTimeline::Data ScrollTimeline::computeTimelineData(const TimelineRange& ra
     if (maxScrollOffset > 0)
         scrollOffset = std::clamp(scrollOffset, 0.f, maxScrollOffset);
 
-    return { scrollOffset, floatValueForOffset(range.start.offset, maxScrollOffset), floatValueForOffset(range.end.offset, maxScrollOffset) };
+    return { scrollOffset, maxScrollOffset, floatValueForOffset(range.start.offset, maxScrollOffset), floatValueForOffset(range.end.offset, maxScrollOffset) };
 }
 
 std::optional<WebAnimationTime> ScrollTimeline::currentTime(const TimelineRange& timelineRange)
@@ -271,6 +271,25 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(const TimelineRange&
     auto distance = data.scrollOffset - data.rangeStart;
     auto progress = distance / range;
     return WebAnimationTime::fromPercentage(progress * 100);
+}
+
+std::optional<WebAnimationTime> ScrollTimeline::currentTimeAtRangeEndPoint(const TimelineRange& timelineRange, SingleTimelineRange::Type endPoint)
+{
+    auto timelineRangeOrDefault = timelineRange.isDefault() ? defaultRange() : timelineRange;
+
+    // Return raw values if we're already dealing with percentages.
+    if (endPoint == SingleTimelineRange::Type::Start && timelineRangeOrDefault.start.offset.isPercent())
+        return WebAnimationTime::fromPercentage(timelineRangeOrDefault.start.offset.percent());
+    if (endPoint == SingleTimelineRange::Type::End && timelineRangeOrDefault.end.offset.isPercent())
+        return WebAnimationTime::fromPercentage(timelineRangeOrDefault.end.offset.percent());
+
+    auto data = computeTimelineData(timelineRangeOrDefault);
+    if (!data.maxScrollOffset)
+        return { };
+
+    if (endPoint == SingleTimelineRange::Type::Start)
+        return WebAnimationTime::fromPercentage(data.rangeStart / data.maxScrollOffset * 100);
+    return WebAnimationTime::fromPercentage(data.rangeEnd / data.maxScrollOffset * 100);
 }
 
 void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)

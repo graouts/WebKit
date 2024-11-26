@@ -1452,22 +1452,21 @@ void WebAnimation::autoAlignStartTime()
     if (playState == PlayState::Paused && m_holdTime)
         return;
 
+    ASSERT(is<ScrollTimeline>(m_timeline));
+
     // 5. Let start offset be the resolved timeline time corresponding to the start of the animation
     // attachment range. In the case of view timelines, it requires a calculation based on the proportion
     // of the cover range.
-    // FIXME: this is a placeholder implementation.
-    auto startOffset = WebAnimationTime::fromPercentage(0);
+    auto startOffset = SingleTimelineRange::Type::Start;
 
     // 6. Let end offset be the resolved timeline time corresponding to the end of the animation attachment
     // range. In the case of view timelines, it requires a calculation based on the proportion of the cover
     // range.
-    // FIXME: this is a placeholder implementation.
-    ASSERT(m_timeline->duration());
-    ASSERT(m_timeline->duration()->percentage());
-    auto endOffset = *m_timeline->duration();
+    auto endOffset = SingleTimelineRange::Type::End;
 
     // 7. Set start time to start offset if effective playback rate ≥ 0, and end offset otherwise.
-    m_startTime = effectivePlaybackRate() >= 0 ? startOffset : endOffset;
+    auto endPoint = effectivePlaybackRate() >= 0 ? startOffset : endOffset;
+    m_startTime = downcast<ScrollTimeline>(m_timeline)->currentTimeAtRangeEndPoint(m_timelineRange, endPoint);
 
     // 8. Clear hold time.
     m_holdTime = std::nullopt;
