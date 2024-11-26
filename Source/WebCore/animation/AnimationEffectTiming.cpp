@@ -34,7 +34,7 @@ void AnimationEffectTiming::updateComputedProperties(IsProgressBased isProgressB
 {
     // https://drafts.csswg.org/web-animations-2/#intrinsic-iteration-duration
     if (isProgressBased == IsProgressBased::Yes && iterations)
-        intrinsicIterationDuration = WebAnimationTime::fromPercentage(100) / iterations;
+        intrinsicIterationDuration = iterationDuration / iterations;
     else
         intrinsicIterationDuration = iterationDuration;
 
