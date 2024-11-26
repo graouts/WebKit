@@ -475,11 +475,11 @@ std::optional<WebAnimationTime> WebAnimation::currentTime(RespectHoldTime respec
     //     2. the associated timeline is inactive, or
     //     3. the animation's start time is unresolved.
     // The current time is an unresolved time value.
-    if (!m_timeline || !m_timeline->currentTime(m_timelineRange) || !m_startTime)
+    if (!m_timeline || !m_timeline->currentTime() || !m_startTime)
         return std::nullopt;
 
     // Otherwise, current time = (timeline time - start time) * playback rate
-    return (*m_timeline->currentTime(m_timelineRange) - startTime.value_or(*m_startTime)) * m_playbackRate;
+    return (*m_timeline->currentTime() - startTime.value_or(*m_startTime)) * m_playbackRate;
 }
 
 ExceptionOr<void> WebAnimation::silentlySetCurrentTime(std::optional<WebAnimationTime> seekTime)
@@ -1860,15 +1860,25 @@ std::optional<double> WebAnimation::overallProgress() const
 
 void WebAnimation::setBindingsRangeStart(TimelineRangeValue&& rangeStart)
 {
-    if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(m_effect.get()))
+    if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(m_effect.get())) {
         m_timelineRange.start = SingleTimelineRange::parse(WTFMove(rangeStart), keyframeEffect->target(), SingleTimelineRange::Type::Start);
+        keyframeEffect->animationRangeDidChange();
+    }
 }
 
 void WebAnimation::setBindingsRangeEnd(TimelineRangeValue&& rangeEnd)
 {
-    if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(m_effect.get()))
+    if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(m_effect.get())) {
         m_timelineRange.end = SingleTimelineRange::parse(WTFMove(rangeEnd), keyframeEffect->target(), SingleTimelineRange::Type::End);
+        keyframeEffect->animationRangeDidChange();
+    }
 }
 
+void WebAnimation::setRange(TimelineRange range)
+{
+    m_timelineRange = range;
+    if (RefPtr effect = m_effect)
+        effect->animationRangeDidChange();
+}
 
 } // namespace WebCore

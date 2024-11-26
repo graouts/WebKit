@@ -144,7 +144,8 @@ public:
     TimelineRangeValue bindingsRangeEnd() const { return m_timelineRange.end.serialize(); }
     virtual void setBindingsRangeStart(TimelineRangeValue&&);
     virtual void setBindingsRangeEnd(TimelineRangeValue&&);
-    void setRange(TimelineRange range) { m_timelineRange = range; }
+    const TimelineRange& range() const { return m_timelineRange; }
+    void setRange(TimelineRange);
 
     bool needsTick() const;
     virtual void tick();

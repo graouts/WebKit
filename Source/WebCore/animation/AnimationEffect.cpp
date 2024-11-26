@@ -34,6 +34,7 @@
 #include "FillMode.h"
 #include "JSComputedEffectTiming.h"
 #include "ScriptExecutionContext.h"
+#include "ScrollTimeline.h"
 #include "WebAnimation.h"
 #include "WebAnimationUtilities.h"
 #include <wtf/TZoneMallocInlines.h>
@@ -247,9 +248,13 @@ void AnimationEffect::normalizeSpecifiedTiming(std::variant<double, String> dura
     // https://drafts.csswg.org/web-animations-2/#normalize-specified-timing
     m_timing.iterationDuration = [&]() {
         if (m_animation) {
-            if (RefPtr timeline = m_animation->timeline()) {
-                if (timeline->duration())
-                    return WebAnimationTime::fromPercentage(100);
+            if (RefPtr scrollTimeline = dynamicDowncast<ScrollTimeline>(m_animation->timeline())) {
+                auto startTime = scrollTimeline->currentTimeAtRangeEndPoint(m_animation->range(), SingleTimelineRange::Type::Start);
+                auto endTime = scrollTimeline->currentTimeAtRangeEndPoint(m_animation->range(), SingleTimelineRange::Type::End);
+                if (startTime && endTime)
+                    return *endTime - *startTime;
+                ASSERT(scrollTimeline->duration());
+                return *scrollTimeline->duration();
             }
         }
         if (auto* doubleValue = std::get_if<double>(&duration))
@@ -390,6 +395,20 @@ Seconds AnimationEffect::timeToNextTick(const BasicEffectTiming& timing) const
 }
 
 void AnimationEffect::animationTimelineDidChange(const AnimationTimeline*)
+{
+    if (m_hasAutoDuration) {
+        if (auto percentage = iterationDuration().percentage())
+            normalizeSpecifiedTiming(*percentage);
+        else {
+            ASSERT(iterationDuration().time());
+            normalizeSpecifiedTiming(iterationDuration().time()->seconds());
+        }
+    }
+
+    updateStaticTimingProperties();
+}
+
+void AnimationEffect::animationRangeDidChange()
 {
     if (m_hasAutoDuration) {
         if (auto percentage = iterationDuration().percentage())

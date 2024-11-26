@@ -67,6 +67,7 @@ public:
     virtual void animationWasCanceled() { };
     virtual void animationSuspensionStateDidChange(bool) { };
     virtual void animationTimelineDidChange(const AnimationTimeline*);
+    virtual void animationRangeDidChange();
     virtual void animationDidFinish() { };
 
     AnimationEffectTiming timing() const { return m_timing; }
