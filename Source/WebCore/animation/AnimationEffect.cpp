@@ -27,6 +27,7 @@
 #include "AnimationEffect.h"
 
 #include "CSSAnimation.h"
+#include "CSSNumericFactory.h"
 #include "CSSNumericValue.h"
 #include "CSSPropertyParserConsumer+TimingFunction.h"
 #include "CSSTimingFunctionValue.h"
@@ -59,8 +60,11 @@ void AnimationEffect::setAnimation(WebAnimation* animation)
 enum class IsComputed : bool { No, Yes };
 static std::variant<double, RefPtr<CSSNumericValue>, String> durationAPIValue(const WebAnimationTime& duration, IsComputed isComputed)
 {
-    if (duration.percentage())
-        return autoAtom();
+    if (auto percent = duration.percentage()) {
+        if (*percent == 100)
+            return autoAtom();
+        return CSSNumericFactory::percent(*percent);
+    }
 
     ASSERT(duration.time());
     if (duration.isZero()) {
@@ -83,12 +87,12 @@ EffectTiming AnimationEffect::getBindingsTiming() const
         styleOriginatedAnimation->flushPendingStyleChanges();
 
     EffectTiming timing;
-    timing.delay = secondsToWebAnimationsAPITime(m_timing.delay);
-    timing.endDelay = secondsToWebAnimationsAPITime(m_timing.endDelay);
+    timing.delay = secondsToWebAnimationsAPITime(m_timing.specifiedStartDelay);
+    timing.endDelay = secondsToWebAnimationsAPITime(m_timing.specifiedEndDelay);
     timing.fill = m_timing.fill;
     timing.iterationStart = m_timing.iterationStart;
     timing.iterations = m_timing.iterations;
-    timing.duration = durationAPIValue(m_timing.iterationDuration, IsComputed::No);
+    timing.duration = durationAPIValue(m_timing.specifiedIterationDuration, IsComputed::No);
     timing.direction = m_timing.direction;
     timing.easing = m_timing.timingFunction->cssText();
     return timing;
@@ -128,8 +132,8 @@ ComputedEffectTiming AnimationEffect::getComputedTiming(std::optional<WebAnimati
     auto resolvedTiming = m_timing.resolve(data);
 
     ComputedEffectTiming computedTiming;
-    computedTiming.delay = secondsToWebAnimationsAPITime(m_timing.delay);
-    computedTiming.endDelay = secondsToWebAnimationsAPITime(m_timing.endDelay);
+    computedTiming.delay = secondsToWebAnimationsAPITime(m_timing.specifiedStartDelay);
+    computedTiming.endDelay = secondsToWebAnimationsAPITime(m_timing.specifiedEndDelay);
     computedTiming.fill = m_timing.fill == FillMode::Auto ? FillMode::None : m_timing.fill;
     computedTiming.iterationStart = m_timing.iterationStart;
     computedTiming.iterations = m_timing.iterations;
@@ -211,11 +215,17 @@ ExceptionOr<void> AnimationEffect::updateTiming(Document& document, std::optiona
     //    direction → playback direction
     //    easing → timing function
 
-    if (timing->delay)
-        m_timing.delay = Seconds::fromMilliseconds(timing->delay.value());
+    auto needsToNormalizeSpecifiedTiming = false;
 
-    if (timing->endDelay)
-        m_timing.endDelay = Seconds::fromMilliseconds(timing->endDelay.value());
+    if (timing->delay) {
+        m_timing.specifiedStartDelay = Seconds::fromMilliseconds(*timing->delay);
+        needsToNormalizeSpecifiedTiming = true;
+    }
+
+    if (timing->endDelay) {
+        m_timing.specifiedEndDelay = Seconds::fromMilliseconds(*timing->endDelay);
+        needsToNormalizeSpecifiedTiming = true;
+    }
 
     if (timing->fill)
         m_timing.fill = timing->fill.value();
@@ -223,17 +233,23 @@ ExceptionOr<void> AnimationEffect::updateTiming(Document& document, std::optiona
     if (timing->iterationStart)
         m_timing.iterationStart = timing->iterationStart.value();
 
-    if (timing->iterations)
+    if (timing->iterations) {
         m_timing.iterations = timing->iterations.value();
+        needsToNormalizeSpecifiedTiming = true;
+    }
 
     if (auto duration = timing->duration) {
-        m_hasAutoDuration = std::holds_alternative<String>(*duration);
-        normalizeSpecifiedTiming(*duration);
+        auto* durationDouble = std::get_if<double>(&*duration);
+        m_hasAutoDuration = !durationDouble;
+        m_timing.specifiedIterationDuration = durationDouble ? Seconds::fromMilliseconds(*durationDouble) : 0_s;
+        needsToNormalizeSpecifiedTiming = true;
     }
 
     if (timing->direction)
         m_timing.direction = timing->direction.value();
 
+    if (needsToNormalizeSpecifiedTiming)
+        normalizeSpecifiedTiming();
     updateStaticTimingProperties();
 
     if (m_animation)
@@ -242,32 +258,26 @@ ExceptionOr<void> AnimationEffect::updateTiming(Document& document, std::optiona
     return { };
 }
 
-void AnimationEffect::normalizeSpecifiedTiming(std::variant<double, String> duration)
+// Move this to AnimationEffectTiming and pass in the timeline duration and whether the duration is auto.
+void AnimationEffect::normalizeSpecifiedTiming()
 {
-    // https://drafts.csswg.org/web-animations-2/#normalize-specified-timing
-    m_timing.iterationDuration = [&]() {
+    auto durationIsAuto = m_hasAutoDuration ? AnimationEffectTiming::DurationIsAuto::Yes : AnimationEffectTiming::DurationIsAuto::No;
+    auto timelineDuration = [&] -> std::optional<WebAnimationTime> {
         if (m_animation) {
-            if (RefPtr timeline = m_animation->timeline()) {
-                if (timeline->duration())
-                    return WebAnimationTime::fromPercentage(100);
-            }
+            if (RefPtr timeline = m_animation->timeline())
+                return timeline->duration();
         }
-        if (auto* doubleValue = std::get_if<double>(&duration))
-            return WebAnimationTime::fromMilliseconds(*doubleValue);
-        return WebAnimationTime::fromMilliseconds(0);
+        return std::nullopt;
     }();
+    m_timing.normalizeSpecifiedTiming(timelineDuration, durationIsAuto);
 }
 
 void AnimationEffect::updateStaticTimingProperties()
 {
-    m_timing.updateComputedProperties([&]() {
-        if (RefPtr animation = m_animation.get()) {
-            if (RefPtr timeline = animation->timeline()) {
-                if (timeline->isProgressBased())
-                    return AnimationEffectTiming::IsProgressBased::Yes;
-            }
-        }
-        return AnimationEffectTiming::IsProgressBased::No;
+    m_timing.updateComputedProperties([&] {
+        if (m_animation)
+            return m_animation->playbackRate();
+        return 1.0;
     }());
 }
 
@@ -305,18 +315,18 @@ ExceptionOr<void> AnimationEffect::setIterations(double iterations)
 
 void AnimationEffect::setDelay(const Seconds& delay)
 {
-    if (m_timing.delay == delay)
+    if (m_timing.specifiedStartDelay == delay)
         return;
 
-    m_timing.delay = delay;
+    m_timing.specifiedStartDelay = delay;
 }
 
 void AnimationEffect::setEndDelay(const Seconds& endDelay)
 {
-    if (m_timing.endDelay == endDelay)
+    if (m_timing.specifiedEndDelay == endDelay)
         return;
 
-    m_timing.endDelay = endDelay;
+    m_timing.specifiedEndDelay = endDelay;
 }
 
 void AnimationEffect::setFill(FillMode fill)
@@ -329,10 +339,10 @@ void AnimationEffect::setFill(FillMode fill)
 
 void AnimationEffect::setIterationDuration(const Seconds& duration)
 {
-    if (m_timing.iterationDuration == duration)
+    if (m_timing.specifiedIterationDuration == duration)
         return;
 
-    m_timing.iterationDuration = duration;
+    m_timing.specifiedIterationDuration = duration;
 }
 
 void AnimationEffect::setDirection(PlaybackDirection direction)
@@ -391,15 +401,12 @@ Seconds AnimationEffect::timeToNextTick(const BasicEffectTiming& timing) const
 
 void AnimationEffect::animationTimelineDidChange(const AnimationTimeline*)
 {
-    if (m_hasAutoDuration) {
-        if (auto percentage = iterationDuration().percentage())
-            normalizeSpecifiedTiming(*percentage);
-        else {
-            ASSERT(iterationDuration().time());
-            normalizeSpecifiedTiming(iterationDuration().time()->seconds());
-        }
-    }
+    normalizeSpecifiedTiming();
+    updateStaticTimingProperties();
+}
 
+void AnimationEffect::animationPlaybackRateDidChange()
+{
     updateStaticTimingProperties();
 }
 

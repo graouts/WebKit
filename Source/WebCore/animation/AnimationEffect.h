@@ -68,16 +68,17 @@ public:
     virtual void animationSuspensionStateDidChange(bool) { };
     virtual void animationTimelineDidChange(const AnimationTimeline*);
     virtual void animationDidFinish() { };
+    void animationPlaybackRateDidChange();
 
     AnimationEffectTiming timing() const { return m_timing; }
 
     WebAnimation* animation() const { return m_animation.get(); }
     virtual void setAnimation(WebAnimation*);
 
-    Seconds delay() const { return m_timing.delay; }
+    WebAnimationTime delay() const { return m_timing.startDelay; }
     void setDelay(const Seconds&);
 
-    Seconds endDelay() const { return m_timing.endDelay; }
+    WebAnimationTime endDelay() const { return m_timing.endDelay; }
     void setEndDelay(const Seconds&);
 
     FillMode fill() const { return m_timing.fill; }
@@ -115,7 +116,7 @@ protected:
 
 private:
     AnimationEffectTiming::ResolutionData resolutionData(std::optional<WebAnimationTime>) const;
-    void normalizeSpecifiedTiming(std::variant<double, String>);
+    void normalizeSpecifiedTiming();
 
     AnimationEffectTiming m_timing;
     WeakPtr<WebAnimation, WeakPtrImplWithEventTargetData> m_animation;

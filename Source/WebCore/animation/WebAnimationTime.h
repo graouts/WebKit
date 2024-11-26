@@ -50,6 +50,7 @@ public:
 
     WebAnimationTime matchingZero() const;
     WebAnimationTime matchingEpsilon() const;
+    WebAnimationTime matchingInfinity() const;
 
     bool approximatelyEqualTo(const WebAnimationTime&) const;
     bool approximatelyLessThan(const WebAnimationTime&) const;

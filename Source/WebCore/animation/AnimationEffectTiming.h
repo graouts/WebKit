@@ -52,8 +52,11 @@ struct AnimationEffectTiming {
     PlaybackDirection direction { PlaybackDirection::Normal };
     double iterationStart { 0 };
     double iterations { 1 };
-    Seconds delay { 0_s };
-    Seconds endDelay { 0_s };
+    Seconds specifiedStartDelay { 0_s };
+    Seconds specifiedEndDelay { 0_s };
+    Seconds specifiedIterationDuration { 0 };
+    WebAnimationTime startDelay { 0_s };
+    WebAnimationTime endDelay { 0_s };
     WebAnimationTime iterationDuration { 0_s };
     WebAnimationTime intrinsicIterationDuration { 0_s };
     WebAnimationTime activeDuration { 0_s };
@@ -67,8 +70,9 @@ struct AnimationEffectTiming {
         double playbackRate { 0 };
     };
 
-    enum class IsProgressBased : bool { No, Yes };
-    void updateComputedProperties(IsProgressBased);
+    enum class DurationIsAuto : bool { No, Yes };
+    void normalizeSpecifiedTiming(std::optional<WebAnimationTime> timelineDuration, DurationIsAuto);
+    void updateComputedProperties(double playbackRate);
     BasicEffectTiming getBasicTiming(const ResolutionData&) const;
     ResolvedEffectTiming resolve(const ResolutionData&) const;
 };

@@ -6536,8 +6536,11 @@ struct WebCore::AnimationEffectTiming {
     WebCore::PlaybackDirection direction;
     double iterationStart;
     double iterations;
-    Seconds delay;
-    Seconds endDelay;
+    Seconds specifiedStartDelay;
+    Seconds specifiedEndDelay;
+    Seconds specifiedIterationDuration;
+    WebCore::WebAnimationTime startDelay;
+    WebCore::WebAnimationTime endDelay;
     WebCore::WebAnimationTime iterationDuration;
     WebCore::WebAnimationTime intrinsicIterationDuration;
     WebCore::WebAnimationTime activeDuration;

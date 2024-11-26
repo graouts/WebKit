@@ -2134,7 +2134,7 @@ Ref<const Animation> KeyframeEffect::backingAnimationForCompositedRenderer() con
     // corresponding Animation properties.
     auto animation = Animation::create();
     animation->setDuration(iterationDuration().time()->seconds());
-    animation->setDelay(delay().seconds());
+    animation->setDelay(delay().time()->seconds());
     animation->setIterationCount(iterations());
     animation->setTimingFunction(timingFunction()->clone());
     animation->setPlaybackRate(effectAnimation->playbackRate());

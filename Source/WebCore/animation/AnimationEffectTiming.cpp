@@ -30,35 +30,82 @@
 
 namespace WebCore {
 
-void AnimationEffectTiming::updateComputedProperties(IsProgressBased isProgressBased)
+void AnimationEffectTiming::normalizeSpecifiedTiming(std::optional<WebAnimationTime> timelineDuration, DurationIsAuto durationIsAuto)
 {
-    // https://drafts.csswg.org/web-animations-2/#intrinsic-iteration-duration
-    if (isProgressBased == IsProgressBased::Yes && iterations)
-        intrinsicIterationDuration = WebAnimationTime::fromPercentage(100) / iterations;
-    else
-        intrinsicIterationDuration = iterationDuration;
+    auto computeIntrinsicIterationDuration = [&] {
+        // https://drafts.csswg.org/web-animations-2/#intrinsic-iteration-duration
+        if (!timelineDuration || !iterations) {
+            // If timeline duration is unresolved or iteration count is zero, return 0
+            intrinsicIterationDuration = timelineDuration ? timelineDuration->matchingZero() : WebAnimationTime::fromMilliseconds(0);
+        } else {
+            // Otherwise, return (100% - start delay - end delay) / iteration count
+            intrinsicIterationDuration = WebAnimationTime::fromPercentage(100) - startDelay - endDelay / iterations;
+        }
+    };
 
-    // 3.8.2. Calculating the active duration
-    // https://drafts.csswg.org/web-animations-1/#calculating-the-active-duration
+    // https://drafts.csswg.org/web-animations-2/#normalize-specified-timing
+    if (timelineDuration) {
+        // If timeline duration is resolved:
+        // Follow the procedure to convert a time-based animation to a proportional animation.
+        if (durationIsAuto == DurationIsAuto::Yes) {
+            // If the iteration duration is auto, then perform the following steps.
+            // Set start delay and end delay to 0, as it is not possible to mix time and proportions.
+            startDelay = WebAnimationTime::fromPercentage(0);
+            endDelay = WebAnimationTime::fromPercentage(0);
+            iterationDuration = *timelineDuration;
+        } else {
+            // Otherwise:
+            // Let total time be equal to end time
+            auto totalTime = std::max(specifiedStartDelay + specifiedIterationDuration + specifiedEndDelay, 0_s);
+            // FIXME: deal with totalTime = 0, see https://github.com/w3c/csswg-drafts/issues/11276.
+            // Set start delay to be the result of evaluating specified start delay / total time * timeline duration.
+            startDelay = *timelineDuration * (specifiedStartDelay / totalTime);
+            // Set iteration duration to be the result of evaluating specified iteration duration / total time * timeline duration.
+            iterationDuration = *timelineDuration * (specifiedIterationDuration / totalTime);
+            // Set end delay to be the result of evaluating specified end delay / total time * timeline duration.
+            endDelay = *timelineDuration * (specifiedEndDelay / totalTime);
+        }
+        computeIntrinsicIterationDuration();
+    } else {
+        // Otherwise:
+        // Set start delay = specified start delay
+        startDelay = specifiedStartDelay;
+        // Set end delay = specified end delay
+        endDelay = specifiedEndDelay;
 
-    // The active duration is calculated as follows:
-    // active duration = iteration duration × iteration count
-    // If either the iteration duration or iteration count are zero, the active duration is zero.
-    if (intrinsicIterationDuration.isZero() || !iterations)
-        activeDuration = intrinsicIterationDuration.matchingZero();
-    else
-        activeDuration = intrinsicIterationDuration * iterations;
+        computeIntrinsicIterationDuration();
 
-    // 3.5.3 The active interval
-    // https://drafts.csswg.org/web-animations-1/#end-time
-    if (intrinsicIterationDuration.percentage())
-        endTime = activeDuration;
-    else {
-        // The end time of an animation effect is the result of evaluating max(start delay + active duration + end delay, 0).
-        endTime = delay + activeDuration + endDelay;
-        if (endTime < 0_s)
-            endTime = 0_s;
+        // If iteration duration is auto:
+        // Set iteration duration = intrinsic iteration duration
+        // Otherwise:
+        // Set iteration duration = specified iteration duration
+        iterationDuration = durationIsAuto == DurationIsAuto::Yes ? intrinsicIterationDuration : WebAnimationTime(specifiedIterationDuration);
     }
+}
+
+void AnimationEffectTiming::updateComputedProperties(double playbackRate)
+{
+    // 3.7.2. Calculating the active duration
+    // https://drafts.csswg.org/web-animations-2/#calculating-the-active-duration
+    activeDuration = [&] {
+        // The active duration is calculated according to the following steps:
+        // If the playback rate is zero, return Infinity.
+        if (!playbackRate)
+            return iterationDuration.matchingInfinity();
+        // In order to calculate the active duration we first define the repeated duration as follows:
+        // repeated duration = iteration duration × iteration count
+        auto repeatedDuration = iterationDuration * iterations;
+        // Otherwise, return repeated duration / abs(playback rate).
+        return repeatedDuration / std::abs(playbackRate);
+    }();
+
+    // https://drafts.csswg.org/web-animations-2/#end-time
+    // The end time of an animation effect is the result of evaluating
+    // max(start time + start delay + active duration + end delay, 0).
+    endTime = startDelay + activeDuration + endDelay;
+    auto zero = endTime.matchingZero();
+    if (endTime < zero)
+        endTime = zero;
 }
 
 BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& data) const
@@ -107,11 +154,8 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
 
         auto animationIsBackwards = data.playbackRate < 0;
 
-        auto beforeActiveBoundaryTime = [&]() -> WebAnimationTime {
-            if (auto endTimeSeconds = endTime.time())
-                return { std::max(std::min(delay, *endTimeSeconds), 0_s) };
-            return endTime.matchingZero();
-        }();
+        // https://drafts.csswg.org/web-animations-1/#before-active-boundary-time
+        auto beforeActiveBoundaryTime = std::max(std::min(startDelay, endTime), endTime.matchingZero());
 
         // An animation effect is in the before phase if the animation effect's local time is not unresolved and
         // either of the following conditions are met:
@@ -121,13 +165,8 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
         if (localTime->approximatelyLessThan(beforeActiveBoundaryTime) || (animationIsBackwards && localTime->approximatelyEqualTo(beforeActiveBoundaryTime) && !atProgressTimelineBoundary()))
             return AnimationEffectPhase::Before;
 
-        auto activeAfterBoundaryTime = [&]() -> WebAnimationTime {
-            if (endTime.percentage())
-                return std::max(std::min(activeDuration, endTime), activeDuration.matchingZero());
-            ASSERT(endTime.time());
-            ASSERT(activeDuration.time());
-            return { std::max(std::min(delay + *activeDuration.time(), *endTime.time()), 0_s) };
-        }();
+        // https://drafts.csswg.org/web-animations-1/#active-after-boundary-time
+        auto activeAfterBoundaryTime = std::max(std::min(startDelay + activeDuration, endTime), endTime.matchingZero());
 
         // An animation effect is in the after phase if the animation effect's local time is not unresolved
         // and either of the following conditions are met:
@@ -156,32 +195,23 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
         if (phase == AnimationEffectPhase::Before) {
             // If the fill mode is backwards or both, return the result of evaluating
             // max(local time - start delay, 0).
-            if (fill == FillMode::Backwards || fill == FillMode::Both) {
-                if (auto percentage = localTime->percentage())
-                    return std::max(*localTime, localTime->matchingZero());
-                return std::max(*localTime->time() - delay, 0_s);
-            }
+            if (fill == FillMode::Backwards || fill == FillMode::Both)
+                return std::max(*localTime - startDelay, localTime->matchingZero());
             // Otherwise, return an unresolved time value.
             return std::nullopt;
         }
 
         // If the animation effect is in the active phase, return the result of evaluating local time - start delay.
-        if (phase == AnimationEffectPhase::Active) {
-            if (localTime->percentage())
-                return *localTime;
-            return *localTime - delay;
-        }
+        if (phase == AnimationEffectPhase::Active)
+            return *localTime - startDelay;
 
         // If the animation effect is in the after phase, the result depends on the first matching
         // condition from the following,
         if (phase == AnimationEffectPhase::After) {
             // If the fill mode is forwards or both, return the result of evaluating
             // max(min(local time - start delay, active duration), 0).
-            if (fill == FillMode::Forwards || fill == FillMode::Both) {
-                if (localTime->percentage())
-                    return std::max(std::min(*localTime, activeDuration), activeDuration.matchingZero());
-                return std::max(std::min(*localTime->time() - delay, *activeDuration.time()), 0_s);
-            }
+            if (fill == FillMode::Forwards || fill == FillMode::Both)
+                return std::max(std::min(*localTime - startDelay, activeDuration), localTime->matchingZero());
             // Otherwise, return an unresolved time value.
             return std::nullopt;
         }
