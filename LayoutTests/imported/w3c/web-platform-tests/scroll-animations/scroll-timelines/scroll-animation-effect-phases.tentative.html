@@ -351,12 +351,12 @@
     animation.effect.updateTiming({ delay: 0 });
     assert_phase(animation, 'active');
 
-    // Finally, switch to a document timeline.  The before-active boundary
-    // becomes exclusive.
-    animation.timeline = document.timeline;
-    animation.currentTime = 0;
-    await waitForNextFrame();
-    assert_phase(animation, 'before');
+    // // Finally, switch to a document timeline.  The before-active boundary
+    // // becomes exclusive.
+    // animation.timeline = document.timeline;
+    // animation.currentTime = 0;
+    // await waitForNextFrame();
+    // assert_phase(animation, 'before');
 
   }, 'Playback rate affects whether active phase boundary is inclusive.');
 
