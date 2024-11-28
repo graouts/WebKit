@@ -6554,6 +6554,7 @@ header: <WebCore/AcceleratedTimeline.h>
 };
 
 [RefCounted] class WebCore::AcceleratedTimeline {
+    WTF::UUID identifier();
     WebCore::AcceleratedTimeline::Type type();
     std::optional<WebCore::WebAnimationTime> duration();
     std::optional<Seconds> originTime();
