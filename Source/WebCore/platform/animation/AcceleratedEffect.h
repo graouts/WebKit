@@ -74,8 +74,8 @@ public:
         OptionSet<AcceleratedEffectProperty> m_animatedProperties;
     };
 
-    static RefPtr<AcceleratedEffect> create(const KeyframeEffect&, const IntRect&, const AcceleratedEffectValues&, OptionSet<AcceleratedEffectProperty>&);
-    WEBCORE_EXPORT static Ref<AcceleratedEffect> create(AnimationEffectTiming, RefPtr<AcceleratedTimeline>&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
+    static RefPtr<AcceleratedEffect> create(const KeyframeEffect&, const WTF::UUID&, const IntRect&, const AcceleratedEffectValues&, OptionSet<AcceleratedEffectProperty>&);
+    WEBCORE_EXPORT static Ref<AcceleratedEffect> create(AnimationEffectTiming, WTF::UUID&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
 
     virtual ~AcceleratedEffect() = default;
 
@@ -87,6 +87,7 @@ public:
     // Encoding and decoding support
     AnimationEffectTiming timing() const { return m_timing; }
     const RefPtr<AcceleratedTimeline>& timeline() const { return m_timeline; }
+    const WTF::UUID& timelineIdentifier() const { return m_timelineIdentifier; }
     const Vector<Keyframe>& keyframes() const { return m_keyframes; }
     WebAnimationType animationType() const { return m_animationType; }
     CompositeOperation compositeOperation() const final { return m_compositeOperation; }
@@ -102,8 +103,8 @@ public:
     bool animatesTransformRelatedProperty() const;
 
 private:
-    AcceleratedEffect(const KeyframeEffect&, const IntRect&, const OptionSet<AcceleratedEffectProperty>&);
-    explicit AcceleratedEffect(AnimationEffectTiming, RefPtr<AcceleratedTimeline>&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
+    AcceleratedEffect(const KeyframeEffect&, const WTF::UUID&, const IntRect&, const OptionSet<AcceleratedEffectProperty>&);
+    explicit AcceleratedEffect(AnimationEffectTiming, WTF::UUID&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
     explicit AcceleratedEffect(const AcceleratedEffect&, OptionSet<AcceleratedEffectProperty>&);
 
     void validateFilters(const AcceleratedEffectValues& baseValues, OptionSet<AcceleratedEffectProperty>&);
@@ -116,6 +117,7 @@ private:
 
     AnimationEffectTiming m_timing;
     RefPtr<AcceleratedTimeline> m_timeline;
+    WTF::UUID m_timelineIdentifier;
     Vector<Keyframe> m_keyframes;
     WebAnimationType m_animationType { WebAnimationType::WebAnimation };
     CompositeOperation m_compositeOperation { CompositeOperation::Replace };

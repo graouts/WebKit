@@ -6583,7 +6583,8 @@ header: <WebCore/AcceleratedEffect.h>
 
 [RefCounted] class WebCore::AcceleratedEffect {
     WebCore::AnimationEffectTiming timing();
-    RefPtr<WebCore::AcceleratedTimeline> timeline();
+    [NotSerialized] RefPtr<WebCore::AcceleratedTimeline> timeline();
+    WTF::UUID timelineIdentifier();
     Vector<WebCore::AcceleratedEffect::Keyframe> keyframes();
     WebCore::WebAnimationType animationType();
     WebCore::CompositeOperation compositeOperation();
