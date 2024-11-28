@@ -110,11 +110,11 @@ bool AnimationTimeline::animationsAreSuspended() const
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-const RefPtr<AcceleratedTimeline>& AnimationTimeline::acceleratedRepresentation()
+AcceleratedTimeline& AnimationTimeline::acceleratedRepresentation()
 {
     if (!m_acceleratedRepresentation)
         m_acceleratedRepresentation = createAcceleratedRepresentation();
-    return m_acceleratedRepresentation;
+    return *m_acceleratedRepresentation;
 }
 
 Ref<AcceleratedTimeline> AnimationTimeline::createAcceleratedRepresentation()

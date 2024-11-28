@@ -77,7 +77,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     void clearAcceleratedRepresentation() { m_acceleratedRepresentation = nullptr; }
-    const RefPtr<AcceleratedTimeline>& acceleratedRepresentation();
+    AcceleratedTimeline& acceleratedRepresentation();
 #endif
 
 protected:

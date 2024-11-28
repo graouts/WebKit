@@ -4192,16 +4192,18 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
                 if ((animatesWidth && blendingKeyframes.hasWidthDependentTransform()) || (animatesHeight && blendingKeyframes.hasHeightDependentTransform()))
                     disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
             }
-            auto acceleratedEffect = AcceleratedEffect::create(*effect, borderBoxRect, baseValues, disallowedAcceleratedProperties);
+            ASSERT(effect->animation());
+            ASSERT(effect->animation()->timeline());
+            Ref acceleratedTimeline = Ref { *effect->animation()->timeline() }->acceleratedRepresentation();
+            auto acceleratedEffect = AcceleratedEffect::create(*effect, acceleratedTimeline->identifier(), borderBoxRect, baseValues, disallowedAcceleratedProperties);
             if (!acceleratedEffect)
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())
                 hasInterpolatingEffect = true;
-            if (auto& timeline = acceleratedEffect->timeline())
-                timelines.add(*timeline);
             effect->setAcceleratedRepresentation(acceleratedEffect.get());
             weakAcceleratedEffects.add(*acceleratedEffect);
             acceleratedEffects.append(acceleratedEffect.releaseNonNull());
+            timelines.add(WTFMove(acceleratedTimeline));
         }
         effectStack->setAcceleratedEffects(WTFMove(weakAcceleratedEffects));
     }
