@@ -45,11 +45,13 @@ public:
     void updateEffectStacks();
     void updateEffectStackForTarget(const Styleable&);
 
+    const HashSet<Ref<AcceleratedTimeline>>& timelines() const { return m_timelines; }
     Seconds originTime() const { return m_originTime; }
 
 private:
     using HashedStyleable = std::pair<Element*, std::optional<Style::PseudoElementIdentifier>>;
     HashSet<HashedStyleable> m_targetsPendingUpdate;
+    HashSet<Ref<AcceleratedTimeline>> m_timelines;
     Seconds m_originTime;
 };
 

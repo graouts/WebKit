@@ -90,6 +90,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
     AcceleratedEffectStackUpdater& acceleratedEffectStackUpdater();
+    AcceleratedEffectStackUpdater* existingAcceleratedEffectStackUpdater() const { return m_acceleratedEffectStackUpdater.get(); }
     void updateAcceleratedEffectStacks();
 #endif
 

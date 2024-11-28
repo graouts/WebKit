@@ -4894,6 +4894,15 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
     if (!frameView)
         return;
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    if (auto* document = localRootFrame->document()) {
+        if (CheckedPtr timelinesController = document->timelinesController()) {
+            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater())
+                layerTransaction.setTimelines(acceleratedEffectStackUpdater->timelines());
+        }
+    }
+#endif
+
     layerTransaction.setContentsSize(frameView->contentsSize());
     layerTransaction.setScrollOrigin(frameView->scrollOrigin());
     layerTransaction.setPageScaleFactor(corePage()->pageScaleFactor());
