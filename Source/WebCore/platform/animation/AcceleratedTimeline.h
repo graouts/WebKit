@@ -32,6 +32,7 @@
 #include "WebAnimationTime.h"
 #include <wtf/Seconds.h>
 #include <wtf/TZoneMalloc.h>
+#include <wtf/UUID.h>
 
 namespace WebCore {
 
@@ -40,8 +41,8 @@ class ScrollTimeline;
 class AcceleratedTimeline : public RefCounted<AcceleratedTimeline> {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(AcceleratedTimeline);
 public:
-    static Ref<AcceleratedTimeline> create(Seconds originTime);
-    static Ref<AcceleratedTimeline> create(const ScrollTimeline&);
+    static Ref<AcceleratedTimeline> create(const WTF::UUID&, Seconds originTime);
+    static Ref<AcceleratedTimeline> create(const WTF::UUID&, const ScrollTimeline&);
 
     bool isMonotonic() const { return !m_duration; }
     bool isProgressBased() const { return !isMonotonic(); }
@@ -55,7 +56,8 @@ public:
     enum class Type : uint8_t { Document, Scroll, View };
 
     // Encoding support.
-    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
+    WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(WTF::UUID&&, Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
+    const WTF::UUID identifier() const { return m_identifier; }
     Type type() const { return m_type; }
     const std::optional<WebAnimationTime> duration() const { return m_duration; }
     const std::optional<Seconds> originTime() const { return m_originTime; }
@@ -65,11 +67,12 @@ public:
     virtual ~AcceleratedTimeline() = default;
 
 private:
-    AcceleratedTimeline(Type);
-    AcceleratedTimeline(Seconds originTime);
-    AcceleratedTimeline(Type, std::optional<WebAnimationTime> duration, ScrollAxis);
-    AcceleratedTimeline(Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
+    AcceleratedTimeline(const WTF::UUID&, Type);
+    AcceleratedTimeline(const WTF::UUID&, Seconds originTime);
+    AcceleratedTimeline(const WTF::UUID&, Type, std::optional<WebAnimationTime> duration, ScrollAxis);
+    AcceleratedTimeline(WTF::UUID&&, Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
 
+    WTF::UUID m_identifier;
     Type m_type;
     std::optional<WebAnimationTime> m_duration;
     std::optional<Seconds> m_originTime;

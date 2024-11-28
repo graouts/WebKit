@@ -542,7 +542,7 @@ Ref<AcceleratedTimeline> DocumentTimeline::createAcceleratedRepresentation()
     ASSERT(m_document->timelinesController());
     CheckedPtr timelinesController = RefPtr { m_document.get() }->timelinesController();
     auto originTime = timelinesController->acceleratedEffectStackUpdater().originTime();
-    return AcceleratedTimeline::create(originTime);
+    return AcceleratedTimeline::create(m_acceleratedTimelineIdentifier, originTime);
 }
 #endif
 
