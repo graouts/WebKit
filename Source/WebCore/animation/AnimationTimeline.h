@@ -34,6 +34,7 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 #include "AcceleratedTimeline.h"
+#include <wtf/UUID.h>
 #endif
 
 namespace WebCore {
@@ -89,11 +90,14 @@ protected:
     AnimationCollection m_animations;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    RefPtr<AcceleratedTimeline> m_acceleratedRepresentation;
+    WTF::UUID m_acceleratedTimelineIdentifier;
 #endif
 
 private:
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    RefPtr<AcceleratedTimeline> m_acceleratedRepresentation;
+#endif
     std::optional<WebAnimationTime> m_currentTime;
     std::optional<WebAnimationTime> m_duration;
 };

@@ -348,7 +348,7 @@ TextStream& operator<<(TextStream& ts, Scroller scroller)
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 Ref<AcceleratedTimeline> ScrollTimeline::createAcceleratedRepresentation()
 {
-    auto acceleratedTimeline = AcceleratedTimeline::create(*this);
+    auto acceleratedTimeline = AcceleratedTimeline::create(m_acceleratedTimelineIdentifier, *this);
     if (RefPtr source = m_source.get()) {
         if (auto* sourceScrollableArea = scrollableAreaForSourceRenderer(source->renderer(), source->document()))
             acceleratedTimeline->setSource(sourceScrollableArea->scrollingNodeID());

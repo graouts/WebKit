@@ -35,42 +35,44 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(AcceleratedTimeline);
 
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(Seconds originTime)
+Ref<AcceleratedTimeline> AcceleratedTimeline::create(const WTF::UUID& identifier, Seconds originTime)
 {
-    return adoptRef(*new AcceleratedTimeline(originTime));
+    return adoptRef(*new AcceleratedTimeline(identifier, originTime));
 }
 
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(const ScrollTimeline& source)
+Ref<AcceleratedTimeline> AcceleratedTimeline::create(const WTF::UUID& identifier, const ScrollTimeline& source)
 {
     // FIXME: process ViewTimeline as well.
-    return adoptRef(*new AcceleratedTimeline(Type::Scroll, source.duration(), source.axis()));
+    return adoptRef(*new AcceleratedTimeline(identifier, Type::Scroll, source.duration(), source.axis()));
 }
 
-Ref<AcceleratedTimeline> AcceleratedTimeline::create(Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
+Ref<AcceleratedTimeline> AcceleratedTimeline::create(WTF::UUID&& identifier, Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
 {
-    return adoptRef(*new AcceleratedTimeline(type, WTFMove(duration), WTFMove(originTime), WTFMove(source), axis));
+    return adoptRef(*new AcceleratedTimeline(WTFMove(identifier), type, WTFMove(duration), WTFMove(originTime), WTFMove(source), axis));
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Type type)
-    : m_type(type)
+AcceleratedTimeline::AcceleratedTimeline(const WTF::UUID& identifier, Type type)
+    : m_identifier(identifier)
+    , m_type(type)
 {
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Seconds originTime)
-    : AcceleratedTimeline(Type::Document)
+AcceleratedTimeline::AcceleratedTimeline(const WTF::UUID& identifier, Seconds originTime)
+    : AcceleratedTimeline(identifier, Type::Document)
 {
     m_originTime = originTime;
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Type type, std::optional<WebAnimationTime> duration, ScrollAxis axis)
-    : AcceleratedTimeline(type)
+AcceleratedTimeline::AcceleratedTimeline(const WTF::UUID& identifier, Type type, std::optional<WebAnimationTime> duration, ScrollAxis axis)
+    : AcceleratedTimeline(identifier, type)
 {
     m_duration = duration;
     m_axis = axis;
 }
 
-AcceleratedTimeline::AcceleratedTimeline(Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
-    : m_type(type)
+AcceleratedTimeline::AcceleratedTimeline(WTF::UUID&& identifier, Type type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&& source, ScrollAxis axis)
+    : m_identifier(WTFMove(identifier))
+    , m_type(type)
     , m_duration(WTFMove(duration))
     , m_originTime(WTFMove(originTime))
     , m_source(WTFMove(source))

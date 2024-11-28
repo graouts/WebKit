@@ -37,8 +37,11 @@
 namespace WebCore {
 
 AnimationTimeline::AnimationTimeline(std::optional<WebAnimationTime> duration)
-    : m_duration(duration)
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    : m_acceleratedTimelineIdentifier(WTF::UUID::createVersion4Weak())
+#endif
 {
+    m_duration = duration;
 }
 
 AnimationTimeline::~AnimationTimeline() = default;
@@ -116,7 +119,7 @@ const RefPtr<AcceleratedTimeline>& AnimationTimeline::acceleratedRepresentation(
 
 Ref<AcceleratedTimeline> AnimationTimeline::createAcceleratedRepresentation()
 {
-    return AcceleratedTimeline::create(0_s);
+    return AcceleratedTimeline::create(m_acceleratedTimelineIdentifier, 0_s);
 }
 
 #endif
