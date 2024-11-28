@@ -4158,7 +4158,7 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const Animation& anim
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
+bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<AcceleratedTimeline>>& timelines)
 {
     auto& renderer = this->renderer();
     OptionSet<AcceleratedEffectProperty> disallowedAcceleratedProperties;
@@ -4197,6 +4197,8 @@ bool RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()
                 continue;
             if (!hasInterpolatingEffect && effect->isRunningAccelerated())
                 hasInterpolatingEffect = true;
+            if (auto& timeline = acceleratedEffect->timeline())
+                timelines.add(*timeline);
             effect->setAcceleratedRepresentation(acceleratedEffect.get());
             weakAcceleratedEffects.add(*acceleratedEffect);
             acceleratedEffects.append(acceleratedEffect.releaseNonNull());

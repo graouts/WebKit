@@ -52,8 +52,7 @@
 #endif
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-#include <WebCore/AcceleratedEffect.h>
-#include <WebCore/AcceleratedEffectValues.h>
+#include <WebCore/AcceleratedTimeline.h>
 #endif
 
 #if ENABLE(MODEL_ELEMENT)
@@ -93,12 +92,12 @@ public:
             WebCore::FloatSize naturalSize;
         };
         using AdditionalData = std::variant<
-            NoAdditionalData, // PlatformCALayerRemote and PlatformCALayerRemoteTiledBacking
-            CustomData, // PlatformCALayerRemoteCustom
+        NoAdditionalData, // PlatformCALayerRemote and PlatformCALayerRemoteTiledBacking
+        CustomData, // PlatformCALayerRemoteCustom
 #if ENABLE(MODEL_ELEMENT)
-            Ref<WebCore::Model>, // PlatformCALayerRemoteModelHosting
+        Ref<WebCore::Model>, // PlatformCALayerRemoteModelHosting
 #endif
-            WebCore::LayerHostingContextIdentifier // PlatformCALayerRemoteHost
+        WebCore::LayerHostingContextIdentifier // PlatformCALayerRemoteHost
         >;
 
         Markable<WebCore::PlatformLayerIdentifier> layerID;
@@ -133,7 +132,7 @@ public:
     String description() const;
     void dump() const;
 #endif
-    
+
     bool hasAnyLayerChanges() const;
 
     const Vector<LayerCreationProperties>& createdLayers() const { return m_createdLayers; }
@@ -157,10 +156,10 @@ public:
 
     WebCore::LayoutSize baseLayoutViewportSize() const { return m_baseLayoutViewportSize; }
     void setBaseLayoutViewportSize(const WebCore::LayoutSize& size) { m_baseLayoutViewportSize = size; };
-    
+
     WebCore::LayoutPoint minStableLayoutViewportOrigin() const { return m_minStableLayoutViewportOrigin; }
     void setMinStableLayoutViewportOrigin(const WebCore::LayoutPoint& point) { m_minStableLayoutViewportOrigin = point; };
-    
+
     WebCore::LayoutPoint maxStableLayoutViewportOrigin() const { return m_maxStableLayoutViewportOrigin; }
     void setMaxStableLayoutViewportOrigin(const WebCore::LayoutPoint& point) { m_maxStableLayoutViewportOrigin = point; };
 
@@ -242,6 +241,11 @@ public:
     void setDynamicViewportSizeUpdateID(DynamicViewportSizeUpdateID resizeID) { m_dynamicViewportSizeUpdateID = resizeID; }
 #endif
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelines() const { return m_timelines; }
+    void setTimelines(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelines) { m_timelines = timelines; }
+#endif
+
 private:
     friend struct IPC::ArgumentCoder<RemoteLayerTreeTransaction, void>;
 
@@ -291,6 +295,9 @@ private:
     std::optional<EditorState> m_editorState;
 #if PLATFORM(IOS_FAMILY)
     std::optional<DynamicViewportSizeUpdateID> m_dynamicViewportSizeUpdateID;
+#endif
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+    HashSet<Ref<WebCore::AcceleratedTimeline>> m_timelines;
 #endif
 };
 

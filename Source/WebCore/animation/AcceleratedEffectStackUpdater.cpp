@@ -53,6 +53,8 @@ AcceleratedEffectStackUpdater::AcceleratedEffectStackUpdater(Document& document)
 
 void AcceleratedEffectStackUpdater::updateEffectStacks()
 {
+    m_timelines.clear();
+
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });
     for (auto [element, pseudoElementIdentifier] : targetsPendingUpdate) {
         if (!element)
@@ -66,7 +68,7 @@ void AcceleratedEffectStackUpdater::updateEffectStacks()
 
         auto* renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
-        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues();
+        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues(m_timelines);
     }
 }
 
