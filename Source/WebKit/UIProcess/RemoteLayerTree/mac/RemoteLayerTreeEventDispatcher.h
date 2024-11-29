@@ -42,6 +42,11 @@
 #include <wtf/ThreadSafeWeakPtr.h>
 #include <wtf/threads/BinarySemaphore.h>
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "RemoteAcceleratedEffectStack.h"
+#include <WebCore/AcceleratedTimeline.h>
+#endif
+
 namespace WebCore {
 class PlatformWheelEvent;
 class WheelEventDeltaFilter;
