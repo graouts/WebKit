@@ -611,24 +611,25 @@ void RemoteLayerTreeEventDispatcher::animationsWereAddedToNode(RemoteLayerTreeNo
     auto effectStack = node.takeEffectStack();
     ASSERT(effectStack);
 
-    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
-        for (auto& effect : effects) {
-            auto& timeline = effect->timeline();
-            if (!timeline)
-                continue;
-
-            if (timeline->isMonotonic()) {
-                m_monotonicTimelines.add(*timeline);
-                continue;
-            }
-
-            ASSERT(timeline->isProgressBased());
-            if (auto scrollingTree = this->scrollingTree())
-                scrollingTree->addScrollTimeline(*timeline);
-        }
-    };
-    addEffectTimelines(effectStack->primaryLayerEffects());
-    addEffectTimelines(effectStack->backdropLayerEffects());
+    // FIXME: handle timeline lookup (graouts)
+//    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
+//        for (auto& effect : effects) {
+//            auto& timeline = effect->timeline();
+//            if (!timeline)
+//                continue;
+//
+//            if (timeline->isMonotonic()) {
+//                m_monotonicTimelines.add(*timeline);
+//                continue;
+//            }
+//
+//            ASSERT(timeline->isProgressBased());
+//            if (auto scrollingTree = this->scrollingTree())
+//                scrollingTree->addScrollTimeline(*timeline);
+//        }
+//    };
+//    addEffectTimelines(effectStack->primaryLayerEffects());
+//    addEffectTimelines(effectStack->backdropLayerEffects());
 
     m_effectStacks.set(node.layerID(), effectStack.releaseNonNull());
 }
@@ -641,11 +642,11 @@ void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTr
         effectStack->clear(node.layer());
 }
 
-void RemoteLayerTreeEventDispatcher::clearAnimationTimelines()
+void RemoteLayerTreeEventDispatcher::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    m_monotonicTimelines.clear();
+    // m_monotonicTimelines.clear();
     if (auto scrollingTree = this->scrollingTree())
-        scrollingTree->clearScrollTimelines();
+        scrollingTree->registerTimelinesIfNecessary(timelineRepresentations);
 }
 
 void RemoteLayerTreeEventDispatcher::setMonotonicTimelinesCurrentTime(MonotonicTime now)
