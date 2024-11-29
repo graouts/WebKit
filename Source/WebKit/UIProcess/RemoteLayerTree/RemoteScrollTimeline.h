@@ -41,7 +41,9 @@ public:
     static Ref<RemoteScrollTimeline> create(const WebCore::AcceleratedTimeline&);
 
     WebCore::ScrollingNodeID source() const { return m_source; }
+
     WebCore::ScrollAxis axis() const { return m_axis; }
+    void setAxis(WebCore::ScrollAxis axis) { m_axis = axis; }
 
     void setProgress(std::optional<double>);
 

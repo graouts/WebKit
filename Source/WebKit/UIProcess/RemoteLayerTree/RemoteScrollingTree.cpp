@@ -265,14 +265,61 @@ void RemoteScrollingTree::tryToApplyLayerPositions()
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 void RemoteScrollingTree::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    UNUSED_PARAM(timelineRepresentations);
-    // m_progressBasedTimelines.clear();
+    for (auto& timelineRepresentation : timelineRepresentations) {
+        if (!timelineRepresentation->source())
+            continue;
 
-//    ASSERT(timeline->isProgressBased());
-//    ASSERT(timeline->source());
-//    m_progressBasedTimelines.ensure(*timeline->source(), [] {
-//        return HashSet<Ref<WebCore::RemoteScrollTimeline>> { };
-//    }).iterator->value.add(WTFMove(timeline));
+        auto done = false;
+
+        auto sourceIterator = m_progressBasedTimelines.find(*timelineRepresentation->source());
+        if (sourceIterator != m_progressBasedTimelines.end()) {
+            auto& existingTimelines = sourceIterator->value;
+            for (size_t i = 0; i < existingTimelines.size(); i++) {
+                auto& existingTimeline = existingTimelines[i];
+                if (existingTimeline->identifier() == timelineRepresentation->identifier()) {
+                    existingTimeline->setAxis(timelineRepresentation->axis());
+                    done = true;
+                    break;
+                }
+            }
+        }
+
+        if (done)
+            continue;
+
+        // If we didn't find the timeline within the timelines for this source, it may have been
+        // associated with another source.
+        for (auto& [source, existingTimelines] : m_progressBasedTimelines) {
+            // We've already looked at the exisiting source.
+            if (source == *timelineRepresentation->source())
+                continue;
+            for (size_t i = 0; i < existingTimelines.size(); i++) {
+                auto& existingTimeline = existingTimelines[i];
+                if (existingTimeline->identifier() == timelineRepresentation->identifier()) {
+                    existingTimeline->setSource(*timelineRepresentation->source());
+                    existingTimeline->setAxis(timelineRepresentation->axis());
+                    Ref timelineToMove = existingTimeline.get();
+                    // Remove from where it was.
+                    existingTimelines.remove(i);
+                    // Move it to the right source.
+                    m_progressBasedTimelines.ensure(timelineToMove->source(), [] {
+                        return HashSet<Ref<RemoteScrollTimeline>> { };
+                    }).iterator->value.add(WTFMove(timelineToMove));
+                    done = true;
+                    break;
+                }
+            }
+        }
+
+        if (done)
+            continue;
+
+        // If we get to this point, we're dealing with a new timeline.
+        auto timeline = RemoteScrollTimeline::create(timelineRepresentation);
+        m_progressBasedTimelines.ensure(timeline->source(), [] {
+            return HashSet<Ref<RemoteScrollTimeline>> { };
+        }).iterator->value.add(WTFMove(timeline));
+    }
 }
 
 void RemoteScrollingTree::updateScrollTimelinesForScrollingTreeScrollingNode(WebCore::ScrollingTreeScrollingNode& node)
