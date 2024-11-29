@@ -34,13 +34,13 @@ namespace WebKit {
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(RemoteScrollTimeline);
 
-Ref<RemoteScrollTimeline> RemoteScrollTimeline::create(const AcceleratedTimeline& input)
+Ref<RemoteScrollTimeline> RemoteScrollTimeline::create(const WebCore::AcceleratedTimeline& input)
 {
     ASSERT(input.source());
     return adoptRef(*new RemoteScrollTimeline(input));
 }
 
-RemoteScrollTimeline::RemoteScrollTimeline(const AcceleratedTimeline& input)
+RemoteScrollTimeline::RemoteScrollTimeline(const WebCore::AcceleratedTimeline& input)
     : RemoteAnimationTimeline(input.identifier(), WebCore::WebAnimationTime::fromPercentage(100))
     , m_source(*input.source())
     , m_axis(input.axis())

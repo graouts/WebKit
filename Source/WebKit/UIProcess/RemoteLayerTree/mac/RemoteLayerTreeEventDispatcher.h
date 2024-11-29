@@ -44,6 +44,7 @@
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
 #include "RemoteAcceleratedEffectStack.h"
+#include "RemoteDocumentTimeline.h"
 #include <WebCore/AcceleratedTimeline.h>
 #endif
 
@@ -107,7 +108,7 @@ public:
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
     void updateAnimations();
-    void clearAnimationTimelines();
+    void registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>&);
     void setMonotonicTimelinesCurrentTime(MonotonicTime);
 #endif
 
@@ -198,7 +199,7 @@ private:
     friend class RemoteScrollingCoordinatorProxyMac;
     Lock m_effectStacksLock;
     HashMap<WebCore::PlatformLayerIdentifier, Ref<RemoteAcceleratedEffectStack>> m_effectStacks WTF_GUARDED_BY_LOCK(m_effectStacksLock);
-    HashSet<Ref<WebCore::AcceleratedTimeline>> m_monotonicTimelines;
+    HashSet<Ref<RemoteDocumentTimeline>> m_monotonicTimelines;
 #endif
 
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)

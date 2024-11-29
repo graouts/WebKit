@@ -412,25 +412,26 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereAddedToNode(RemoteLayerTr
     RefPtr effectStack = node.effectStack();
     ASSERT(effectStack);
 
+    // FIXME: handle timeline lookup (graouts)
     // FIXME: should share this with RemoteLayerTreeEventDispatcher::animationsWereAddedToNode().
-    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
-        for (auto& effect : effects) {
-            auto& timeline = effect->timeline();
-            if (!timeline)
-                continue;
-
-            if (timeline->isMonotonic()) {
-                m_monotonicTimelines.add(*timeline);
-                continue;
-            }
-
-            ASSERT(timeline->isProgressBased());
-            if (auto scrollingTree = this->scrollingTree())
-                scrollingTree->addScrollTimeline(*timeline);
-        }
-    };
-    addEffectTimelines(effectStack->primaryLayerEffects());
-    addEffectTimelines(effectStack->backdropLayerEffects());
+//    auto addEffectTimelines = [&](const WebCore::AcceleratedEffects& effects) {
+//        for (auto& effect : effects) {
+//            auto& timeline = effect->timeline();
+//            if (!timeline)
+//                continue;
+//
+//            if (timeline->isMonotonic()) {
+//                m_monotonicTimelines.add(*timeline);
+//                continue;
+//            }
+//
+//            ASSERT(timeline->isProgressBased());
+//            if (auto scrollingTree = this->scrollingTree())
+//                scrollingTree->addScrollTimeline(*timeline);
+//        }
+//    };
+//    addEffectTimelines(effectStack->primaryLayerEffects());
+//    addEffectTimelines(effectStack->backdropLayerEffects());
 
     if (!m_monotonicTimelines.isEmpty())
         drawingAreaIOS().scheduleDisplayRefreshCallbacksForAnimation();
@@ -448,10 +449,10 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
         drawingAreaIOS().pauseDisplayRefreshCallbacksForAnimation();
 }
 
-void RemoteScrollingCoordinatorProxyIOS::clearAnimationTimelines()
+void RemoteScrollingCoordinatorProxyIOS::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    m_monotonicTimelines.clear();
-    scrollingTree()->clearScrollTimelines();
+//    m_monotonicTimelines.clear();
+    scrollingTree()->registerTimelinesIfNecessary(timelineRepresentations);
 }
 
 void RemoteScrollingCoordinatorProxyIOS::setMonotonicTimelinesCurrentTime(MonotonicTime now)

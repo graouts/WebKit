@@ -716,9 +716,9 @@ void RemoteLayerTreeDrawingAreaProxy::sizeToContentAutoSizeMaximumSizeDidChange(
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-void RemoteLayerTreeDrawingAreaProxy::clearAnimationTimelines()
+void RemoteLayerTreeDrawingAreaProxy::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    protectedWebPageProxy()->scrollingCoordinatorProxy()->clearAnimationTimelines();
+    protectedWebPageProxy()->scrollingCoordinatorProxy()->registerTimelinesIfNecessary(timelineRepresentations);
 }
 
 void RemoteLayerTreeDrawingAreaProxy::setMonotonicTimelinesCurrentTime(MonotonicTime now)

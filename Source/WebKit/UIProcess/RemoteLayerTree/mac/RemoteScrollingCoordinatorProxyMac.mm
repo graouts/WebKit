@@ -300,9 +300,9 @@ void RemoteScrollingCoordinatorProxyMac::applyScrollingTreeLayerPositionsAfterCo
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-void RemoteScrollingCoordinatorProxyMac::clearAnimationTimelines()
+void RemoteScrollingCoordinatorProxyMac::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    m_eventDispatcher->clearAnimationTimelines();
+    m_eventDispatcher->registerTimelinesIfNecessary(timelineRepresentations);
 }
 
 void RemoteScrollingCoordinatorProxyMac::setMonotonicTimelinesCurrentTime(MonotonicTime now)

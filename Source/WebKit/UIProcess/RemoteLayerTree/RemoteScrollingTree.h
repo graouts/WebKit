@@ -34,6 +34,10 @@
 #include <wtf/TZoneMalloc.h>
 #include <wtf/WeakPtr.h>
 
+#if ENABLE(THREADED_ANIMATION_RESOLUTION)
+#include "RemoteScrollTimeline.h"
+#endif
+
 namespace WebCore {
 class PlatformMouseEvent;
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
@@ -81,8 +85,7 @@ public:
     void tryToApplyLayerPositions();
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    void clearScrollTimelines();
-    void addScrollTimeline(Ref<WebCore::AcceleratedTimeline>&&);
+    void registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>&);
 #endif
 
 protected:
@@ -103,7 +106,7 @@ protected:
     void updateScrollTimelinesForScrollingTreeScrollingNode(WebCore::ScrollingTreeScrollingNode&);
 
 private:
-    UncheckedKeyHashMap<WebCore::ScrollingNodeID, HashSet<Ref<WebCore::AcceleratedTimeline>>> m_progressBasedTimelines;
+    UncheckedKeyHashMap<WebCore::ScrollingNodeID, HashSet<Ref<RemoteScrollTimeline>>> m_progressBasedTimelines;
 #endif
 };
 

@@ -203,7 +203,7 @@ bool RemoteLayerTreeHost::updateLayerTree(const IPC::Connection& connection, con
     }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    bool hasFoundNodeWithChangedAnimations = false;
+    m_drawingArea->registerTimelinesIfNecessary(transaction.timelines());
 #endif
 
     for (auto& changedLayer : transaction.changedLayerProperties()) {
@@ -221,13 +221,6 @@ bool RemoteLayerTreeHost::updateLayerTree(const IPC::Connection& connection, con
 
         if (properties.changedProperties.contains(LayerChange::ClonedContentsChanged) && properties.clonedLayerID)
             clonesToUpdate.append({ layerID, *properties.clonedLayerID });
-
-#if ENABLE(THREADED_ANIMATION_RESOLUTION)
-        if (!hasFoundNodeWithChangedAnimations && properties.changedProperties.contains(LayerChange::AnimationsChanged)) {
-            hasFoundNodeWithChangedAnimations = true;
-            m_drawingArea->clearAnimationTimelines();
-        }
-#endif
 
         RemoteLayerTreePropertyApplier::applyProperties(*node, this, properties, m_nodes, layerContentsType);
 

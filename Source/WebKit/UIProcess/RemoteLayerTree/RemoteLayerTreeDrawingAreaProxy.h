@@ -79,7 +79,7 @@ public:
     void viewWillEndLiveResize() final;
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-    void clearAnimationTimelines();
+    void registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>&);
     void setMonotonicTimelinesCurrentTime(MonotonicTime);
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
