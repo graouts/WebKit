@@ -29,6 +29,7 @@
 
 #include "RemoteAnimationTimeline.h"
 #include <WebCore/AcceleratedTimeline.h>
+#include <WebCore/ScrollAxis.h>
 #include <wtf/Ref.h>
 #include <wtf/TZoneMalloc.h>
 
@@ -37,15 +38,18 @@ namespace WebKit {
 class RemoteScrollTimeline final : public RemoteAnimationTimeline {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteScrollTimeline);
 public:
-    static Ref<RemoteScrollTimeline> create(const AcceleratedTimeline&);
+    static Ref<RemoteScrollTimeline> create(const WebCore::AcceleratedTimeline&);
+
+    WebCore::ScrollingNodeID source() const { return m_source; }
+    WebCore::ScrollAxis axis() const { return m_axis; }
 
     void setProgress(std::optional<double>);
 
 private:
-    RemoteScrollTimeline(const AcceleratedTimeline&);
+    RemoteScrollTimeline(const WebCore::AcceleratedTimeline&);
 
     WebCore::ScrollingNodeID m_source;
-    WebCore::ScrollAxis m_axis { ScrollAxis::Block };
+    WebCore::ScrollAxis m_axis { WebCore::ScrollAxis::Block };
 };
 
 } // namespace WebKit

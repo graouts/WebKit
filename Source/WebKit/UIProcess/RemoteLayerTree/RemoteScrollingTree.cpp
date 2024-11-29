@@ -263,18 +263,16 @@ void RemoteScrollingTree::tryToApplyLayerPositions()
 }
 
 #if ENABLE(THREADED_ANIMATION_RESOLUTION)
-void RemoteScrollingTree::clearScrollTimelines()
+void RemoteScrollingTree::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    m_progressBasedTimelines.clear();
-}
+    UNUSED_PARAM(timelineRepresentations);
+    // m_progressBasedTimelines.clear();
 
-void RemoteScrollingTree::addScrollTimeline(Ref<WebCore::AcceleratedTimeline>&& timeline)
-{
-    ASSERT(timeline->isProgressBased());
-    ASSERT(timeline->source());
-    m_progressBasedTimelines.ensure(*timeline->source(), [] {
-        return HashSet<Ref<WebCore::AcceleratedTimeline>> { };
-    }).iterator->value.add(WTFMove(timeline));
+//    ASSERT(timeline->isProgressBased());
+//    ASSERT(timeline->source());
+//    m_progressBasedTimelines.ensure(*timeline->source(), [] {
+//        return HashSet<Ref<WebCore::RemoteScrollTimeline>> { };
+//    }).iterator->value.add(WTFMove(timeline));
 }
 
 void RemoteScrollingTree::updateScrollTimelinesForScrollingTreeScrollingNode(WebCore::ScrollingTreeScrollingNode& node)
@@ -286,7 +284,7 @@ void RemoteScrollingTree::updateScrollTimelinesForScrollingTreeScrollingNode(Web
     auto currentOffset = node.currentScrollOffset();
     auto maxOffset = node.totalContentsSize() - node.scrollableAreaSize();
 
-    auto progress = [&](const Ref<WebCore::AcceleratedTimeline>& timeline) -> std::optional<double> {
+    auto progress = [&](const Ref<RemoteScrollTimeline>& timeline) -> std::optional<double> {
         if (timeline->axis() == WebCore::ScrollAxis::Block) {
             if (auto maxHeight = maxOffset.height())
                 return currentOffset.y() / maxHeight;

@@ -37,12 +37,12 @@ namespace WebKit {
 class RemoteDocumentTimeline final : public RemoteAnimationTimeline {
     WTF_MAKE_TZONE_OR_ISO_ALLOCATED(RemoteDocumentTimeline);
 public:
-    static Ref<RemoteDocumentTimeline> create(const AcceleratedTimeline&);
+    static Ref<RemoteDocumentTimeline> create(const WebCore::AcceleratedTimeline&);
 
     void setMonotonicTime(MonotonicTime);
 
 private:
-    RemoteDocumentTimeline(const AcceleratedTimeline&);
+    RemoteDocumentTimeline(const WebCore::AcceleratedTimeline&);
 
     Seconds m_originTime;
 };
