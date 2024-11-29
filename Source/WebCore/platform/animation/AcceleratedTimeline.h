@@ -57,7 +57,7 @@ public:
 
     // Encoding support.
     WEBCORE_EXPORT static Ref<AcceleratedTimeline> create(WTF::UUID&&, Type, std::optional<WebAnimationTime>&& duration, std::optional<Seconds>&& originTime, std::optional<ScrollingNodeID>&&, ScrollAxis);
-    const WTF::UUID identifier() const { return m_identifier; }
+    const WTF::UUID& identifier() const { return m_identifier; }
     Type type() const { return m_type; }
     const std::optional<WebAnimationTime> duration() const { return m_duration; }
     const std::optional<Seconds> originTime() const { return m_originTime; }
