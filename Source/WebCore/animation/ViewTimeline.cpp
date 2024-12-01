@@ -292,70 +292,26 @@ RenderBox* ViewTimeline::sourceScrollerRenderer() const
     return subjectRenderer->enclosingScrollableContainer();
 }
 
-ScrollTimeline::Data ViewTimeline::computeTimelineData(const TimelineRange& range) const
+ScrollTimeline::Data ViewTimeline::computeTimelineData() const
 {
     if (!m_cachedCurrentTimeData.scrollOffset && !m_cachedCurrentTimeData.scrollContainerSize)
         return { };
 
-    auto computeRangeStart = [&]() {
-        switch (range.start.name) {
-        case SingleTimelineRange::Name::Normal:
-        case SingleTimelineRange::Name::EntryCrossing:
-        case SingleTimelineRange::Name::Entry:
-        case SingleTimelineRange::Name::Cover:
-            return m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize;
-        case SingleTimelineRange::Name::Contain:
-            return m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize - m_cachedCurrentTimeData.subjectSize;
-        case SingleTimelineRange::Name::ExitCrossing:
-        case SingleTimelineRange::Name::Exit:
-            return m_cachedCurrentTimeData.subjectOffset;
-        case SingleTimelineRange::Name::Omitted:
-            return 0.f;
-        }
-        ASSERT_NOT_REACHED();
-        return 0.f;
-    };
-    auto computeRangeEnd = [&]() {
-        switch (range.end.name) {
-        case SingleTimelineRange::Name::Normal:
-        case SingleTimelineRange::Name::ExitCrossing:
-        case SingleTimelineRange::Name::Exit:
-        case SingleTimelineRange::Name::Cover:
-            return m_cachedCurrentTimeData.subjectOffset + m_cachedCurrentTimeData.subjectSize;
-        case SingleTimelineRange::Name::Contain:
-            return m_cachedCurrentTimeData.subjectOffset;
-        case SingleTimelineRange::Name::Entry:
-        case SingleTimelineRange::Name::EntryCrossing:
-            return m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize - m_cachedCurrentTimeData.subjectSize;
-        case SingleTimelineRange::Name::Omitted:
-            return 0.f;
-        }
-        ASSERT_NOT_REACHED();
-        return 0.f;
-    };
-
-    auto rangeStart = computeRangeStart() + m_cachedCurrentTimeData.insetEnd.value();
-    auto rangeEnd = computeRangeEnd() - m_cachedCurrentTimeData.insetStart.value();
-
     return {
         m_cachedCurrentTimeData.scrollOffset,
-        rangeStart + ScrollTimeline::floatValueForOffset(range.start.offset, rangeEnd - rangeStart),
-        rangeStart + ScrollTimeline::floatValueForOffset(range.end.offset, rangeEnd - rangeStart)
+        m_cachedCurrentTimeData.insetStart.value(),
+        m_cachedCurrentTimeData.insetEnd.value()
     };
 }
 
 Ref<CSSNumericValue> ViewTimeline::startOffset()
 {
-    auto range = defaultRange();
-    auto data = computeTimelineData(range);
-    return CSSNumericFactory::px(data.rangeStart);
+    return CSSNumericFactory::px(computeTimelineData().rangeStart);
 }
 
 Ref<CSSNumericValue> ViewTimeline::endOffset()
 {
-    auto range = defaultRange();
-    auto data = computeTimelineData(range);
-    return CSSNumericFactory::px(data.rangeEnd);
+    return CSSNumericFactory::px(computeTimelineData().rangeEnd);
 }
 
 } // namespace WebCore

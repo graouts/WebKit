@@ -403,6 +403,11 @@ void AnimationEffect::animationPlaybackRateDidChange()
     m_timingDidMutate = true;
 }
 
+void AnimationEffect::animationProgressBasedTimelineSourceDidChangeMetrics()
+{
+    m_timingDidMutate = true;
+}
+
 void AnimationEffect::updateComputedTimingPropertiesIfNeeded()
 {
     if (!m_timingDidMutate)
@@ -410,21 +415,30 @@ void AnimationEffect::updateComputedTimingPropertiesIfNeeded()
 
     m_timingDidMutate = false;
 
-    auto timelineDuration = [&] -> std::optional<WebAnimationTime> {
-        if (m_animation) {
-            if (RefPtr timeline = m_animation->timeline())
-                return timeline->duration();
-        }
-        return std::nullopt;
-    }();
-
     auto playbackRate = [&] {
         if (m_animation)
             return m_animation->playbackRate();
         return 1.0;
     }();
 
-    m_timing.updateComputedProperties(timelineDuration, playbackRate);
+    // FIXME: also update computed properties when the attachement range changes.
+    auto rangeDuration = [&] -> std::optional<WebAnimationTime> {
+        if (!m_animation)
+            return std::nullopt;
+
+        RefPtr timeline = m_animation->timeline();
+        if (!timeline)
+            return std::nullopt;
+
+        if (RefPtr scrollTimeline = dynamicDowncast<ScrollTimeline>(timeline)) {
+            auto interval = scrollTimeline->intervalForAttachmentRange(m_animation->attachmentRange());
+            return interval.second - interval.first;
+        }
+
+        return timeline->duration();
+    }();
+
+    m_timing.updateComputedProperties(rangeDuration, playbackRate);
 }
 
 } // namespace WebCore

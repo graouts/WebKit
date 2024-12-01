@@ -64,9 +64,9 @@ void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationT
             endDelay = WebAnimationTime::fromPercentage(0);
             iterationDuration = std::isinf(iterations) ? WebAnimationTime::fromPercentage(0) : *timelineDuration;
         } else if (auto totalTime = specifiedEndTime()) {
-            auto sanitize = [](const WebAnimationTime& time) {
+            auto sanitize = [&](const WebAnimationTime& time) {
                 if (time.isInfinity() || time.isNaN())
-                    return WebAnimationTime::fromPercentage(100);
+                    return *timelineDuration;
                 return time;
             };
             // Otherwise:
