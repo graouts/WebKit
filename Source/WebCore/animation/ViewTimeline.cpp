@@ -297,10 +297,14 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
     if (!m_cachedCurrentTimeData.scrollOffset && !m_cachedCurrentTimeData.scrollContainerSize)
         return { };
 
+    auto rangeStart = m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize;
+    auto range = m_cachedCurrentTimeData.subjectSize + m_cachedCurrentTimeData.scrollContainerSize;
+    auto rangeEnd = rangeStart + range;
+
     return {
         m_cachedCurrentTimeData.scrollOffset,
-        m_cachedCurrentTimeData.insetStart.value(),
-        m_cachedCurrentTimeData.insetEnd.value()
+        rangeStart,
+        rangeEnd
     };
 }
 
