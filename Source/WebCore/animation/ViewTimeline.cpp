@@ -315,8 +315,8 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
 std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmentRange(const TimelineRange& timelineRange) const
 {
     // FIXME: maybe use this codepath for the default case as well?
-    auto maxTimelineRange = m_cachedCurrentTimeData.contentSize + m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
-    if (!maxTimelineRange) {
+    auto maxAttachmentRange = computeTimelineData().rangeStart + m_cachedCurrentTimeData.contentSize;
+    if (!maxAttachmentRange) {
         return {
             WebAnimationTime::fromPercentage(0),
             WebAnimationTime::fromPercentage(100)
@@ -328,7 +328,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     auto computedPercentageIfNecessary = [&](const Length& length) {
         if (length.isPercent())
             return length.value();
-        return floatValueForOffset(length, maxTimelineRange) / maxTimelineRange * 100;
+        return floatValueForOffset(length, maxAttachmentRange) / maxAttachmentRange * 100;
     };
 
     return {
