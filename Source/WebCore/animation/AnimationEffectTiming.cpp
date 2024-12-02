@@ -49,7 +49,7 @@ void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationT
             if (std::isinf(iterations))
                 intrinsicIterationDuration = WebAnimationTime::fromPercentage(0);
             else
-                intrinsicIterationDuration = (WebAnimationTime::fromPercentage(100) - startDelay - endDelay) / iterations;
+                intrinsicIterationDuration = (*timelineDuration - startDelay - endDelay) / iterations;
         }
     };
 

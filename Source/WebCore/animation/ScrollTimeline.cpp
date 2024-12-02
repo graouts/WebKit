@@ -202,7 +202,7 @@ AnimationTimelinesController* ScrollTimeline::controller() const
 
 void ScrollTimeline::cacheCurrentTime()
 {
-    auto previousMaxScrollOffset = m_cachedCurrentTimeData.maxScrollOffset;
+    auto previousContentSize = m_cachedCurrentTimeData.contentSize;
 
     m_cachedCurrentTimeData = [&] -> CurrentTimeData {
         RefPtr source = this->source();
@@ -213,14 +213,15 @@ void ScrollTimeline::cacheCurrentTime()
             return { };
         float scrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->scrollOffset().y() : sourceScrollableArea->scrollOffset().x();
         float maxScrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->maximumScrollOffset().y() : sourceScrollableArea->maximumScrollOffset().x();
+        int contentSize = axis() == ScrollAxis::Block ? sourceScrollableArea->totalContentsSize().height() : sourceScrollableArea->totalContentsSize().width();
         // Chrome appears to clip the current time of a scroll timeline in the [0-100] range.
         // We match this behavior for compatibility reasons, see https://github.com/w3c/csswg-drafts/issues/11033.
         if (maxScrollOffset > 0)
             scrollOffset = std::clamp(scrollOffset, 0.f, maxScrollOffset);
-        return { scrollOffset, maxScrollOffset };
+        return { scrollOffset, maxScrollOffset, contentSize };
     }();
 
-    if (previousMaxScrollOffset != m_cachedCurrentTimeData.maxScrollOffset) {
+    if (previousContentSize != m_cachedCurrentTimeData.contentSize) {
         for (auto& animation : m_animations)
             animation->progressBasedTimelineSourceDidChangeMetrics();
     }
@@ -277,8 +278,8 @@ ScrollTimeline::Data ScrollTimeline::computeTimelineData() const
 std::pair<WebAnimationTime, WebAnimationTime> ScrollTimeline::intervalForAttachmentRange(const TimelineRange& timelineRange) const
 {
     // FIXME: maybe use this codepath for the default case as well?
-    auto maxScrollOffset = m_cachedCurrentTimeData.maxScrollOffset;
-    if (!maxScrollOffset) {
+    auto contentSize = m_cachedCurrentTimeData.contentSize;
+    if (!contentSize) {
         return {
             WebAnimationTime::fromPercentage(0),
             WebAnimationTime::fromPercentage(100)
@@ -290,7 +291,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ScrollTimeline::intervalForAttachm
     auto computedPercentageIfNecessary = [&](const Length& length) {
         if (length.isPercent())
             return length.value();
-        return maxScrollOffset / floatValueForOffset(length, maxScrollOffset) * 100;
+        return floatValueForOffset(length, contentSize) / contentSize * 100;
     };
 
     return {

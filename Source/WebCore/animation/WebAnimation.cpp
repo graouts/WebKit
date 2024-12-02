@@ -1476,6 +1476,8 @@ void WebAnimation::autoAlignStartTime()
 
     // 8. Clear hold time.
     m_holdTime = std::nullopt;
+
+    progressBasedTimelineSourceDidChangeMetrics();
 }
 
 bool WebAnimation::needsTick() const
