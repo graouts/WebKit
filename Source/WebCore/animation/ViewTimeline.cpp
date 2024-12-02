@@ -312,18 +312,9 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
     };
 }
 
-std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmentRange(const TimelineRange& timelineRange) const
+std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmentRange(const TimelineRange& attachmentRange) const
 {
-    // FIXME: maybe use this codepath for the default case as well?
-    auto maxAttachmentRange = computeTimelineData().rangeStart + m_cachedCurrentTimeData.contentSize;
-    if (!maxAttachmentRange) {
-        return {
-            WebAnimationTime::fromPercentage(0),
-            WebAnimationTime::fromPercentage(100)
-        };
-    }
-
-    auto timelineRangeOrDefault = timelineRange.isDefault() ? defaultRange() : timelineRange;
+    auto attachmentRangeOrDefault = attachmentRange.isDefault() ? defaultRange() : attachmentRange;
 
     // https://drafts.csswg.org/scroll-animations-1/#view-timelines-ranges
     //
@@ -331,49 +322,94 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     //
     // === SingleTimelineRange::Name::Cover ===
     // Represents the full range of the view progress timeline:
-    // 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
+    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
+    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
     //
     // === SingleTimelineRange::Name::Contain ===
     // Represents the range during which the principal box is either fully contained by, or fully covers, its view progress visibility range within the scrollport.
-    // 0% progress represents the earliest position at which either:
-    //
-    // the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    // the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // 100% progress represents the latest position at which either:
+    // - 0% progress represents the earliest position at which either:
+    //     x the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
+    //     x the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
+    // - 100% progress represents the latest position at which either:
     //
     // the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
     // the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
     //
     // === SingleTimelineRange::Name::Entry ===
     // Represents the range during which the principal box is entering the view progress visibility range.
-    // 0% is equivalent to 0% of the cover range.
-    // 100% is equivalent to 0% of the contain range.
+    // - 0% is equivalent to 0% of the cover range.
+    // - 100% is equivalent to 0% of the contain range.
     //
     // === SingleTimelineRange::Name::Exit ===
     // Represents the range during which the principal box is exiting the view progress visibility range.
-    // 0% is equivalent to 100% of the contain range.
-    // 100% is equivalent to 100% of the cover range.
+    // - 0% is equivalent to 100% of the contain range.
+    // - 100% is equivalent to 100% of the cover range.
     //
     // === SingleTimelineRange::Name::EntryCrossing ===
     // Represents the range during which the principal box crosses the end border edge
-    // 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
+    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
+    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
     //
     // === SingleTimelineRange::Name::ExitCrossing ===
     // Represents the range during which the principal box crosses the start border edge
-    // 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    // 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
+    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
+    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
 
-    auto computedPercentageIfNecessary = [&](const Length& length) {
-        if (length.isPercent())
-            return length.value();
-        return floatValueForOffset(length, maxAttachmentRange) / maxAttachmentRange * 100;
+    auto fullRangeStart = 0.0f;
+    auto fullRangeEnd = computeTimelineData().rangeStart + m_cachedCurrentTimeData.contentSize;
+
+    // enum class Name { Normal, Omitted, Cover, Contain, Entry, Exit, EntryCrossing, ExitCrossing };
+    auto rangeStart = [&] {
+        switch (attachmentRangeOrDefault.start.name) {
+        case SingleTimelineRange::Name::Normal:
+        case SingleTimelineRange::Name::Omitted:
+        case SingleTimelineRange::Name::Cover:
+            return fullRangeStart;
+        case SingleTimelineRange::Name::Contain:
+        case SingleTimelineRange::Name::Entry:
+        case SingleTimelineRange::Name::Exit:
+        case SingleTimelineRange::Name::EntryCrossing:
+        case SingleTimelineRange::Name::ExitCrossing:
+            return 0.0f;
+        default:
+            break;
+        }
+        ASSERT_NOT_REACHED();
+        return 0.0f;
+    }();
+
+    auto rangeEnd = [&] {
+        switch (attachmentRangeOrDefault.end.name) {
+        case SingleTimelineRange::Name::Normal:
+        case SingleTimelineRange::Name::Omitted:
+        case SingleTimelineRange::Name::Cover:
+            return fullRangeEnd;
+        case SingleTimelineRange::Name::Contain:
+        case SingleTimelineRange::Name::Entry:
+        case SingleTimelineRange::Name::Exit:
+        case SingleTimelineRange::Name::EntryCrossing:
+        case SingleTimelineRange::Name::ExitCrossing:
+            return 0.0f;
+        default:
+            break;
+        }
+        ASSERT_NOT_REACHED();
+        return 0.0f;
+    }();
+
+    auto range = rangeEnd - rangeStart;
+    if (!range)
+        return { WebAnimationTime::fromPercentage(0), WebAnimationTime::fromPercentage(100) };
+
+    auto computeTime = [&](const Length& length, float rangeValue, float fullRangeValue) {
+        if (rangeValue == fullRangeValue && length.isPercent())
+            return WebAnimationTime::fromPercentage(length.value());
+        return WebAnimationTime::fromPercentage(floatValueForOffset(length, range) / range * 100);
     };
 
     return {
-        WebAnimationTime::fromPercentage(computedPercentageIfNecessary(timelineRangeOrDefault.start.offset)),
-        WebAnimationTime::fromPercentage(computedPercentageIfNecessary(timelineRangeOrDefault.end.offset))
+        computeTime(attachmentRangeOrDefault.start.offset, rangeStart, fullRangeStart),
+        computeTime(attachmentRangeOrDefault.end.offset, rangeEnd, fullRangeEnd),
     };
 }
 
