@@ -73,6 +73,7 @@ public:
 
 private:
     ScrollTimeline::Data computeTimelineData() const final;
+    std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const TimelineRange&) const final;
 
     explicit ViewTimeline(ViewTimelineOptions&& = { });
     explicit ViewTimeline(const AtomString&, ScrollAxis, ViewTimelineInsets&&);
@@ -83,6 +84,8 @@ private:
 
     struct CurrentTimeData {
         float scrollOffset { 0 };
+        float maxScrollOffset { 0 };
+        int contentSize { 0 };
         float scrollContainerSize { 0 };
         float subjectOffset { 0 };
         float subjectSize { 0 };

@@ -71,7 +71,7 @@ public:
     void setTimelineScopeElement(const Element&);
     void clearTimelineScopeDeclaredElement() { m_timelineScopeElement = nullptr; }
 
-    std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const TimelineRange&) const;
+    virtual std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const TimelineRange&) const;
 
 protected:
     explicit ScrollTimeline(const AtomString&, ScrollAxis);

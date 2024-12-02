@@ -225,6 +225,8 @@ void ViewTimeline::cacheCurrentTime()
         // - range is the scroll offset corresponding to the end of the cover range minus the scroll offset
         //   corresponding to the start of the cover range
         float scrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->scrollPosition().y() : sourceScrollableArea->scrollPosition().x();
+        float maxScrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->maximumScrollOffset().y() : sourceScrollableArea->maximumScrollOffset().x();
+        int contentSize = axis() == ScrollAxis::Block ? sourceScrollableArea->totalContentsSize().height() : sourceScrollableArea->totalContentsSize().width();
         float scrollContainerSize = axis() == ScrollAxis::Block ? sourceScrollableArea->visibleHeight() : sourceScrollableArea->visibleWidth();
 
         auto subjectOffsetFromSource = subjectRenderer->localToContainerPoint(FloatPoint(), sourceScrollerRenderer());
@@ -249,6 +251,8 @@ void ViewTimeline::cacheCurrentTime()
 
         return {
             scrollOffset,
+            maxScrollOffset,
+            contentSize,
             scrollContainerSize,
             subjectOffset,
             subjectSize,
@@ -305,6 +309,31 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
         m_cachedCurrentTimeData.scrollOffset,
         rangeStart,
         rangeEnd
+    };
+}
+
+std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmentRange(const TimelineRange& timelineRange) const
+{
+    // FIXME: maybe use this codepath for the default case as well?
+    auto maxTimelineRange = m_cachedCurrentTimeData.contentSize + m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
+    if (!maxTimelineRange) {
+        return {
+            WebAnimationTime::fromPercentage(0),
+            WebAnimationTime::fromPercentage(100)
+        };
+    }
+
+    auto timelineRangeOrDefault = timelineRange.isDefault() ? defaultRange() : timelineRange;
+
+    auto computedPercentageIfNecessary = [&](const Length& length) {
+        if (length.isPercent())
+            return length.value();
+        return floatValueForOffset(length, maxTimelineRange) / maxTimelineRange * 100;
+    };
+
+    return {
+        WebAnimationTime::fromPercentage(computedPercentageIfNecessary(timelineRangeOrDefault.start.offset)),
+        WebAnimationTime::fromPercentage(computedPercentageIfNecessary(timelineRangeOrDefault.end.offset))
     };
 }
 
