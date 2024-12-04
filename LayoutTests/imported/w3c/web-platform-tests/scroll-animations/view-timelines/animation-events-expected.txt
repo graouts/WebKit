@@ -1,3 +1,3 @@
 
-FAIL View timeline generates and resolves finish promises and events assert_false: Animation is not finished while active expected false got true
+FAIL View timeline generates and resolves finish promises and events assert_equals: A finish event is generated after end expected 1 but got 0
 
