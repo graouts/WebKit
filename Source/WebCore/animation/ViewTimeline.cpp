@@ -356,18 +356,21 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
 
     auto data = computeTimelineData();
+    auto timelineRange = data.rangeEnd - data.rangeStart;
+    if (!timelineRange)
+        return { WebAnimationTime::fromPercentage(0), WebAnimationTime::fromPercentage(100) };
 
     auto fullRangeStart = 0.0f;
     auto fullRangeEnd = (data.rangeEnd - data.rangeStart) * 2;
 
-    // enum class Name { Normal, Omitted, Cover, Contain, Entry, Exit, EntryCrossing, ExitCrossing };
-    auto rangeStart = [&] {
+    auto subjectRangeStart = [&] {
         switch (attachmentRangeOrDefault.start.name) {
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
             return fullRangeStart;
         case SingleTimelineRange::Name::Contain:
+            return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
         case SingleTimelineRange::Name::Entry:
         case SingleTimelineRange::Name::Exit:
         case SingleTimelineRange::Name::EntryCrossing:
@@ -380,13 +383,14 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         return 0.0f;
     }();
 
-    auto rangeEnd = [&] {
+    auto subjectRangeEnd = [&] {
         switch (attachmentRangeOrDefault.end.name) {
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
             return fullRangeEnd;
         case SingleTimelineRange::Name::Contain:
+                return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
         case SingleTimelineRange::Name::Entry:
         case SingleTimelineRange::Name::Exit:
         case SingleTimelineRange::Name::EntryCrossing:
@@ -399,19 +403,24 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         return 0.0f;
     }();
 
-    auto range = rangeEnd - rangeStart;
-    if (!range)
-        return { WebAnimationTime::fromPercentage(0), WebAnimationTime::fromPercentage(100) };
+    if (subjectRangeEnd < subjectRangeStart)
+        std::swap(subjectRangeStart, subjectRangeEnd);
+    auto subjectRange = subjectRangeEnd - subjectRangeStart;
 
-    auto computeTime = [&](const Length& length, float rangeValue, float fullRangeValue) {
-        if (rangeValue == fullRangeValue && length.isPercent())
+    auto computeTime = [&](const Length& length, float subjectRangeValue, float fullRangeValue) {
+        // Works fine with % values, but not with absolute values.
+        if (subjectRangeValue == fullRangeValue && length.isPercent())
             return WebAnimationTime::fromPercentage(length.value());
-        return WebAnimationTime::fromPercentage(floatValueForOffset(length, range) / range * 100);
+        auto valueWithinSubjectRange = floatValueForOffset(length, subjectRange);
+        auto positionWithinContainer = subjectRangeStart + valueWithinSubjectRange;
+        auto positionWithinTimelineRange = positionWithinContainer - data.rangeStart;
+        auto offsetWithinTimelineRange = positionWithinTimelineRange / timelineRange;
+        return WebAnimationTime::fromPercentage(offsetWithinTimelineRange * 100);
     };
 
     return {
-        computeTime(attachmentRangeOrDefault.start.offset, rangeStart, fullRangeStart),
-        computeTime(attachmentRangeOrDefault.end.offset, rangeEnd, fullRangeEnd),
+        computeTime(attachmentRangeOrDefault.start.offset, subjectRangeStart, fullRangeStart),
+        computeTime(attachmentRangeOrDefault.end.offset, subjectRangeEnd, fullRangeEnd),
     };
 }
 
