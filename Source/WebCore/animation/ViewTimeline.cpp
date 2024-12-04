@@ -365,14 +365,14 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
+        case SingleTimelineRange::Name::Entry:
+        case SingleTimelineRange::Name::EntryCrossing:
             return data.rangeStart;
         case SingleTimelineRange::Name::Contain:
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
-        case SingleTimelineRange::Name::Entry:
         case SingleTimelineRange::Name::Exit:
-        case SingleTimelineRange::Name::EntryCrossing:
         case SingleTimelineRange::Name::ExitCrossing:
-            return 0.0f;
+            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
         default:
             break;
         }
@@ -385,14 +385,14 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
+        case SingleTimelineRange::Name::Exit:
+        case SingleTimelineRange::Name::ExitCrossing:
             return data.rangeEnd;
         case SingleTimelineRange::Name::Contain:
-                return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
+            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
         case SingleTimelineRange::Name::Entry:
-        case SingleTimelineRange::Name::Exit:
         case SingleTimelineRange::Name::EntryCrossing:
-        case SingleTimelineRange::Name::ExitCrossing:
-            return 0.0f;
+            return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
         default:
             break;
         }
