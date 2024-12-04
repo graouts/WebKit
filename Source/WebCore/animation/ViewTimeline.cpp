@@ -360,15 +360,12 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     if (!timelineRange)
         return { WebAnimationTime::fromPercentage(0), WebAnimationTime::fromPercentage(100) };
 
-    auto fullRangeStart = 0.0f;
-    auto fullRangeEnd = (data.rangeEnd - data.rangeStart) * 2;
-
     auto subjectRangeStart = [&] {
         switch (attachmentRangeOrDefault.start.name) {
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
-            return fullRangeStart;
+            return data.rangeStart;
         case SingleTimelineRange::Name::Contain:
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
         case SingleTimelineRange::Name::Entry:
@@ -388,7 +385,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
-            return fullRangeEnd;
+            return data.rangeEnd;
         case SingleTimelineRange::Name::Contain:
                 return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
         case SingleTimelineRange::Name::Entry:
@@ -403,15 +400,15 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         return 0.0f;
     }();
 
+    // Is this necessary?
     if (subjectRangeEnd < subjectRangeStart)
         std::swap(subjectRangeStart, subjectRangeEnd);
     auto subjectRange = subjectRangeEnd - subjectRangeStart;
 
-    auto computeTime = [&](const Length& length, float subjectRangeValue, float fullRangeValue) {
-        // Works fine with % values, but not with absolute values.
-        if (subjectRangeValue == fullRangeValue && length.isPercent())
-            return WebAnimationTime::fromPercentage(length.value());
+    auto computeTime = [&](const Length& length) {
         auto valueWithinSubjectRange = floatValueForOffset(length, subjectRange);
+        if (!length.isPercent()) // It seems to work, but why?
+            valueWithinSubjectRange /= 2;
         auto positionWithinContainer = subjectRangeStart + valueWithinSubjectRange;
         auto positionWithinTimelineRange = positionWithinContainer - data.rangeStart;
         auto offsetWithinTimelineRange = positionWithinTimelineRange / timelineRange;
@@ -419,8 +416,8 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     };
 
     return {
-        computeTime(attachmentRangeOrDefault.start.offset, subjectRangeStart, fullRangeStart),
-        computeTime(attachmentRangeOrDefault.end.offset, subjectRangeEnd, fullRangeEnd),
+        computeTime(attachmentRangeOrDefault.start.offset),
+        computeTime(attachmentRangeOrDefault.end.offset),
     };
 }
 
