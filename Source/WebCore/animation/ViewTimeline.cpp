@@ -355,8 +355,10 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
     // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
 
+    auto data = computeTimelineData();
+
     auto fullRangeStart = 0.0f;
-    auto fullRangeEnd = computeTimelineData().rangeStart + m_cachedCurrentTimeData.contentSize;
+    auto fullRangeEnd = (data.rangeEnd - data.rangeStart) * 2;
 
     // enum class Name { Normal, Omitted, Cover, Contain, Entry, Exit, EntryCrossing, ExitCrossing };
     auto rangeStart = [&] {
