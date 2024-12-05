@@ -246,8 +246,10 @@ void ViewTimeline::cacheCurrentTime()
 
         auto subjectSize = axis() == ScrollAxis::Block ? subjectBounds.height() : subjectBounds.width();
 
-        auto insetStart = m_insets.start.value_or(Length());
-        auto insetEnd = m_insets.end.value_or(insetStart);
+        auto insetStartLength = m_insets.start.value_or(Length());
+        auto insetEndLength = m_insets.start.value_or(insetStartLength);
+        auto insetStart = floatValueForOffset(insetStartLength, scrollContainerSize);
+        auto insetEnd = floatValueForOffset(insetEndLength, scrollContainerSize);
 
         return {
             scrollOffset,
@@ -307,8 +309,8 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
 
     return {
         m_cachedCurrentTimeData.scrollOffset,
-        rangeStart,
-        rangeEnd
+        rangeStart + m_cachedCurrentTimeData.insetStart,
+        rangeEnd - m_cachedCurrentTimeData.insetEnd
     };
 }
 
@@ -317,43 +319,6 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     auto attachmentRangeOrDefault = attachmentRange.isDefault() ? defaultRange() : attachmentRange;
 
     // https://drafts.csswg.org/scroll-animations-1/#view-timelines-ranges
-    //
-    // range.name
-    //
-    // === SingleTimelineRange::Name::Cover ===
-    // Represents the full range of the view progress timeline:
-    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    //
-    // === SingleTimelineRange::Name::Contain ===
-    // Represents the range during which the principal box is either fully contained by, or fully covers, its view progress visibility range within the scrollport.
-    // - 0% progress represents the earliest position at which either:
-    //     x the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    //     x the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // - 100% progress represents the latest position at which either:
-    //
-    // the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    // the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    //
-    // === SingleTimelineRange::Name::Entry ===
-    // Represents the range during which the principal box is entering the view progress visibility range.
-    // - 0% is equivalent to 0% of the cover range.
-    // - 100% is equivalent to 0% of the contain range.
-    //
-    // === SingleTimelineRange::Name::Exit ===
-    // Represents the range during which the principal box is exiting the view progress visibility range.
-    // - 0% is equivalent to 100% of the contain range.
-    // - 100% is equivalent to 100% of the cover range.
-    //
-    // === SingleTimelineRange::Name::EntryCrossing ===
-    // Represents the range during which the principal box crosses the end border edge
-    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the end edge of its view progress visibility range.
-    //
-    // === SingleTimelineRange::Name::ExitCrossing ===
-    // Represents the range during which the principal box crosses the start border edge
-    // - 0% progress represents the latest position at which the start border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
-    // - 100% progress represents the earliest position at which the end border edge of the element’s principal box coincides with the start edge of its view progress visibility range.
 
     auto data = computeTimelineData();
     auto timelineRange = data.rangeEnd - data.rangeStart;
@@ -372,7 +337,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
         case SingleTimelineRange::Name::Exit:
         case SingleTimelineRange::Name::ExitCrossing:
-            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
+            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
         default:
             break;
         }
@@ -389,7 +354,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         case SingleTimelineRange::Name::ExitCrossing:
             return data.rangeEnd;
         case SingleTimelineRange::Name::Contain:
-            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset;
+            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
         case SingleTimelineRange::Name::Entry:
         case SingleTimelineRange::Name::EntryCrossing:
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;

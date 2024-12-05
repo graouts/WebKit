@@ -89,8 +89,8 @@ private:
         float scrollContainerSize { 0 };
         float subjectOffset { 0 };
         float subjectSize { 0 };
-        Length insetStart { };
-        Length insetEnd { };
+        float insetStart { 0 };
+        float insetEnd { 0 };
     };
 
     void cacheCurrentTime();
