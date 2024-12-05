@@ -41,6 +41,7 @@
 #include "Element.h"
 #include "LegacyRenderSVGModelObject.h"
 #include "RenderBox.h"
+#include "RenderBoxInlines.h"
 #include "RenderInline.h"
 #include "RenderSVGModelObject.h"
 #include "ScrollAnchoringController.h"
@@ -204,6 +205,15 @@ AnimationTimelinesController* ViewTimeline::controller() const
     return nullptr;
 }
 
+static FloatPoint pointForLocalToContainer(const ScrollableArea& area)
+{
+    // For subscrollers we need to ajust the point fed into localToContainerPoint as the point
+    // it returns can be outside of the scroller
+    if (is<RenderLayerScrollableArea>(area))
+        return area.scrollOffset();
+    return FloatPoint();
+}
+
 void ViewTimeline::cacheCurrentTime()
 {
     m_cachedCurrentTimeData = [&] -> CurrentTimeData {
@@ -224,17 +234,17 @@ void ViewTimeline::cacheCurrentTime()
         //   cover range
         // - range is the scroll offset corresponding to the end of the cover range minus the scroll offset
         //   corresponding to the start of the cover range
-        float scrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->scrollPosition().y() : sourceScrollableArea->scrollPosition().x();
+        float scrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->scrollOffset().y() : sourceScrollableArea->scrollOffset().x();
         float maxScrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->maximumScrollOffset().y() : sourceScrollableArea->maximumScrollOffset().x();
         int contentSize = axis() == ScrollAxis::Block ? sourceScrollableArea->totalContentsSize().height() : sourceScrollableArea->totalContentsSize().width();
         float scrollContainerSize = axis() == ScrollAxis::Block ? sourceScrollableArea->visibleHeight() : sourceScrollableArea->visibleWidth();
 
-        auto subjectOffsetFromSource = subjectRenderer->localToContainerPoint(FloatPoint(), sourceScrollerRenderer());
+        auto subjectOffsetFromSource = subjectRenderer->localToContainerPoint(pointForLocalToContainer(*sourceScrollableArea), sourceScrollerRenderer());
         float subjectOffset = axis() == ScrollAxis::Block ? subjectOffsetFromSource.y() : subjectOffsetFromSource.x();
 
         auto subjectBounds = [&] -> FloatSize {
             if (CheckedPtr subjectRenderBox = dynamicDowncast<RenderBox>(subjectRenderer.get()))
-                return subjectRenderBox->borderBoxRect().size();
+                return subjectRenderBox->contentBoxRect().size();
             if (CheckedPtr subjectRenderInline = dynamicDowncast<RenderInline>(subjectRenderer.get()))
                 return subjectRenderInline->borderBoundingBox().size();
             if (CheckedPtr subjectRenderSVGModelObject = dynamicDowncast<RenderSVGModelObject>(subjectRenderer.get()))
@@ -303,7 +313,7 @@ ScrollTimeline::Data ViewTimeline::computeTimelineData() const
     if (!m_cachedCurrentTimeData.scrollOffset && !m_cachedCurrentTimeData.scrollContainerSize)
         return { };
 
-    auto rangeStart = m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize;
+    auto rangeStart = m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.scrollContainerSize;
     auto range = m_cachedCurrentTimeData.subjectSize + m_cachedCurrentTimeData.scrollContainerSize;
     auto rangeEnd = rangeStart + range;
 
@@ -337,7 +347,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
         case SingleTimelineRange::Name::Exit:
         case SingleTimelineRange::Name::ExitCrossing:
-            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
+            return m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
         default:
             break;
         }
@@ -354,7 +364,7 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         case SingleTimelineRange::Name::ExitCrossing:
             return data.rangeEnd;
         case SingleTimelineRange::Name::Contain:
-            return m_cachedCurrentTimeData.scrollOffset + m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
+            return m_cachedCurrentTimeData.subjectOffset - m_cachedCurrentTimeData.insetEnd;
         case SingleTimelineRange::Name::Entry:
         case SingleTimelineRange::Name::EntryCrossing:
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize;
