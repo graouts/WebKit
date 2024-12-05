@@ -235,8 +235,6 @@ void ViewTimeline::cacheCurrentTime()
         // - range is the scroll offset corresponding to the end of the cover range minus the scroll offset
         //   corresponding to the start of the cover range
         float scrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->scrollOffset().y() : sourceScrollableArea->scrollOffset().x();
-        float maxScrollOffset = axis() == ScrollAxis::Block ? sourceScrollableArea->maximumScrollOffset().y() : sourceScrollableArea->maximumScrollOffset().x();
-        int contentSize = axis() == ScrollAxis::Block ? sourceScrollableArea->totalContentsSize().height() : sourceScrollableArea->totalContentsSize().width();
         float scrollContainerSize = axis() == ScrollAxis::Block ? sourceScrollableArea->visibleHeight() : sourceScrollableArea->visibleWidth();
 
         auto subjectOffsetFromSource = subjectRenderer->localToContainerPoint(pointForLocalToContainer(*sourceScrollableArea), sourceScrollerRenderer());
@@ -263,8 +261,6 @@ void ViewTimeline::cacheCurrentTime()
 
         return {
             scrollOffset,
-            maxScrollOffset,
-            contentSize,
             scrollContainerSize,
             subjectOffset,
             subjectSize,
