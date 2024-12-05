@@ -360,8 +360,8 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     if (!timelineRange)
         return { WebAnimationTime::fromPercentage(0), WebAnimationTime::fromPercentage(100) };
 
-    auto subjectRangeStart = [&] {
-        switch (attachmentRangeOrDefault.start.name) {
+    auto subjectRangeStartForName = [&](SingleTimelineRange::Name name) {
+        switch (name) {
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
@@ -378,10 +378,10 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         }
         ASSERT_NOT_REACHED();
         return 0.0f;
-    }();
+    };
 
-    auto subjectRangeEnd = [&] {
-        switch (attachmentRangeOrDefault.end.name) {
+    auto subjectRangeEndForName = [&](SingleTimelineRange::Name name) {
+        switch (name) {
         case SingleTimelineRange::Name::Normal:
         case SingleTimelineRange::Name::Omitted:
         case SingleTimelineRange::Name::Cover:
@@ -398,14 +398,17 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
         }
         ASSERT_NOT_REACHED();
         return 0.0f;
-    }();
+    };
 
-    // Is this necessary?
-    if (subjectRangeEnd < subjectRangeStart)
-        std::swap(subjectRangeStart, subjectRangeEnd);
-    auto subjectRange = subjectRangeEnd - subjectRangeStart;
+    auto computeTime = [&](const SingleTimelineRange& rangeToConvert) {
+        auto subjectRangeStart = subjectRangeStartForName(rangeToConvert.name);
+        auto subjectRangeEnd = subjectRangeEndForName(rangeToConvert.name);
+        // FIXME: is this necessary?
+        if (subjectRangeEnd < subjectRangeStart)
+            std::swap(subjectRangeStart, subjectRangeEnd);
+        auto subjectRange = subjectRangeEnd - subjectRangeStart;
 
-    auto computeTime = [&](const Length& length) {
+        auto& length = rangeToConvert.offset;
         auto valueWithinSubjectRange = floatValueForOffset(length, subjectRange);
         if (!length.isPercent()) // It seems to work, but why?
             valueWithinSubjectRange /= 2;
@@ -416,8 +419,8 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
     };
 
     return {
-        computeTime(attachmentRangeOrDefault.start.offset),
-        computeTime(attachmentRangeOrDefault.end.offset),
+        computeTime(attachmentRangeOrDefault.start),
+        computeTime(attachmentRangeOrDefault.end),
     };
 }
 

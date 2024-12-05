@@ -4,7 +4,7 @@ FAIL Animation with ranges [cover 0%, cover 100%] assert_equals: expected "50" b
 FAIL Animation with ranges [contain 0%, contain 100%] assert_equals: expected "50" but got "40"
 FAIL Animation with ranges [entry 0%, entry 100%] assert_equals: expected "50" but got "40"
 FAIL Animation with ranges [exit 0%, exit 100%] assert_equals: expected "50" but got "40"
-FAIL Animation with ranges [contain -50%, entry 200%] assert_equals: expected "50" but got "100"
+FAIL Animation with ranges [contain -50%, entry 200%] assert_equals: expected "50" but got "43"
 FAIL Animation with ranges [entry 0%, exit 100%] assert_equals: expected "50" but got "47"
 FAIL Animation with ranges [cover 20px, cover 100px] assert_equals: expected "50" but got "100"
 FAIL Animation with ranges [contain 20px, contain 100px] assert_equals: expected "50" but got "100"
