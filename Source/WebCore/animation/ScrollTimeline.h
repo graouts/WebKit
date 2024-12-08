@@ -99,7 +99,6 @@ private:
     struct CurrentTimeData {
         float scrollOffset { 0 };
         float maxScrollOffset { 0 };
-        int contentSize { 0 };
     };
 
     void cacheCurrentTime();

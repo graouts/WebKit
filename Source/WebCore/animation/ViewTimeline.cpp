@@ -381,8 +381,6 @@ std::pair<WebAnimationTime, WebAnimationTime> ViewTimeline::intervalForAttachmen
 
         auto& length = rangeToConvert.offset;
         auto valueWithinSubjectRange = floatValueForOffset(length, subjectRange);
-        if (!length.isPercent()) // It seems to work, but why?
-            valueWithinSubjectRange /= 2;
         auto positionWithinContainer = subjectRangeStart + valueWithinSubjectRange;
         auto positionWithinTimelineRange = positionWithinContainer - data.rangeStart;
         auto offsetWithinTimelineRange = positionWithinTimelineRange / timelineRange;
