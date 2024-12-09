@@ -644,9 +644,26 @@ void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTr
 
 void RemoteLayerTreeEventDispatcher::registerTimelinesIfNecessary(const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
 {
-    // m_monotonicTimelines.clear();
     if (auto scrollingTree = this->scrollingTree())
         scrollingTree->registerTimelinesIfNecessary(timelineRepresentations);
+
+    for (auto& timelineRepresentation : timelineRepresentations) {
+        auto originTime = timelineRepresentation->originTime();
+        if (!originTime)
+            continue;
+
+        auto foundExistingTimeline = false;
+        for (auto& existingTimeline : m_monotonicTimelines) {
+            if (existingTimeline->identifier() == timelineRepresentation->identifier()) {
+                existingTimeline->setOriginTime(*originTime);
+                foundExistingTimeline = true;
+                break;
+            }
+        }
+
+        if (!foundExistingTimeline)
+            m_monotonicTimelines.add(RemoteDocumentTimeline::create(timelineRepresentation));
+    }
 }
 
 void RemoteLayerTreeEventDispatcher::setMonotonicTimelinesCurrentTime(MonotonicTime now)

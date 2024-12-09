@@ -39,6 +39,8 @@ class RemoteDocumentTimeline final : public RemoteAnimationTimeline {
 public:
     static Ref<RemoteDocumentTimeline> create(const WebCore::AcceleratedTimeline&);
 
+    void setOriginTime(Seconds originTime) { m_originTime = originTime; }
+
     void setMonotonicTime(MonotonicTime);
 
 private:
