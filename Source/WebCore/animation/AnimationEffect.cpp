@@ -432,12 +432,6 @@ void AnimationEffect::updateComputedTimingPropertiesIfNeeded()
 
     m_timingDidMutate = false;
 
-    auto playbackRate = [&] {
-        if (m_animation)
-            return m_animation->playbackRate();
-        return 1.0;
-    }();
-
     auto rangeDuration = [&] -> std::optional<WebAnimationTime> {
         if (!m_animation)
             return std::nullopt;
@@ -454,7 +448,7 @@ void AnimationEffect::updateComputedTimingPropertiesIfNeeded()
         return timeline->duration();
     }();
 
-    m_timing.updateComputedProperties(rangeDuration, playbackRate);
+    m_timing.updateComputedProperties(rangeDuration);
 }
 
 } // namespace WebCore

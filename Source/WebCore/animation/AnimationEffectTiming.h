@@ -52,25 +52,26 @@ struct AnimationEffectTiming {
     PlaybackDirection direction { PlaybackDirection::Normal };
     double iterationStart { 0 };
     double iterations { 1 };
-    Seconds specifiedStartDelay { 0_s };
-    Seconds specifiedEndDelay { 0_s };
-    std::optional<Seconds> specifiedIterationDuration;
     WebAnimationTime startDelay { 0_s };
     WebAnimationTime endDelay { 0_s };
     WebAnimationTime iterationDuration { 0_s };
     WebAnimationTime intrinsicIterationDuration { 0_s };
     WebAnimationTime activeDuration { 0_s };
     WebAnimationTime endTime { 0_s };
+    Seconds specifiedStartDelay { 0_s };
+    Seconds specifiedEndDelay { 0_s };
+    std::optional<Seconds> specifiedIterationDuration;
+    double playbackRate { 1 };
 
     struct ResolutionData {
         std::optional<WebAnimationTime> timelineTime;
         std::optional<WebAnimationTime> timelineDuration;
         std::optional<WebAnimationTime> startTime;
         std::optional<WebAnimationTime> localTime;
-        double playbackRate { 0 };
+        double animationPlaybackRate { 0 };
     };
 
-    void updateComputedProperties(std::optional<WebAnimationTime> timelineDuration, double playbackRate);
+    void updateComputedProperties(std::optional<WebAnimationTime> timelineDuration);
     BasicEffectTiming getBasicTiming(const ResolutionData&) const;
     ResolvedEffectTiming resolve(const ResolutionData&) const;
 };
