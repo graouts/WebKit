@@ -30,7 +30,7 @@
 
 namespace WebCore {
 
-void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationTime> timelineDuration, double playbackRate)
+void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationTime> timelineDuration)
 {
     auto specifiedEndTime = [&] {
         ASSERT(specifiedIterationDuration);
@@ -160,7 +160,7 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             // return false
             if (!data.timelineDuration || data.timelineDuration->isZero())
                 return false;
-            if (!data.playbackRate)
+            if (!data.animationPlaybackRate)
                 return false;
             // Let effective start time be the animation’s start time if resolved, or zero otherwise.
             auto effectiveStartTime = data.startTime.value_or(WebAnimationTime::fromPercentage(0));
@@ -168,16 +168,16 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             // - start time is resolved: (timeline time - start time) × playback rate
             // - Otherwise: animation's current time
             ASSERT_IMPLIES(data.startTime, data.timelineTime);
-            auto unlimitedCurrentTime = data.startTime ? (*data.timelineTime - *data.startTime) * data.playbackRate : *data.localTime;
+            auto unlimitedCurrentTime = data.startTime ? (*data.timelineTime - *data.startTime) * data.animationPlaybackRate : *data.localTime;
             // Let effective timeline time be unlimited current time / animation’s playback rate + effective start time
-            auto effectiveTimelineTime = unlimitedCurrentTime / data.playbackRate + effectiveStartTime;
+            auto effectiveTimelineTime = unlimitedCurrentTime / data.animationPlaybackRate + effectiveStartTime;
             // Let effective timeline progress be effective timeline time / timeline duration
             auto effectiveTimelineProgress = effectiveTimelineTime / *data.timelineDuration;
             // If effective timeline progress is 0 or 1, return true, otherwise false.
             return !effectiveTimelineProgress || effectiveTimelineProgress == 1;
         };
 
-        auto animationIsBackwards = data.playbackRate < 0;
+        auto animationIsBackwards = data.animationPlaybackRate < 0;
 
         // https://drafts.csswg.org/web-animations-1/#before-active-boundary-time
         auto beforeActiveBoundaryTime = std::max(std::min(startDelay, endTime), endTime.matchingZero());

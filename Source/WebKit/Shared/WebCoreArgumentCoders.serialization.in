@@ -6528,15 +6528,16 @@ struct WebCore::AnimationEffectTiming {
     WebCore::PlaybackDirection direction;
     double iterationStart;
     double iterations;
-    [NotSerialized] Seconds specifiedStartDelay;
-    [NotSerialized] Seconds specifiedEndDelay;
-    [NotSerialized] std::optional<Seconds> specifiedIterationDuration;
     WebCore::WebAnimationTime startDelay;
     WebCore::WebAnimationTime endDelay;
     WebCore::WebAnimationTime iterationDuration;
     WebCore::WebAnimationTime intrinsicIterationDuration;
     WebCore::WebAnimationTime activeDuration;
     WebCore::WebAnimationTime endTime;
+    [NotSerialized] Seconds specifiedStartDelay;
+    [NotSerialized] Seconds specifiedEndDelay;
+    [NotSerialized] std::optional<Seconds> specifiedIterationDuration;
+    [NotSerialized] double playbackRate;
 };
 
 header: <WebCore/AcceleratedEffect.h>
