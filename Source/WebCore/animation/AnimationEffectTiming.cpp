@@ -30,6 +30,11 @@
 
 namespace WebCore {
 
+static bool percentageTimesApproximatelyEqual(WebAnimationTime a, WebAnimationTime b)
+{
+    return a.percentage() && b.percentage() && std::abs(*a.percentage() - *b.percentage()) < *a.matchingEpsilon().percentage();
+}
+
 void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationTime> timelineDuration)
 {
     auto specifiedEndTime = [&] {
@@ -127,10 +132,18 @@ void AnimationEffectTiming::updateComputedProperties(std::optional<WebAnimationT
         return repeatedDuration() / std::abs(playbackRate);
     }();
 
+    if (auto percentage = activeDuration.percentage()) {
+        if (*percentage > 60 && *percentage < 70)
+            WTFLogAlways("[GRAOUTS]");
+    }
+
     // https://drafts.csswg.org/web-animations-2/#end-time
     // The end time of an animation effect is the result of evaluating
     // max(start time + start delay + active duration + end delay, 0).
     endTime = std::max(startDelay + activeDuration + endDelay, activeDuration.matchingZero());
+
+    if (timelineDuration && percentageTimesApproximatelyEqual(endTime, *timelineDuration))
+        endTime = *timelineDuration;
 }
 
 BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& data) const
@@ -138,6 +151,11 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
     // The Web Animations spec introduces a number of animation effect time-related definitions that refer
     // to each other a fair bit, so rather than implementing them as individual methods, it's more efficient
     // to return them all as a single BasicEffectTiming.
+
+    if (auto percentage = activeDuration.percentage()) {
+        if (*percentage > 60 && *percentage < 70)
+            WTFLogAlways("[GRAOUTS]");
+    }
 
     auto localTime = data.localTime;
 
@@ -168,7 +186,7 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             // - start time is resolved: (timeline time - start time) × playback rate
             // - Otherwise: animation's current time
             ASSERT_IMPLIES(data.startTime, data.timelineTime);
-            auto unlimitedCurrentTime = data.startTime ? (*data.timelineTime - *data.startTime) * data.animationPlaybackRate : *data.localTime;
+            auto unlimitedCurrentTime = data.startTime ? (*data.timelineTime - *data.startTime) * playbackRate : *data.localTime;
             // Let effective timeline time be unlimited current time / animation’s playback rate + effective start time
             auto effectiveTimelineTime = unlimitedCurrentTime / data.animationPlaybackRate + effectiveStartTime;
             // Let effective timeline progress be effective timeline time / timeline duration
@@ -192,6 +210,9 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
 
         // https://drafts.csswg.org/web-animations-1/#active-after-boundary-time
         auto activeAfterBoundaryTime = std::max(std::min(startDelay + activeDuration, endTime), endTime.matchingZero());
+
+        if (percentageTimesApproximatelyEqual(activeAfterBoundaryTime, endTime))
+            activeAfterBoundaryTime = endTime;
 
         // An animation effect is in the after phase if the animation effect's local time is not unresolved
         // and either of the following conditions are met:
