@@ -113,12 +113,8 @@ bool BlendingKeyframes::hasImplicitKeyframeForProperty(AnimatableCSSProperty pro
 void BlendingKeyframes::copyKeyframes(const BlendingKeyframes& other)
 {
     for (auto& keyframe : other) {
-        BlendingKeyframe blendingKeyframe(keyframe.offset(), RenderStyle::clonePtr(*keyframe.style()));
-        for (auto propertyId : keyframe.properties())
-            blendingKeyframe.addProperty(propertyId);
-        blendingKeyframe.setTimingFunction(keyframe.timingFunction());
-        blendingKeyframe.setCompositeOperation(keyframe.compositeOperation());
-        insert(WTFMove(blendingKeyframe));
+        auto copy = keyframe;
+        insert(WTFMove(copy));
     }
 }
 
@@ -128,7 +124,7 @@ static const StyleRuleKeyframe& zeroPercentKeyframe()
     static std::once_flag onceFlag;
     std::call_once(onceFlag, [] {
         rule.construct(StyleRuleKeyframe::create(MutableStyleProperties::create()));
-        rule.get()->setKey(0);
+        rule.get()->setKey({ CSSValueNormal, 0 });
     });
     return rule.get().get();
 }
@@ -139,7 +135,7 @@ static const StyleRuleKeyframe& hundredPercentKeyframe()
     static std::once_flag onceFlag;
     std::call_once(onceFlag, [] {
         rule.construct(StyleRuleKeyframe::create(MutableStyleProperties::create()));
-        rule.get()->setKey(1);
+        rule.get()->setKey({ CSSValueNormal, 1 });
     });
     return rule.get().get();
 }
@@ -210,7 +206,7 @@ void BlendingKeyframes::fillImplicitKeyframes(const KeyframeEffect& effect, cons
         }
 
         // Otherwise we create a new keyframe.
-        BlendingKeyframe blendingKeyframe(key, nullptr);
+        BlendingKeyframe blendingKeyframe(key, { nullptr });
         blendingKeyframe.setStyle(styleResolver.styleForKeyframe(element, underlyingStyle, { nullptr }, keyframeRule, blendingKeyframe));
         for (auto property : implicitProperties)
             blendingKeyframe.addProperty(property);
@@ -385,6 +381,16 @@ void BlendingKeyframes::analyzeKeyframe(const BlendingKeyframe& keyframe)
     analyzeDiscreteTransformInterval();
     analyzeExplicitlyInheritedKeyframeProperty();
     analyzeKeyframeForExplicitProperties();
+}
+
+BlendingKeyframe::BlendingKeyframe(const BlendingKeyframe& source)
+    : m_offset(source.m_offset)
+    , m_properties(source.m_properties)
+    , m_style(RenderStyle::clonePtr(*source.style()))
+    , m_timingFunction(source.m_timingFunction)
+    , m_compositeOperation(source.m_compositeOperation)
+    , m_containsDirectionAwareProperty(source.m_containsDirectionAwareProperty)
+{
 }
 
 void BlendingKeyframe::addProperty(const AnimatableCSSProperty& property)

@@ -739,7 +739,8 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
     auto keyframeRuleForKey = [&](double key) -> StyleRuleKeyframe* {
         for (auto& keyframeRule : keyframeRules) {
             for (auto keyframeRuleKey : keyframeRule->keys()) {
-                if (keyframeRuleKey == key)
+                // FIXME.
+                if (keyframeRuleKey.offset == key)
                     return keyframeRule.ptr();
             }
         }

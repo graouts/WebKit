@@ -27,6 +27,7 @@
 #include "CompositeOperation.h"
 #include "KeyframeInterpolation.h"
 #include "RenderStyle.h"
+#include "TimelineRange.h"
 #include "WebAnimationTypes.h"
 #include <wtf/Vector.h>
 #include <wtf/HashSet.h>
@@ -45,14 +46,33 @@ class Resolver;
 
 class BlendingKeyframe final : public KeyframeInterpolation::Keyframe {
 public:
-    BlendingKeyframe(double offset, std::unique_ptr<RenderStyle> style)
-        : m_offset(offset)
+    struct Offset {
+        SingleTimelineRange::Name name;
+        double value;
+
+        Offset(double value)
+            : name(SingleTimelineRange::Name::Omitted)
+            , value(value)
+        {
+        }
+
+        Offset(SingleTimelineRange::Name name, double value)
+            : name(name)
+            , value(value)
+        {
+        }
+    };
+
+    BlendingKeyframe(Offset&& offset, std::unique_ptr<RenderStyle>&& style)
+        : m_offset(WTFMove(offset))
         , m_style(WTFMove(style))
     {
     }
 
+    BlendingKeyframe(const BlendingKeyframe&);
+
     // KeyframeInterpolation::Keyframe
-    double offset() const final { return m_offset; }
+    double offset() const final { return m_offset.value; }
     std::optional<CompositeOperation> compositeOperation() const final { return m_compositeOperation; }
     bool animatesProperty(KeyframeInterpolation::Property) const final;
     bool isBlendingKeyframe() const final { return true; }
@@ -60,10 +80,8 @@ public:
     void addProperty(const AnimatableCSSProperty&);
     const HashSet<AnimatableCSSProperty>& properties() const { return m_properties; }
 
-    void setOffset(double offset) { m_offset = offset; }
-
     const RenderStyle* style() const { return m_style.get(); }
-    void setStyle(std::unique_ptr<RenderStyle> style) { m_style = WTFMove(style); }
+    void setStyle(std::unique_ptr<RenderStyle>&& style) { m_style = WTFMove(style); }
 
     TimingFunction* timingFunction() const { return m_timingFunction.get(); }
     void setTimingFunction(const RefPtr<TimingFunction>& timingFunction) { m_timingFunction = timingFunction; }
@@ -74,7 +92,7 @@ public:
     void setContainsDirectionAwareProperty(bool containsDirectionAwareProperty) { m_containsDirectionAwareProperty = containsDirectionAwareProperty; }
 
 private:
-    double m_offset;
+    Offset m_offset;
     HashSet<AnimatableCSSProperty> m_properties; // The properties specified in this keyframe.
     std::unique_ptr<RenderStyle> m_style;
     RefPtr<TimingFunction> m_timingFunction;

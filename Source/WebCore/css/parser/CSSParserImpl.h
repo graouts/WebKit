@@ -101,7 +101,7 @@ public:
     static void parseStyleSheet(const String&, const CSSParserContext&, StyleSheetContents&);
     static CSSSelectorList parsePageSelector(CSSParserTokenRange, StyleSheetContents*);
 
-    static Vector<double> parseKeyframeKeyList(const String&);
+    static Vector<std::pair<CSSValueID, double>> parseKeyframeKeyList(const String&);
 
     bool supportsDeclaration(CSSParserTokenRange&);
     const CSSParserContext& context() const { return m_context; }
@@ -183,7 +183,7 @@ private:
     void consumeDeclarationValue(CSSParserTokenRange, CSSPropertyID, IsImportant, StyleRuleType);
     void consumeCustomPropertyValue(CSSParserTokenRange, const AtomString& propertyName, IsImportant);
 
-    static Vector<double> consumeKeyframeKeyList(CSSParserTokenRange);
+    static Vector<std::pair<CSSValueID, double>> consumeKeyframeKeyList(CSSParserTokenRange);
 
     RefPtr<StyleSheetContents> protectedStyleSheet() const;
 

@@ -86,8 +86,12 @@ std::optional<size_t> StyleRuleKeyframes::findKeyframeIndex(const String& key) c
     auto keys = CSSParser::parseKeyframeKeyList(key);
     if (keys.isEmpty())
         return std::nullopt;
+
+    auto convertedKeys = keys.map([](auto& pair) -> StyleRuleKeyframe::Key {
+        return { pair.first, pair.second };
+    });
     for (auto i = m_keyframes.size(); i--; ) {
-        if (m_keyframes[i]->keys() == keys)
+        if (m_keyframes[i]->keys() == convertedKeys)
             return i;
     }
     return std::nullopt;

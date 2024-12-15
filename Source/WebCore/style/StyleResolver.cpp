@@ -90,6 +90,28 @@
 #include <wtf/Vector.h>
 #include <wtf/text/AtomStringHash.h>
 
+#include <wtf/HashFunctions.h>
+#include <wtf/HashTraits.h>
+
+namespace WTF {
+
+// The empty value is (0, INT_MIN), the deleted value is (INT_MIN, 0)
+struct StyleRuleKeyframeKeyHash {
+    static unsigned hash(const WebCore::StyleRuleKeyframe::Key& p) { return pairIntHash(p.rangeName, p.offset); }
+    static bool equal(const WebCore::StyleRuleKeyframe::Key& a, const WebCore::StyleRuleKeyframe::Key& b) { return a == b; }
+    static const bool safeToCompareToEmptyOrDeleted = true;
+};
+template<> struct HashTraits<WebCore::StyleRuleKeyframe::Key> : GenericHashTraits<WebCore::StyleRuleKeyframe::Key> {
+    static WebCore::StyleRuleKeyframe::Key emptyValue() { return WebCore::StyleRuleKeyframe::Key(WebCore::CSSValueNormal, -1); }
+    static bool isEmptyValue(const WebCore::StyleRuleKeyframe::Key& value) { return value.offset == -1; }
+
+    static void constructDeletedValue(WebCore::StyleRuleKeyframe::Key& slot) { slot.offset = -2; }
+    static bool isDeletedValue(const WebCore::StyleRuleKeyframe::Key& slot) { return slot.offset == -2; }
+};
+template<> struct DefaultHash<WebCore::StyleRuleKeyframe::Key> : StyleRuleKeyframeKeyHash { };
+
+}
+
 namespace WebCore {
 namespace Style {
 
@@ -440,7 +462,7 @@ Vector<Ref<StyleRuleKeyframe>> Resolver::keyframeRulesForName(const AtomString& 
     auto* keyframesRule = it->value.get();
     auto* keyframes = &keyframesRule->keyframes();
 
-    using KeyframeUniqueKey = std::tuple<double, RefPtr<const TimingFunction>, CompositeOperation>;
+    using KeyframeUniqueKey = std::tuple<StyleRuleKeyframe::Key, RefPtr<const TimingFunction>, CompositeOperation>;
     auto hasDuplicateKeys = [&]() -> bool {
         HashSet<KeyframeUniqueKey> uniqueKeyframeKeys;
         for (auto& keyframe : *keyframes) {
@@ -493,10 +515,9 @@ void Resolver::keyframeStylesForAnimation(Element& element, const RenderStyle& e
     // Construct and populate the style for each keyframe.
     for (auto& keyframeRule : keyframeRules) {
         // Add this keyframe style to all the indicated key times
-        for (auto key : keyframeRule->keys()) {
-            BlendingKeyframe blendingKeyframe(0, nullptr);
+        for (auto& key : keyframeRule->keys()) {
+            BlendingKeyframe blendingKeyframe({ SingleTimelineRange::timelineName(key.rangeName), key.offset }, { nullptr });
             blendingKeyframe.setStyle(styleForKeyframe(element, elementStyle, context, keyframeRule.get(), blendingKeyframe));
-            blendingKeyframe.setOffset(key);
             if (auto timingFunctionCSSValue = keyframeRule->properties().getPropertyCSSValue(CSSPropertyAnimationTimingFunction))
                 blendingKeyframe.setTimingFunction(createTimingFunction(*timingFunctionCSSValue));
             if (auto compositeOperationCSSValue = keyframeRule->properties().getPropertyCSSValue(CSSPropertyAnimationComposition)) {

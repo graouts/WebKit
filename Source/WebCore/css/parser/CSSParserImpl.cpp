@@ -51,6 +51,7 @@
 #include "CSSPropertyParserConsumer+Integer.h"
 #include "CSSPropertyParserConsumer+Length.h"
 #include "CSSPropertyParserConsumer+Primitives.h"
+#include "CSSPropertyParserConsumer+Timeline.h"
 #include "CSSSelector.h"
 #include "CSSSelectorList.h"
 #include "CSSSelectorParser.h"
@@ -280,7 +281,7 @@ CSSSelectorList CSSParserImpl::parsePageSelector(CSSParserTokenRange range, Styl
     return CSSSelectorList { MutableCSSSelectorList::from(WTFMove(selector)) };
 }
 
-Vector<double> CSSParserImpl::parseKeyframeKeyList(const String& keyList)
+Vector<std::pair<CSSValueID, double>> CSSParserImpl::parseKeyframeKeyList(const String& keyList)
 {
     return consumeKeyframeKeyList(CSSTokenizer(keyList).tokenRange());
 }
@@ -1625,19 +1626,33 @@ void CSSParserImpl::consumeDeclarationValue(CSSParserTokenRange range, CSSProper
     CSSPropertyParser::parseValue(propertyID, important == IsImportant::Yes, range, m_context, topContext().m_parsedProperties, ruleType);
 }
 
-Vector<double> CSSParserImpl::consumeKeyframeKeyList(CSSParserTokenRange range)
+Vector<std::pair<CSSValueID, double>> CSSParserImpl::consumeKeyframeKeyList(CSSParserTokenRange range)
 {
-    Vector<double> result;
+    auto timelineRange = [](CSSParserTokenRange& range, CSSValueID id) -> std::optional<std::pair<CSSValueID, double>> {
+        if (CSSPropertyParserHelpers::isAnimationRangeKeyword(id)) {
+            auto& token = range.consumeIncludingWhitespace();
+            if (token.type() == PercentageToken && token.numericValue() >= 0 && token.numericValue() <= 100)
+                return { { id, token.numericValue() / 100 } };
+        }
+        return { };
+    };
+
+    Vector<std::pair<CSSValueID, double>> result;
     while (true) {
         range.consumeWhitespace();
         const CSSParserToken& token = range.consumeIncludingWhitespace();
         if (token.type() == PercentageToken && token.numericValue() >= 0 && token.numericValue() <= 100)
-            result.append(token.numericValue() / 100);
-        else if (token.type() == IdentToken && equalLettersIgnoringASCIICase(token.value(), "from"_s))
-            result.append(0);
-        else if (token.type() == IdentToken && equalLettersIgnoringASCIICase(token.value(), "to"_s))
-            result.append(1);
-        else
+            result.append({ CSSValueNormal, token.numericValue() / 100 });
+        else if (token.type() == IdentToken) {
+            if (token.id() == CSSValueFrom)
+                result.append({ CSSValueNormal, 0 });
+            else if (token.id() == CSSValueTo)
+                result.append({ CSSValueNormal, 1 });
+            else if (auto pair = timelineRange(range, token.id()))
+                result.append(*pair);
+            else
+                return { }; // Parser error, invalid value in keyframe selector
+        } else
             return { }; // Parser error, invalid value in keyframe selector
 
         if (range.atEnd()) {

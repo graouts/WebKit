@@ -164,7 +164,7 @@ void CSSParser::parseDeclarationForInspector(const CSSParserContext& context, co
     CSSParserImpl::parseDeclarationListForInspector(string, context, observer);
 }
 
-Vector<double> CSSParser::parseKeyframeKeyList(const String& selector)
+Vector<std::pair<CSSValueID, double>> CSSParser::parseKeyframeKeyList(const String& selector)
 {
     return CSSParserImpl::parseKeyframeKeyList(selector);
 }
