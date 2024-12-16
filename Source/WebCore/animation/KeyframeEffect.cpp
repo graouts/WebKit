@@ -71,6 +71,7 @@
 #include "TransformOperationData.h"
 #include "TransformOperationsSharedPrimitivesPrefix.h"
 #include "TranslateTransformOperation.h"
+#include "ViewTimeline.h"
 #include <JavaScriptCore/Exception.h>
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/UUID.h>
@@ -955,6 +956,8 @@ ExceptionOr<void> KeyframeEffect::processKeyframes(JSGlobalObject& lexicalGlobal
 
 void KeyframeEffect::updateBlendingKeyframes(RenderStyle& elementStyle, const Style::ResolutionContext& resolutionContext)
 {
+    updateComputedKeyframeOffsetsIfNeeded();
+
     if (!m_blendingKeyframes.isEmpty() || !m_target)
         return;
 
@@ -1062,6 +1065,8 @@ void KeyframeEffect::setBlendingKeyframes(BlendingKeyframes&& blendingKeyframes)
 
     m_blendingKeyframes = WTFMove(blendingKeyframes);
     m_animatedProperties.clear();
+
+    m_needsComputedKeyframeOffsetsUpdate = true;
 
     computedNeedsForcedLayout();
     computeStackingContextImpact();
@@ -1221,6 +1226,9 @@ void KeyframeEffect::animationTimelineDidChange(const AnimationTimeline* timelin
         }
         return false;
     }();
+
+    m_needsComputedKeyframeOffsetsUpdate = true;
+
     updateAcceleratedAnimationIfNecessary();
 
     auto target = targetStyleable();
@@ -2888,5 +2896,34 @@ bool KeyframeEffect::isPropertyAdditiveOrCumulative(KeyframeInterpolation::Prope
         return false;
     });
 }
+
+void KeyframeEffect::updateComputedKeyframeOffsetsIfNeeded()
+{
+    if (!m_needsComputedKeyframeOffsetsUpdate)
+        return;
+
+    // FIXME: also call this when metrics of the view timeline changes.
+    if (m_blendingKeyframes.isEmpty())
+        return;
+
+    RefPtr animation = this->animation();
+    if (!animation)
+        return;
+
+    RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(animation->timeline());
+    if (viewTimeline && !viewTimeline->currentTime())
+        return;
+
+    m_blendingKeyframes.updatedComputedOffsets([&](auto& specifiedOffset) {
+        if ((specifiedOffset.name == SingleTimelineRange::Name::Normal || specifiedOffset.name == SingleTimelineRange::Name::Omitted)
+            || !viewTimeline)
+            return specifiedOffset.value;
+        auto [rangeStartOffset, rangeEndOffset] = viewTimeline->offsetIntervalForTimelineRangeName(specifiedOffset.name);
+        auto rangeOffsetDelta = rangeEndOffset - rangeStartOffset;
+        return rangeStartOffset + specifiedOffset.value * rangeOffsetDelta;
+    });
+
+    m_needsComputedKeyframeOffsetsUpdate = false;
+};
 
 } // namespace WebCore

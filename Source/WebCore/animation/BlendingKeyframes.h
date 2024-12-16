@@ -64,7 +64,8 @@ public:
     };
 
     BlendingKeyframe(Offset&& offset, std::unique_ptr<RenderStyle>&& style)
-        : m_offset(WTFMove(offset))
+        : m_specifiedOffset(WTFMove(offset))
+        , m_computedOffset(m_specifiedOffset.value)
         , m_style(WTFMove(style))
     {
     }
@@ -72,13 +73,16 @@ public:
     BlendingKeyframe(const BlendingKeyframe&);
 
     // KeyframeInterpolation::Keyframe
-    double offset() const final { return m_offset.value; }
+    double offset() const final { return m_computedOffset; }
     std::optional<CompositeOperation> compositeOperation() const final { return m_compositeOperation; }
     bool animatesProperty(KeyframeInterpolation::Property) const final;
     bool isBlendingKeyframe() const final { return true; }
 
     void addProperty(const AnimatableCSSProperty&);
     const HashSet<AnimatableCSSProperty>& properties() const { return m_properties; }
+
+    const Offset& specifiedOffset() const { return m_specifiedOffset; }
+    void setComputedOffset(double offset) { m_computedOffset = offset; }
 
     const RenderStyle* style() const { return m_style.get(); }
     void setStyle(std::unique_ptr<RenderStyle>&& style) { m_style = WTFMove(style); }
@@ -92,7 +96,8 @@ public:
     void setContainsDirectionAwareProperty(bool containsDirectionAwareProperty) { m_containsDirectionAwareProperty = containsDirectionAwareProperty; }
 
 private:
-    Offset m_offset;
+    Offset m_specifiedOffset;
+    double m_computedOffset;
     HashSet<AnimatableCSSProperty> m_properties; // The properties specified in this keyframe.
     std::unique_ptr<RenderStyle> m_style;
     RefPtr<TimingFunction> m_timingFunction;
@@ -149,6 +154,8 @@ public:
     bool hasDiscreteTransformInterval() const { return m_hasDiscreteTransformInterval; }
     bool hasExplicitlyInheritedKeyframeProperty() const { return m_hasExplicitlyInheritedKeyframeProperty; }
     bool usesAnchorFunctions() const { return m_usesAnchorFunctions; }
+
+    void updatedComputedOffsets(const Function<double(const BlendingKeyframe::Offset&)>&);
 
 private:
     void analyzeKeyframe(const BlendingKeyframe&);

@@ -280,6 +280,7 @@ private:
     bool ticksContinuouslyWhileActive() const final;
     std::optional<double> progressUntilNextStep(double) const final;
     bool preventsAnimationReadiness() const final;
+    void updateComputedKeyframeOffsetsIfNeeded();
 
     // KeyframeInterpolation
     CompositeOperation compositeOperation() const final { return m_compositeOperation; }
@@ -324,6 +325,7 @@ private:
     bool m_hasReferenceFilter { false };
     bool m_animatesSizeAndSizeDependentTransform { false };
     bool m_isAssociatedWithProgressBasedTimeline { false };
+    bool m_needsComputedKeyframeOffsetsUpdate { false };
 };
 
 } // namespace WebCore

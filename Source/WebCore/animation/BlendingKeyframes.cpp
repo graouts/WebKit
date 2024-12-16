@@ -383,8 +383,39 @@ void BlendingKeyframes::analyzeKeyframe(const BlendingKeyframe& keyframe)
     analyzeKeyframeForExplicitProperties();
 }
 
+void BlendingKeyframes::updatedComputedOffsets(const Function<double(const BlendingKeyframe::Offset&)>& callback)
+{
+    for (auto& keyframe : m_keyframes) {
+        auto& specifiedOffset = keyframe.specifiedOffset();
+        auto computedOffset = callback(specifiedOffset);
+        auto name = [&] {
+            switch (specifiedOffset.name) {
+            case SingleTimelineRange::Name::Normal:
+                return "normal"_s;
+            case SingleTimelineRange::Name::Omitted:
+                return "omitted"_s;
+            case SingleTimelineRange::Name::Cover:
+                return "cover"_s;
+            case SingleTimelineRange::Name::Contain:
+                return "contain"_s;
+            case SingleTimelineRange::Name::Entry:
+                return "entry"_s;
+            case SingleTimelineRange::Name::Exit:
+                return "exit"_s;
+            case SingleTimelineRange::Name::EntryCrossing:
+                return "entryCrossing"_s;
+            case SingleTimelineRange::Name::ExitCrossing:
+                return "exitCrossing"_s;
+            }
+        };
+        WTFLogAlways("[GRAOUTS] Converted specified offset { %s, %f } to %f", name().characters(), specifiedOffset.value, computedOffset);
+        keyframe.setComputedOffset(computedOffset);
+    }
+}
+
 BlendingKeyframe::BlendingKeyframe(const BlendingKeyframe& source)
-    : m_offset(source.m_offset)
+    : m_specifiedOffset(source.m_specifiedOffset)
+    , m_computedOffset(source.m_specifiedOffset.value)
     , m_properties(source.m_properties)
     , m_style(RenderStyle::clonePtr(*source.style()))
     , m_timingFunction(source.m_timingFunction)

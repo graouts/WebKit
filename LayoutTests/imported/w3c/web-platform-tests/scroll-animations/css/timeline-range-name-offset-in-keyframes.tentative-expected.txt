@@ -1,3 +1,3 @@
 
-FAIL Timeline offset in Animation Keyframes assert_equals: Effect at entry 0% expected "0" but got "1"
+FAIL Timeline offset in Animation Keyframes assert_equals: Effect at entry 50% expected "0.5" but got "0.2375"
 
