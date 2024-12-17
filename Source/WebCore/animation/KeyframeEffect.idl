@@ -41,7 +41,7 @@ typedef USVString CSSOMString;
 };
 
 dictionary BasePropertyIndexedKeyframe {
-    (sequence<double?> or double?) offset = [];
+    (sequence<(double? or TimelineRangeOffset)> or (double? or TimelineRangeOffset)) offset = [];
     (sequence<DOMString> or DOMString) easing = [];
     (sequence<CompositeOperationOrAuto> or CompositeOperationOrAuto) composite = [];
 };
@@ -55,8 +55,8 @@ dictionary BaseKeyframe {
 [
     JSGenerateToJSObject
 ] dictionary BaseComputedKeyframe {
-     double? offset = null;
-     double computedOffset;
+     (double? or TimelineRangeOffset) offset = null;
+     double? computedOffset = null;
      DOMString easing = "linear";
      CompositeOperationOrAuto composite = "auto";
 };

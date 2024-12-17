@@ -67,14 +67,16 @@ public:
     static Ref<KeyframeEffect> create(Ref<KeyframeEffect>&&);
     static Ref<KeyframeEffect> create(const Element&, const std::optional<Style::PseudoElementIdentifier>&);
 
+    using OptionalDoubleOrTimelineRangeOffset = std::variant<std::nullptr_t, double, TimelineRangeOffset>;
+
     struct BasePropertyIndexedKeyframe {
-        std::variant<std::nullptr_t, Vector<std::optional<double>>, double> offset = Vector<std::optional<double>>();
+        std::variant<std::nullptr_t, Vector<OptionalDoubleOrTimelineRangeOffset>, double, TimelineRangeOffset> offset = Vector<OptionalDoubleOrTimelineRangeOffset>();
         std::variant<Vector<String>, String> easing = Vector<String>();
         std::variant<Vector<CompositeOperationOrAuto>, CompositeOperationOrAuto> composite = Vector<CompositeOperationOrAuto>();
     };
 
     struct BaseKeyframe {
-        MarkableDouble offset;
+        OptionalDoubleOrTimelineRangeOffset offset;
         String easing { "linear"_s };
         CompositeOperationOrAuto composite { CompositeOperationOrAuto::Auto };
     };
@@ -91,7 +93,7 @@ public:
     };
 
     struct BaseComputedKeyframe : BaseKeyframe {
-        double computedOffset;
+        MarkableDouble computedOffset;
     };
 
     struct ComputedKeyframe : BaseComputedKeyframe {

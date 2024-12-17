@@ -179,8 +179,9 @@ static Ref<JSON::ArrayOf<Inspector::Protocol::Animation::Keyframe>> buildObjectF
         }
     } else {
         for (const auto& parsedKeyframe : parsedKeyframes) {
+            // FIXME: handle null computed offset values.
             auto keyframePayload = Inspector::Protocol::Animation::Keyframe::create()
-                .setOffset(parsedKeyframe.computedOffset)
+                .setOffset(parsedKeyframe.computedOffset.value_or(0))
                 .release();
 
             if (!parsedKeyframe.easing.isEmpty())

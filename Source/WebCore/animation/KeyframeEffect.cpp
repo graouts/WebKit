@@ -156,17 +156,22 @@ static inline void computeMissingKeyframeOffsets(Vector<KeyframeEffect::ParsedKe
     // that a keyframe hasn't had a computed offset by checking if it has a null offset and a 0 computedOffset, since the first
     // keyframe will already have a 0 computedOffset.
     for (auto& keyframe : keyframes) {
-        auto computedOffset = keyframe.offset;
-        keyframe.computedOffset = computedOffset ? *computedOffset : 0;
+        auto& offset = keyframe.offset;
+        if (auto* doubleValue = std::get_if<double>(&offset))
+            keyframe.computedOffset = *doubleValue;
+        else if (auto* singleTimelineRange = std::get_if<SingleTimelineRange>(&offset))
+            keyframe.computedOffset = singleTimelineRange->offset.percent() * 100;
+        else
+            keyframe.computedOffset = std::nullopt;
     }
 
     // 2. If keyframes contains more than one keyframe and the computed keyframe offset of the first keyframe in keyframes is null,
     //    set the computed keyframe offset of the first keyframe to 0.
-    if (keyframes.size() > 1 && !keyframes[0].offset)
+    if (keyframes.size() > 1 && !keyframes[0].computedOffset)
         keyframes[0].computedOffset = 0;
 
     // 3. If the computed keyframe offset of the last keyframe in keyframes is null, set its computed keyframe offset to 1.
-    if (!keyframes.last().offset)
+    if (!keyframes.last().computedOffset)
         keyframes.last().computedOffset = 1;
 
     // 4. For each pair of keyframes A and B where:
@@ -183,11 +188,11 @@ static inline void computeMissingKeyframeOffsets(Vector<KeyframeEffect::ParsedKe
         auto& keyframe = keyframes[i];
         // Keyframes with a null offset that don't yet have a non-zero computed offset are keyframes
         // with an offset that needs to be computed.
-        if (!keyframe.offset && !keyframe.computedOffset)
+        if (!keyframe.computedOffset)
             continue;
         if (indexOfLastKeyframeWithNonNullOffset != i - 1) {
-            double lastNonNullOffset = keyframes[indexOfLastKeyframeWithNonNullOffset].computedOffset;
-            double offsetDelta = keyframe.computedOffset - lastNonNullOffset;
+            double lastNonNullOffset = *keyframes[indexOfLastKeyframeWithNonNullOffset].computedOffset;
+            double offsetDelta = *keyframe.computedOffset - lastNonNullOffset;
             double offsetIncrement = offsetDelta / (i - indexOfLastKeyframeWithNonNullOffset);
             size_t indexOfFirstKeyframeWithNullOffset = indexOfLastKeyframeWithNonNullOffset + 1;
             for (size_t j = indexOfFirstKeyframeWithNullOffset; j < i; ++j)
@@ -764,7 +769,12 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
         auto* keyframeRule = keyframeRuleForKey(keyframe.offset());
 
         ComputedKeyframe computedKeyframe;
-        computedKeyframe.offset = keyframe.offset();
+        computedKeyframe.offset = [&] -> OptionalDoubleOrTimelineRangeOffset {
+            auto& specifiedOffset = keyframe.specifiedOffset();
+            if (specifiedOffset.name == SingleTimelineRange::Name::Ommitted)
+                return specifiedOffset.value;
+            return SingleTimelineRange(specifiedOffset.name, Length(specifiedOffset.value, LengthType::Percent));
+        }();
         computedKeyframe.computedOffset = keyframe.offset();
         // For CSS transitions, all keyframes should return "linear" since the effect's global timing function applies.
         computedKeyframe.easing = is<CSSTransition>(animation()) ? "linear"_s : timingFunctionForBlendingKeyframe(keyframe)->cssText();
