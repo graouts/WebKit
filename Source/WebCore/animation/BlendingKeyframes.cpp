@@ -415,7 +415,7 @@ void BlendingKeyframes::updatedComputedOffsets(const Function<double(const Blend
 
 BlendingKeyframe::BlendingKeyframe(const BlendingKeyframe& source)
     : m_specifiedOffset(source.m_specifiedOffset)
-    , m_computedOffset(source.m_specifiedOffset.value)
+    , m_computedOffset(source.m_computedOffset)
     , m_properties(source.m_properties)
     , m_style(RenderStyle::clonePtr(*source.style()))
     , m_timingFunction(source.m_timingFunction)
