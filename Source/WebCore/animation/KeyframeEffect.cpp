@@ -731,7 +731,7 @@ static TimelineRangeOffset timelineRangeOffsetFromSpecifiedOffset(const Blending
             return "exitCrossing"_s;
         }
     }();
-    return TimelineRangeOffset(name, CSSNumericFactory::percent(specifiedOffset.value));
+    return TimelineRangeOffset(name, CSSNumericFactory::percent(specifiedOffset.value * 100));
 }
 
 auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
@@ -807,6 +807,9 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
         }
     }
 
+    Vector<ComputedKeyframe> computedKeyframesWithTimelineRangeOffset;
+    Vector<ComputedKeyframe> computedKeyframesWithDoubleOffset;
+
     for (auto& keyframe : computedBlendingKeyframes) {
         auto& style = *keyframe.style();
         auto* keyframeRule = keyframeRuleForKey(keyframe.offset());
@@ -879,8 +882,17 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
             );
         }
 
-        computedKeyframes.append(WTFMove(computedKeyframe));
+        // FIXME: this is so that we mimic the Chrome behavior since this isn't
+        // spec'd out, but it makes little sense to me. Items ought to be sorted
+        // by computed offset just like BlendingKeyframes would organize its keyframes.
+        if (std::holds_alternative<double>(computedKeyframe.offset))
+            computedKeyframesWithDoubleOffset.append(WTFMove(computedKeyframe));
+        else
+            computedKeyframesWithTimelineRangeOffset.append(WTFMove(computedKeyframe));
     }
+
+    computedKeyframes.appendVector(WTFMove(computedKeyframesWithDoubleOffset));
+    computedKeyframes.appendVector(WTFMove(computedKeyframesWithTimelineRangeOffset));
 
     return computedKeyframes;
 }
