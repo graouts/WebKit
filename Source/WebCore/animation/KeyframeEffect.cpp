@@ -30,6 +30,7 @@
 #include "AnimationTimelinesController.h"
 #include "CSSAnimation.h"
 #include "CSSKeyframeRule.h"
+#include "CSSNumericFactory.h"
 #include "CSSPropertyAnimation.h"
 #include "CSSPropertyNames.h"
 #include "CSSPropertyParser.h"
@@ -38,6 +39,7 @@
 #include "CSSStyleDeclaration.h"
 #include "CSSTimingFunctionValue.h"
 #include "CSSTransition.h"
+#include "CSSUnitValue.h"
 #include "CSSValue.h"
 #include "CSSValueKeywords.h"
 #include "ComputedStyleExtractor.h"
@@ -67,6 +69,7 @@
 #include "StyleResolver.h"
 #include "StyleScope.h"
 #include "StyledElement.h"
+#include "TimelineRangeOffset.h"
 #include "TimingFunction.h"
 #include "TransformOperationData.h"
 #include "TransformOperationsSharedPrimitivesPrefix.h"
@@ -159,9 +162,11 @@ static inline void computeMissingKeyframeOffsets(Vector<KeyframeEffect::ParsedKe
         auto& offset = keyframe.offset;
         if (auto* doubleValue = std::get_if<double>(&offset))
             keyframe.computedOffset = *doubleValue;
-        else if (auto* singleTimelineRange = std::get_if<SingleTimelineRange>(&offset))
-            keyframe.computedOffset = singleTimelineRange->offset.percent() * 100;
-        else
+        else if (auto* timelineRangeOffset = std::get_if<TimelineRangeOffset>(&offset)) {
+            RefPtr offsetUnitValue = dynamicDowncast<CSSUnitValue>(timelineRangeOffset->offset);
+            ASSERT(offsetUnitValue && offsetUnitValue->unitEnum() == CSSUnitType::CSS_PERCENTAGE);
+            keyframe.computedOffset = offsetUnitValue->value() * 100;
+        } else
             keyframe.computedOffset = std::nullopt;
     }
 
@@ -240,8 +245,11 @@ static inline ExceptionOr<KeyframeEffect::KeyframeLikeObject> processKeyframeLik
             return Exception { ExceptionCode::TypeError };
 
         auto baseKeyframe = baseKeyframeConversionResult.releaseReturnValue();
-        if (baseKeyframe.offset)
-            baseProperties.offset = baseKeyframe.offset.value();
+        auto* baseKeyframeOffset = &baseKeyframe.offset;
+        if (auto* doubleValue = std::get_if<double>(baseKeyframeOffset))
+            baseProperties.offset = *doubleValue;
+        else if (auto* timelineRangeOffsetValue = std::get_if<TimelineRangeOffset>(baseKeyframeOffset))
+            baseProperties.offset = *timelineRangeOffsetValue;
         else
             baseProperties.offset = nullptr;
         baseProperties.easing = baseKeyframe.easing;
@@ -397,8 +405,10 @@ static inline ExceptionOr<void> processIterableKeyframes(JSGlobalObject& lexical
 
         // When calling processKeyframeLikeObject() with the "allow lists" flag set to false, the only offset
         // alternatives we should expect are double and nullptr.
-        if (std::holds_alternative<double>(keyframeLikeObject.baseProperties.offset))
-            keyframeOutput.offset = std::get<double>(keyframeLikeObject.baseProperties.offset);
+        if (auto* doubleValue = std::get_if<double>(&keyframeLikeObject.baseProperties.offset))
+            keyframeOutput.offset = *doubleValue;
+        else if (auto* timelineRangeOffset = std::get_if<TimelineRangeOffset>(&keyframeLikeObject.baseProperties.offset))
+            keyframeOutput.offset = *timelineRangeOffset;
         else
             ASSERT(std::holds_alternative<std::nullptr_t>(keyframeLikeObject.baseProperties.offset));
 
@@ -478,7 +488,11 @@ static inline ExceptionOr<void> processPropertyIndexedKeyframes(JSGlobalObject& 
 
     // 3. Sort processed keyframes by the computed keyframe offset of each keyframe in increasing order.
     std::sort(parsedKeyframes.begin(), parsedKeyframes.end(), [](auto& lhs, auto& rhs) {
-        return lhs.computedOffset < rhs.computedOffset;
+        // FIXME: perhaps we can ASSERT(lhs.computedOffset && rhs.computedOffset)
+        if (lhs.computedOffset && rhs.computedOffset)
+            return *lhs.computedOffset < *rhs.computedOffset;
+        // This will sort nullopt values prior to other values.
+        return !!lhs.computedOffset;
     });
 
     // 4. Merge adjacent keyframes in processed keyframes when they have equal computed keyframe offsets.
@@ -516,13 +530,16 @@ static inline ExceptionOr<void> processPropertyIndexedKeyframes(JSGlobalObject& 
     // 5. Let offsets be a sequence of nullable double values assigned based on the type of the “offset” member of the property-indexed keyframe as follows:
     //    - sequence<double?>, the value of “offset” as-is.
     //    - double?, a sequence of length one with the value of “offset” as its single item, i.e. « offset »,
-    Vector<std::optional<double>> offsets;
-    if (std::holds_alternative<Vector<std::optional<double>>>(propertyIndexedKeyframe.baseProperties.offset))
-        offsets = std::get<Vector<std::optional<double>>>(propertyIndexedKeyframe.baseProperties.offset);
-    else if (std::holds_alternative<double>(propertyIndexedKeyframe.baseProperties.offset))
-        offsets.append(std::get<double>(propertyIndexedKeyframe.baseProperties.offset));
-    else if (std::holds_alternative<std::nullptr_t>(propertyIndexedKeyframe.baseProperties.offset))
-        offsets.append(std::nullopt);
+    auto* sourceOffsets = &propertyIndexedKeyframe.baseProperties.offset;
+    Vector<KeyframeEffect::OptionalDoubleOrTimelineRangeOffset> offsets;
+    if (auto* vectorOfOptionalDoubleOrTimelineRangeOffsets = std::get_if<Vector<KeyframeEffect::OptionalDoubleOrTimelineRangeOffset>>(sourceOffsets))
+        offsets = *vectorOfOptionalDoubleOrTimelineRangeOffsets;
+    else if (auto* doubleValue = std::get_if<double>(sourceOffsets))
+        offsets.append(*doubleValue);
+    else if (auto* timelineRangeOffset = std::get_if<TimelineRangeOffset>(sourceOffsets))
+        offsets.append(*timelineRangeOffset);
+    else
+        offsets.append(nullptr);
 
     // 6. Assign each value in offsets to the keyframe offset of the keyframe with corresponding position in property keyframes until the end of either sequence is reached.
     for (size_t i = 0; i < offsets.size() && i < parsedKeyframes.size(); ++i)
@@ -691,6 +708,32 @@ void KeyframeEffect::copyPropertiesFromSource(Ref<KeyframeEffect>&& source)
     setBlendingKeyframes(WTFMove(blendingKeyframes));
 }
 
+// FIXME: move this to BlendingKeyframe and rename type to SpecifiedOffset?
+static TimelineRangeOffset timelineRangeOffsetFromSpecifiedOffset(const BlendingKeyframe::Offset& specifiedOffset)
+{
+    auto name = [&] {
+        switch (specifiedOffset.name) {
+        case SingleTimelineRange::Name::Normal:
+            return "normal"_s;
+        case SingleTimelineRange::Name::Omitted:
+            return "omitted"_s;
+        case SingleTimelineRange::Name::Cover:
+            return "cover"_s;
+        case SingleTimelineRange::Name::Contain:
+            return "contain"_s;
+        case SingleTimelineRange::Name::Entry:
+            return "entry"_s;
+        case SingleTimelineRange::Name::Exit:
+            return "exit"_s;
+        case SingleTimelineRange::Name::EntryCrossing:
+            return "entryCrossing"_s;
+        case SingleTimelineRange::Name::ExitCrossing:
+            return "exitCrossing"_s;
+        }
+    }();
+    return TimelineRangeOffset(name, CSSNumericFactory::percent(specifiedOffset.value));
+}
+
 auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
 {
     // https://drafts.csswg.org/web-animations-1/#dom-keyframeeffectreadonly-getkeyframes
@@ -771,9 +814,9 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
         ComputedKeyframe computedKeyframe;
         computedKeyframe.offset = [&] -> OptionalDoubleOrTimelineRangeOffset {
             auto& specifiedOffset = keyframe.specifiedOffset();
-            if (specifiedOffset.name == SingleTimelineRange::Name::Ommitted)
+            if (specifiedOffset.name == SingleTimelineRange::Name::Omitted)
                 return specifiedOffset.value;
-            return SingleTimelineRange(specifiedOffset.name, Length(specifiedOffset.value, LengthType::Percent));
+            return timelineRangeOffsetFromSpecifiedOffset(specifiedOffset);
         }();
         computedKeyframe.computedOffset = keyframe.offset();
         // For CSS transitions, all keyframes should return "linear" since the effect's global timing function applies.
@@ -921,9 +964,11 @@ ExceptionOr<void> KeyframeEffect::processKeyframes(JSGlobalObject& lexicalGlobal
     //    zero or greater than one, throw a TypeError and abort these steps.
     double lastNonNullOffset = -1;
     for (auto& keyframe : parsedKeyframes) {
-        if (!keyframe.offset)
+        // FIXME: deal with TimelineRangeOffset here.
+        auto* doubleOffset = std::get_if<double>(&keyframe.offset);
+        if (!doubleOffset)
             continue;
-        auto offset = keyframe.offset.value();
+        auto offset = *doubleOffset;
         if (offset < lastNonNullOffset || offset < 0 || offset > 1)
             return Exception { ExceptionCode::TypeError };
         lastNonNullOffset = offset;
@@ -975,7 +1020,10 @@ void KeyframeEffect::updateBlendingKeyframes(RenderStyle& elementStyle, const St
     auto& styleResolver = m_target->styleResolver();
 
     for (auto& keyframe : m_parsedKeyframes) {
-        BlendingKeyframe blendingKeyframe(keyframe.computedOffset, nullptr);
+        if (!keyframe.computedOffset)
+            return;
+
+        BlendingKeyframe blendingKeyframe(*keyframe.computedOffset, nullptr);
         blendingKeyframe.setTimingFunction(keyframe.timingFunction->clone());
 
         switch (keyframe.composite) {
@@ -1545,7 +1593,7 @@ bool KeyframeEffect::hasImplicitKeyframes() const
 
     // If we have two or more keyframes, then we have implicit keyframes if the first and last
     // keyframes don't have 0 and 1 respectively as their computed offset.
-    return m_parsedKeyframes[0].computedOffset || m_parsedKeyframes[numberOfKeyframes - 1].computedOffset != 1;
+    return m_parsedKeyframes[0].computedOffset.value_or(0) || m_parsedKeyframes[numberOfKeyframes - 1].computedOffset.value_or(1) != 1;
 }
 
 void KeyframeEffect::getAnimatedStyle(std::unique_ptr<RenderStyle>& animatedStyle)
@@ -2524,12 +2572,15 @@ void KeyframeEffect::computeHasImplicitKeyframeForAcceleratedProperty()
             HashSet<CSSPropertyID> explicitOneProperties;
             auto styleProperties = keyframe.style;
             for (auto propertyReference : styleProperties.get()) {
+                auto computedOffset = keyframe.computedOffset;
+                if (!computedOffset)
+                    continue;
                 auto property = propertyReference.id();
                 // All properties may end up being implicit.
                 implicitProperties.add(property);
-                if (!keyframe.computedOffset)
+                if (!*computedOffset)
                     explicitZeroProperties.add(property);
-                else if (keyframe.computedOffset == 1)
+                else if (*computedOffset == 1)
                     explicitOneProperties.add(property);
             }
             // Let's remove all properties found on the 0% and 100% keyframes from the list of potential implicit properties.

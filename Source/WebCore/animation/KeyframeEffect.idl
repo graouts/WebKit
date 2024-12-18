@@ -47,7 +47,7 @@ dictionary BasePropertyIndexedKeyframe {
 };
 
 dictionary BaseKeyframe {
-    double? offset = null;
+    (double? or TimelineRangeOffset) offset = null;
     DOMString easing = "linear";
     CompositeOperationOrAuto composite = "auto";
 };
