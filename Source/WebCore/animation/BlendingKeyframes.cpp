@@ -385,32 +385,8 @@ void BlendingKeyframes::analyzeKeyframe(const BlendingKeyframe& keyframe)
 
 void BlendingKeyframes::updatedComputedOffsets(const Function<double(const BlendingKeyframe::Offset&)>& callback)
 {
-    for (auto& keyframe : m_keyframes) {
-        auto& specifiedOffset = keyframe.specifiedOffset();
-        auto computedOffset = callback(specifiedOffset);
-        auto name = [&] {
-            switch (specifiedOffset.name) {
-            case SingleTimelineRange::Name::Normal:
-                return "normal"_s;
-            case SingleTimelineRange::Name::Omitted:
-                return "omitted"_s;
-            case SingleTimelineRange::Name::Cover:
-                return "cover"_s;
-            case SingleTimelineRange::Name::Contain:
-                return "contain"_s;
-            case SingleTimelineRange::Name::Entry:
-                return "entry"_s;
-            case SingleTimelineRange::Name::Exit:
-                return "exit"_s;
-            case SingleTimelineRange::Name::EntryCrossing:
-                return "entryCrossing"_s;
-            case SingleTimelineRange::Name::ExitCrossing:
-                return "exitCrossing"_s;
-            }
-        };
-        WTFLogAlways("[GRAOUTS] Converted specified offset { %s, %f } to %f", name().characters(), specifiedOffset.value, computedOffset);
-        keyframe.setComputedOffset(computedOffset);
-    }
+    for (auto& keyframe : m_keyframes)
+        keyframe.setComputedOffset(callback(keyframe.specifiedOffset()));
 }
 
 BlendingKeyframe::BlendingKeyframe(const BlendingKeyframe& source)
