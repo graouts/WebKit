@@ -726,9 +726,9 @@ static TimelineRangeOffset timelineRangeOffsetFromSpecifiedOffset(const Blending
         case SingleTimelineRange::Name::Exit:
             return "exit"_s;
         case SingleTimelineRange::Name::EntryCrossing:
-            return "entryCrossing"_s;
+            return "entry-crossing"_s;
         case SingleTimelineRange::Name::ExitCrossing:
-            return "exitCrossing"_s;
+            return "exit-crossing"_s;
         }
     }();
     return TimelineRangeOffset(name, CSSNumericFactory::percent(specifiedOffset.value * 100));
@@ -785,11 +785,11 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
         return styleScope->resolver().keyframeRulesForName(computedBlendingKeyframes.animationName());
     }();
 
-    auto keyframeRuleForKey = [&](double key) -> StyleRuleKeyframe* {
+    auto keyframeRuleForKey = [&](const BlendingKeyframe::Offset& specifiedOffset) -> StyleRuleKeyframe* {
+        StyleRuleKeyframe::Key key { SingleTimelineRange::valueID(specifiedOffset.name), specifiedOffset.value };
         for (auto& keyframeRule : keyframeRules) {
             for (auto keyframeRuleKey : keyframeRule->keys()) {
-                // FIXME.
-                if (keyframeRuleKey.offset == key)
+                if (keyframeRuleKey == key)
                     return keyframeRule.ptr();
             }
         }
@@ -812,7 +812,7 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
 
     for (auto& keyframe : computedBlendingKeyframes) {
         auto& style = *keyframe.style();
-        auto* keyframeRule = keyframeRuleForKey(keyframe.offset());
+        auto* keyframeRule = keyframeRuleForKey(keyframe.specifiedOffset());
 
         ComputedKeyframe computedKeyframe;
         computedKeyframe.offset = [&] -> OptionalDoubleOrTimelineRangeOffset {
