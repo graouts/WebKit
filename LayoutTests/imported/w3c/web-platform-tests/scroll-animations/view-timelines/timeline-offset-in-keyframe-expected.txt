@@ -1,7 +1,11 @@
 
-FAIL Timeline offsets in programmatic keyframes promise_test: Unhandled rejection with value: object "TypeError: The provided value is non-finite"
+FAIL Timeline offsets in programmatic keyframes assert_approx_equals: Testcase '[{"offset":{"rangeName":"cover","offset":{}},"opacity":0},{"offset":{"rangeName":"cover","offset":{}},"opacity":1}]': opacity at contain 0% expected 0.3333333333333333 +/- 0.000001 but got 0
 FAIL String offsets in programmatic keyframes assert_approx_equals: [{"offset":"0.5","opacity":0.5}] expected 0.5 +/- 0.000001 but got 0.4000000381469729
-PASS Invalid timeline offset in programmatic keyframe throws
+FAIL Invalid timeline offset in programmatic keyframe throws assert_throws_js: Invalid keyframes test case "[{"offset":{"rangeName":"somewhere","offset":{}}}]" function "() => {
+        target.animate(keyframes, {
+          timeline: new ViewTimeline( { subject: target }),
+        });
+      }" did not throw
 FAIL Timeline offsets in programmatic keyframes adjust for change in timeline promise_test: Unhandled rejection with value: object "TypeError: The provided value is non-finite"
 FAIL Timeline offsets in programmatic keyframes resolved when updating the animation effect assert_approx_equals: Progress at contain 50% before effect change expected 0.5 +/- 0.000001 but got 0.4000000381469729
 
