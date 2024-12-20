@@ -1630,6 +1630,9 @@ Vector<std::pair<CSSValueID, double>> CSSParserImpl::consumeKeyframeKeyList(CSSP
 {
     auto timelineRange = [](CSSParserTokenRange& range, CSSValueID id) -> std::optional<std::pair<CSSValueID, double>> {
         if (CSSPropertyParserHelpers::isAnimationRangeKeyword(id)) {
+            // "normal" will be considered valid by isAnimationRangeKeyword() but is not valid for a @keyframes rule.
+            if (id == CSSValueNormal)
+                return { };
             auto& token = range.consumeIncludingWhitespace();
             if (token.type() == PercentageToken && token.numericValue() >= 0 && token.numericValue() <= 100)
                 return { { id, token.numericValue() / 100 } };

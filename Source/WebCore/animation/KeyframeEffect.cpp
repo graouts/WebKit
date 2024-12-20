@@ -817,7 +817,7 @@ auto KeyframeEffect::getKeyframes() -> Vector<ComputedKeyframe>
         ComputedKeyframe computedKeyframe;
         computedKeyframe.offset = [&] -> OptionalDoubleOrTimelineRangeOffset {
             auto& specifiedOffset = keyframe.specifiedOffset();
-            if (specifiedOffset.name == SingleTimelineRange::Name::Omitted)
+            if (specifiedOffset.name == SingleTimelineRange::Name::Omitted || specifiedOffset.name == SingleTimelineRange::Name::Normal)
                 return specifiedOffset.value;
             return timelineRangeOffsetFromSpecifiedOffset(specifiedOffset);
         }();
