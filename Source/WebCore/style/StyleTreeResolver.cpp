@@ -257,7 +257,10 @@ static bool styleChangeAffectsRelativeUnits(const RenderStyle& style, const Rend
 
 auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingStyle, ResolutionType resolutionType) -> std::pair<ElementUpdate, DescendantsToResolve>
 {
-    if (element.getAttribute("class"_s) == "target"_s)
+    auto className = element.getAttribute("class"_s);
+    WTFLogAlways("[GRAOUTS] resolveElement for <%s class='%s'>", element.localName().string().ascii().data(), className.string().ascii().data());
+
+    if (className == "target"_s)
         WTFLogAlways("");
 
     if (m_didSeePendingStylesheet && !element.renderOrDisplayContentsStyle() && !m_document->isIgnoringPendingStylesheets()) {
@@ -1056,6 +1059,11 @@ void TreeResolver::resolveComposedTree()
     auto descendants = composedTreeDescendants(m_document);
     auto it = descendants.begin();
     auto end = descendants.end();
+
+    if (it != end) {
+        if (auto* element = dynamicDowncast<Element>(*it))
+            WTFLogAlways("[GRAOUTS] resolveComposedTree for <%s class='%s'>", element->localName().string().ascii().data(), element->getAttribute("class"_s).string().ascii().data());
+    }
 
     while (it != end) {
         popParentsToDepth(it.depth());

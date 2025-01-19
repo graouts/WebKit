@@ -2601,6 +2601,8 @@ void Element::invalidateStyleInternal()
 
 void Element::invalidateStyleForAnimation()
 {
+    WTFLogAlways("[GRAOUTS] invalidateStyleForAnimation for <%s class='%s'>", localName().string().ascii().data(), getAttribute("class"_s).string().ascii().data());
+
     Node::invalidateStyle(Style::Validity::AnimationInvalid);
 }
 
@@ -4347,6 +4349,9 @@ const RenderStyle* Element::renderOrDisplayContentsStyle(const std::optional<Sty
 
 const RenderStyle* Element::resolveComputedStyle(ResolveComputedStyleMode mode)
 {
+    auto className = getAttribute("class"_s);
+    UNUSED_PARAM(className);
+
     ASSERT(isConnected());
 
     Ref document = this->document();
