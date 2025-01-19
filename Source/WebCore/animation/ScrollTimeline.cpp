@@ -228,6 +228,9 @@ void ScrollTimeline::cacheCurrentTime()
         return { scrollOffset, maxScrollOffset };
     }();
 
+    if (m_cachedCurrentTimeData.scrollOffset > 0)
+        WTFLogAlways("");
+
     if (previousMaxScrollOffset != m_cachedCurrentTimeData.maxScrollOffset) {
         for (auto& animation : m_animations)
             animation->progressBasedTimelineSourceDidChangeMetrics();

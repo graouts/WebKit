@@ -257,6 +257,9 @@ static bool styleChangeAffectsRelativeUnits(const RenderStyle& style, const Rend
 
 auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingStyle, ResolutionType resolutionType) -> std::pair<ElementUpdate, DescendantsToResolve>
 {
+    if (element.getAttribute("class"_s) == "target"_s)
+        WTFLogAlways("");
+
     if (m_didSeePendingStylesheet && !element.renderOrDisplayContentsStyle() && !m_document->isIgnoringPendingStylesheets()) {
         m_document->setHasNodesWithMissingStyle();
         return { };
@@ -1059,6 +1062,11 @@ void TreeResolver::resolveComposedTree()
 
         auto& node = *it;
         auto& parent = this->parent();
+
+        if (auto* element = dynamicDowncast<Element>(node)) {
+            if (element->getAttribute("class"_s) == "target"_s)
+                WTFLogAlways("");
+        }
 
         ASSERT(node.isConnected());
         ASSERT(node.containingShadowRoot() == scope().shadowRoot);
