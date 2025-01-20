@@ -188,6 +188,8 @@ static void resetStyleForNonRenderedDescendants(Element& current)
             it->resetComputedStyle();
             it->resetStyleRelations();
             it->setHasValidStyle();
+            if (it->getAttribute("class"_s) == "target"_s)
+                WTFLogAlways("[GRAOUTS] resetStyleForNonRenderedDescendants for <div class='target'> set valid style");
         }
 
         if (it->childNeedsStyleRecalc()) {
@@ -257,11 +259,8 @@ static bool styleChangeAffectsRelativeUnits(const RenderStyle& style, const Rend
 
 auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingStyle, ResolutionType resolutionType) -> std::pair<ElementUpdate, DescendantsToResolve>
 {
-    auto className = element.getAttribute("class"_s);
-    WTFLogAlways("[GRAOUTS] resolveElement for <%s class='%s'>", element.localName().string().ascii().data(), className.string().ascii().data());
-
-    if (className == "target"_s)
-        WTFLogAlways("");
+    if (element.getAttribute("class"_s) == "target"_s)
+        WTFLogAlways("[GRAOUTS] resolveElement for <div class='target'>");
 
     if (m_didSeePendingStylesheet && !element.renderOrDisplayContentsStyle() && !m_document->isIgnoringPendingStylesheets()) {
         m_document->setHasNodesWithMissingStyle();
@@ -925,6 +924,8 @@ void TreeResolver::popParent()
 {
     auto& parentElement = *parent().element;
 
+    if (parentElement.getAttribute("class"_s) == "target"_s)
+        WTFLogAlways("[GRAOUTS] popParent for <div class='target'> set valid style");
     parentElement.setHasValidStyle();
     parentElement.clearChildNeedsStyleRecalc();
 
@@ -1001,6 +1002,8 @@ auto TreeResolver::determineResolutionType(const Element& element, const RenderS
 
 static void clearNeedsStyleResolution(Element& element)
 {
+    if (element.getAttribute("class"_s) == "target"_s)
+        WTFLogAlways("[GRAOUTS] clearNeedsStyleResolution for <div class='target'> set valid style");
     element.setHasValidStyle();
     if (auto* before = element.beforePseudoElement())
         before->setHasValidStyle();
@@ -1059,11 +1062,6 @@ void TreeResolver::resolveComposedTree()
     auto descendants = composedTreeDescendants(m_document);
     auto it = descendants.begin();
     auto end = descendants.end();
-
-    if (it != end) {
-        if (auto* element = dynamicDowncast<Element>(*it))
-            WTFLogAlways("[GRAOUTS] resolveComposedTree for <%s class='%s'>", element->localName().string().ascii().data(), element->getAttribute("class"_s).string().ascii().data());
-    }
 
     while (it != end) {
         popParentsToDepth(it.depth());

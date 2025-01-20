@@ -2648,6 +2648,7 @@ void Document::resolveStyle(ResolveStyleType type)
         setHasValidStyle();
         clearChildNeedsStyleRecalc();
         unscheduleStyleRecalc();
+        WTFLogAlways("[GRAOUTS] reset child needs style recalc in resolveStyle()");
 
         m_inStyleRecalc = false;
 
