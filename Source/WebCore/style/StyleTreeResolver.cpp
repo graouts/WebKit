@@ -188,8 +188,6 @@ static void resetStyleForNonRenderedDescendants(Element& current)
             it->resetComputedStyle();
             it->resetStyleRelations();
             it->setHasValidStyle();
-            if (it->getAttribute("class"_s) == "target"_s)
-                WTFLogAlways("[GRAOUTS] resetStyleForNonRenderedDescendants for <div class='target'> set valid style");
         }
 
         if (it->childNeedsStyleRecalc()) {
@@ -259,9 +257,6 @@ static bool styleChangeAffectsRelativeUnits(const RenderStyle& style, const Rend
 
 auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingStyle, ResolutionType resolutionType) -> std::pair<ElementUpdate, DescendantsToResolve>
 {
-    if (element.getAttribute("class"_s) == "target"_s)
-        WTFLogAlways("[GRAOUTS] resolveElement for <div class='target'>");
-
     if (m_didSeePendingStylesheet && !element.renderOrDisplayContentsStyle() && !m_document->isIgnoringPendingStylesheets()) {
         m_document->setHasNodesWithMissingStyle();
         return { };
@@ -924,8 +919,6 @@ void TreeResolver::popParent()
 {
     auto& parentElement = *parent().element;
 
-    if (parentElement.getAttribute("class"_s) == "target"_s)
-        WTFLogAlways("[GRAOUTS] popParent for <div class='target'> set valid style");
     parentElement.setHasValidStyle();
     parentElement.clearChildNeedsStyleRecalc();
 
@@ -1002,8 +995,6 @@ auto TreeResolver::determineResolutionType(const Element& element, const RenderS
 
 static void clearNeedsStyleResolution(Element& element)
 {
-    if (element.getAttribute("class"_s) == "target"_s)
-        WTFLogAlways("[GRAOUTS] clearNeedsStyleResolution for <div class='target'> set valid style");
     element.setHasValidStyle();
     if (auto* before = element.beforePseudoElement())
         before->setHasValidStyle();
@@ -1068,11 +1059,6 @@ void TreeResolver::resolveComposedTree()
 
         auto& node = *it;
         auto& parent = this->parent();
-
-        if (auto* element = dynamicDowncast<Element>(node)) {
-            if (element->getAttribute("class"_s) == "target"_s)
-                WTFLogAlways("");
-        }
 
         ASSERT(node.isConnected());
         ASSERT(node.containingShadowRoot() == scope().shadowRoot);

@@ -21,7 +21,7 @@
 </script>
 <style>
   @keyframes anim {
-    from { width: 100px; }
+    from { width: 0px; }
     to { width: 200px; }
   }
 
@@ -38,7 +38,7 @@
   }
   .target {
     background-color: coral;
-    width: 100px;
+    width: 0px;
     animation: anim auto linear;
     animation-timeline: --t1;
   }
@@ -64,26 +64,259 @@
 <script>
   promise_test(async (t) => {
     await inflate(t, deferred_timeline);
-    
-    deferred_timeline.remove();
-    
     let scroller = main.querySelector('.scroller');
     let target = main.querySelector('.target');
 
     const anim = target.getAnimations()[0];
-    // console.log("Created animation");
     await anim.ready;
 
-    console.log("Animation ready, about to scroll");
     await scrollTop(scroller, 350); // 50%
-    // console.log("Done scrolling");
-
-    // assert_equals(anim.currentTime.toString(), "50%");
-    console.log("Getting computed style");
-    const computedWidth = getComputedStyle(target).width;
-    console.log("Got computed style");
-    assert_equals(computedWidth, '150px'); // 100px => 200px, 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
   }, 'Descendant can attach to deferred timeline');
 </script>
+
+<template id=deferred_timeline_no_attachments>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_no_attachments);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '0px');
+  }, 'Deferred timeline with no attachments');
+</script>
+
+<template id=scroll_timeline_inner_interference>
+  <div class="scroller timeline">
+    <div class=content>
+      <div class=target>Test</div>
+      <div class="scroller timeline">
+        <div class=content></div>
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, scroll_timeline_inner_interference);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+  }, 'Inner timeline does not interfere with outer timeline');
+</script>
+
+<template id=deferred_timeline_two_attachments>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+    <!-- Extra attachment -->
+    <div class="timeline"></div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_two_attachments);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '0px');
+  }, 'Deferred timeline with two attachments');
+</script>
+
+<!-- Dynamic Reattachment -->
+
+<template id=deferred_timeline_reattach>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+    <div class="scroller">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_reattach);
+    let scrollers = main.querySelectorAll('.scroller');
+    assert_equals(scrollers.length, 2);
+    let target = main.querySelector('.target');
+    await scrollTop(scrollers[0], 350); // 50%
+    await scrollTop(scrollers[1], 175); // 25%
+
+    // Attached to scrollers[0].
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+
+    // Reattach to scrollers[1].
+    await runAndWaitForFrameUpdate(() => {
+      scrollers[0].classList.remove('timeline');
+      scrollers[1].classList.add('timeline');
+    });
+
+    assert_equals(getComputedStyle(target).width, '50px'); // 0px => 200px, 25%
+  }, 'Dynamically re-attaching');
+</script>
+
+<template id=deferred_timeline_dynamic_detach>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_dynamic_detach);
+    let scrollers = main.querySelectorAll('.scroller');
+    assert_equals(scrollers.length, 2);
+    let target = main.querySelector('.target');
+    await scrollTop(scrollers[0], 350); // 50%
+    await scrollTop(scrollers[1], 175); // 25%
+
+    // Attached to two timelines initially:
+    assert_equals(getComputedStyle(target).width, '0px');
+
+    // Detach scrollers[1].
+    await runAndWaitForFrameUpdate(() => {
+      scrollers[1].classList.remove('timeline');
+    });
+
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+
+    // Also detach scrollers[0].
+    scrollers[0].classList.remove('timeline');
+
+    await waitForNextFrame();
+    assert_equals(getComputedStyle(target).width, '0px');
+  }, 'Dynamically detaching');
+</script>
+
+<template id=deferred_timeline_attached_removed>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_attached_removed);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+
+    let scroller_parent = scroller.parentElement;
+    scroller.remove();
+    await waitForNextFrame();
+    assert_equals(getComputedStyle(target).width, '0px');
+
+    scroller_parent.append(scroller);
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+  }, 'Removing/inserting element with attaching timeline');
+</script>
+
+<template id=deferred_timeline_attached_display_none>
+  <div class="scope">
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_attached_display_none);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+
+    scroller.style.display = 'none';
+    await waitForNextFrame();
+    assert_equals(getComputedStyle(target).width, '0px');
+
+    scroller.style.display = 'block';
+    await scrollTop(scroller, 350); // 50%
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+  }, 'Ancestor attached element becoming display:none/block');
+</script>
+
+<template id=deferred_timeline_appearing>
+  <div class=container>
+    <div class=target>Test</div>
+    <div class="scroller timeline">
+      <div class=content></div>
+    </div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_appearing);
+    let container = main.querySelector('.container');
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+
+    await scrollTop(scroller, 350); // 50%
+
+    // Not attached to any timeline initially.
+    assert_equals(getComputedStyle(target).width, '0px');
+
+    // Add the deferred timeline.
+    container.classList.add('scope');
+    await waitForNextFrame();
+    assert_equals(getComputedStyle(target).width, '100px'); // 0px => 200px, 50%
+
+    // Remove the deferred timeline.
+    container.classList.remove('scope');
+    await waitForNextFrame();
+    assert_equals(getComputedStyle(target).width, '0px');
+  }, 'A deferred timeline appearing dynamically in the ancestor chain');
+</script>
+
+<template id=deferred_timeline_on_self>
+  <div class="scroller timeline scope">
+    <div class=content>
+      <div class=target></div>
+    </div>
+    <div class=scroller2></div>
+  </div>
+</template>
+<script>
+  promise_test(async (t) => {
+    await inflate(t, deferred_timeline_on_self);
+    let scroller = main.querySelector('.scroller');
+    let target = main.querySelector('.target');
+    await scrollTop(scroller, 525); // 75%
+
+    assert_equals(getComputedStyle(target).width, '150px'); // 0px => 200px, 75%
+
+    // A second scroll-timeline now attaches to the same root.
+    let scroller2 = main.querySelector('.scroller2');
+    scroller2.classList.add('timeline');
+    await waitForNextFrame();
+
+    // The deferred timeline produced by timeline-scope is now inactive,
+    // but it doesn't matter, because we preferred to attach
+    // to the non-deferred timeline.
+    assert_equals(getComputedStyle(target).width, '150px'); // 0px => 200px, 75%
+  }, 'Animations prefer non-deferred timelines');
 
 </script>

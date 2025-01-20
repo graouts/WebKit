@@ -98,10 +98,8 @@ static inline void invalidateElement(const std::optional<const Styleable>& style
         return;
 
     auto& element = styleable->element;
-    if (element.document().inStyleRecalc())
-        return;
-
-    element.invalidateStyleForAnimation();
+    if (!element.document().inStyleRecalc())
+        element.invalidateStyleForAnimation();
 }
 
 String KeyframeEffect::CSSPropertyIDToIDLAttributeName(CSSPropertyID property)
