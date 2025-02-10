@@ -34,7 +34,7 @@ struct TimelineScope {
     bool operator==(const TimelineScope& other) const
     {
         if (type == Type::Ident)
-            return other.type == Type::Ident && scopeNames != other.scopeNames;
+            return other.type == Type::Ident && scopeNames == other.scopeNames;
         return type == other.type;
     }
 
