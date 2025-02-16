@@ -249,14 +249,17 @@ void StyleOriginatedTimelinesController::documentDidResolveStyle()
     }
 
     // Purge any inactive named timeline no longer attached to an animation.
-    Vector<AtomString> namesToRemove;
+    HashSet<AtomString> namesToRemove;
     for (auto& [name, timelines] : m_nameToTimelineMap) {
         timelines.removeAllMatching([](auto& timeline) {
             return timeline->isInactiveStyleOriginatedTimeline() && timeline->relevantAnimations().isEmpty();
         });
         if (timelines.isEmpty())
-            m_nameToTimelineMap.remove(name);
+            namesToRemove.add(name);
     }
+
+    for (auto& nameToRemove : namesToRemove)
+        m_nameToTimelineMap.remove(nameToRemove);
 
     m_removedTimelines.clear();
 }
@@ -408,17 +411,34 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     // (such as a named scroll progress timeline or named view progress timeline) to be referenced by elements outside the timeline-defining element’s
     // subtree—​for example, by siblings, cousins, or ancestors.
     switch (scope.type) {
-    case NameScope::Type::None:
+    case NameScope::Type::None: {
+        HashSet<Ref<ScrollTimeline>> namedTimelinesToUnregister;
         for (auto& entry : m_nameToTimelineMap) {
             for (auto& timeline : entry.value) {
-                if (timeline->timelineScopeDeclaredElement() == &styleable.element)
+                if (timeline->timelineScopeDeclaredElement() == &styleable.element) {
                     timeline->clearTimelineScopeDeclaredElement();
+                    namedTimelinesToUnregister.add(timeline.get());
+                }
             }
         }
         m_timelineScopeEntries.removeAllMatching([&] (const std::pair<NameScope, WeakStyleable> entry) {
             return entry.second == styleable;
         });
+        // We need to unregister all timelines that are no longer within this scope.
+        // FIXME: should we check hierarchy here to see whether that name was affected
+        // by timeline-scope in the first place?
+        for (auto& timeline : namedTimelinesToUnregister) {
+            //            auto& name = timeline->name();
+            //            if (m_timelineScopeEntries.find(name) == m_timelineScopeEntries.end()) {
+            if (auto associatedElement = originatingElement(timeline).styleable())
+                unregisterNamedTimeline(timeline->name(), *associatedElement);
+            //            }
+        }
+        // Now, make sure the animation-to-timeline relationships are up-to-date.
+        for (auto& timeline : namedTimelinesToUnregister)
+            updateCSSAnimationsAssociatedWithNamedTimeline(timeline->name());
         break;
+    }
     case NameScope::Type::All:
         for (auto& entry : m_nameToTimelineMap)
             updateTimelinesForTimelineScope(entry.value, styleable);
@@ -432,6 +452,22 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
         }
         m_timelineScopeEntries.append(std::make_pair(scope, styleable));
         break;
+    }
+
+    auto effectCanBeListed = [&](const AnimationEffect* effect) {
+        if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(effect)) {
+            RefPtr target = keyframeEffect->target();
+            return target && target->isConnected() && styleable.element.contains(*target);
+        }
+        return false;
+    };
+
+    // FIXME: make this more efficient.
+    for (auto* animation : WebAnimation::instances()) {
+        if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
+            if (effectCanBeListed(animation->effect()))
+                cssAnimation->syncStyleOriginatedTimeline();
+        }
     }
 }
 
