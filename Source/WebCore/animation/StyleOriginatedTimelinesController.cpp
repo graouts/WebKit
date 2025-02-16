@@ -257,8 +257,11 @@ void StyleOriginatedTimelinesController::documentDidResolveStyle()
             return timeline->isInactiveStyleOriginatedTimeline() && timeline->relevantAnimations().isEmpty();
         });
         if (timelines.isEmpty())
-            m_nameToTimelineMap.remove(name);
+            namesToRemove.add(name);
     }
+
+    for (auto& nameToRemove : namesToRemove)
+        m_nameToTimelineMap.remove(nameToRemove);
 
     m_removedTimelines.clear();
 }
@@ -461,6 +464,22 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
         }
         m_timelineScopeEntries.append(std::make_pair(scope, styleable));
         break;
+    }
+
+    auto effectCanBeListed = [&](const AnimationEffect* effect) {
+        if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(effect)) {
+            RefPtr target = keyframeEffect->target();
+            return target && target->isConnected() && styleable.element.contains(*target);
+        }
+        return false;
+    };
+
+    // FIXME: make this more efficient.
+    for (auto* animation : WebAnimation::instances()) {
+        if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
+            if (effectCanBeListed(animation->effect()))
+                cssAnimation->syncStyleOriginatedTimeline();
+        }
     }
 }
 
