@@ -40,12 +40,6 @@ class WebAnimation;
 
 struct ViewTimelineInsets;
 
-struct TimelineMapAttachOperation {
-    WeakStyleable element;
-    AtomString name;
-    Ref<CSSAnimation> animation;
-};
-
 // A style-originated timeline is a timeline that is assigned to a CSS Animation
 // via the `animation-timeline` property. These timelines may be created directly
 // as a result of that property being set to a `scroll()` or `view()` value, but
@@ -91,7 +85,13 @@ private:
     ScrollTimeline* determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Vector<WeakStyleable>&);
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
 
-    Vector<TimelineMapAttachOperation> m_pendingAttachOperations;
+    struct AttachmentOperation {
+        AtomString name;
+        WeakStyleable target;
+        Ref<CSSAnimation> animation;
+    };
+
+    Vector<AttachmentOperation> m_pendingAttachmentOperations;
     Vector<std::pair<NameScope, WeakStyleable>> m_timelineScopeEntries;
     UncheckedKeyHashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
