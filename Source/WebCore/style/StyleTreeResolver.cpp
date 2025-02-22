@@ -693,9 +693,16 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
             styleable.updateCSSViewTimelines(oldStyle, *resolvedStyle.style);
         }
 
-        if ((oldStyle && oldStyle->timelineScope().type != NameScope::Type::None) || resolvedStyle.style->timelineScope().type != NameScope::Type::None) {
+        auto& timelineScope = resolvedStyle.style->timelineScope();
+        auto needsTimelineScopeUpdate = [&] {
+            if (oldStyle)
+                return oldStyle->timelineScope() != timelineScope;
+            return timelineScope.type != NameScope::Type::None;
+        };
+
+        if (needsTimelineScopeUpdate()) {
             CheckedRef styleOriginatedTimelinesController = element.protectedDocument()->ensureStyleOriginatedTimelinesController();
-            styleOriginatedTimelinesController->updateNamedTimelineMapForTimelineScope(resolvedStyle.style->timelineScope(), styleable);
+            styleOriginatedTimelinesController->updateNamedTimelineMapForTimelineScope(timelineScope, styleable);
         }
 
         // The order in which CSS Transitions and CSS Animations are updated matters since CSS Transitions define the after-change style
