@@ -86,16 +86,15 @@ private:
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
 
     struct Entry {
-        WeakStyleable scopeStyleable;
+        Vector<WeakStyleable> scopeStyleables;
         Vector<Ref<ScrollTimeline>> timelines;
 
-        bool isEmpty() const { return timelines.isEmpty() && !scopeStyleable; }
+        bool isEmpty() const { return timelines.isEmpty() && scopeStyleables.isEmpty(); }
     };
 
     Vector<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
     UncheckedKeyHashMap<AtomString, Entry> m_nameToScopeAndTimelinesMap;
-    Vector<WeakStyleable> m_allScopeStyleables;
-    Vector<std::pair<NameScope, WeakStyleable>> m_timelineScopeEntries;
+    Vector<WeakStyleable> m_scopeStyleablesMatchingAllNames;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
 };
 
