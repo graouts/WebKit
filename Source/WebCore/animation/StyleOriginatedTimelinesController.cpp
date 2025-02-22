@@ -158,9 +158,9 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTimelineForElement(
 
 Vector<Ref<ScrollTimeline>>& StyleOriginatedTimelinesController::timelinesForName(const AtomString& name)
 {
-    return m_nameToTimelineMap.ensure(name, [] {
-        return Vector<Ref<ScrollTimeline>> { };
-    }).iterator->value;
+    return m_nameToScopeAndTimelinesMap.ensure(name, [] {
+        return Entry { };
+    }).iterator->value.timelines;
 }
 
 void StyleOriginatedTimelinesController::updateTimelineForTimelineScope(const Ref<ScrollTimeline>& timeline, const AtomString& name)
@@ -252,16 +252,18 @@ void StyleOriginatedTimelinesController::documentDidResolveStyle()
     }
 
     // Purge any inactive named timeline no longer attached to an animation.
-    for (auto& [name, timelines] : m_nameToTimelineMap) {
+    HashSet<AtomString> namesToRemove;
+    for (auto& [name, entry] : m_nameToScopeAndTimelinesMap) {
+        auto& timelines = entry.timelines;
         timelines.removeAllMatching([](auto& timeline) {
             return timeline->isInactiveStyleOriginatedTimeline() && timeline->relevantAnimations().isEmpty();
         });
-        if (timelines.isEmpty())
+        if (entry.isEmpty())
             namesToRemove.add(name);
     }
 
     for (auto& nameToRemove : namesToRemove)
-        m_nameToTimelineMap.remove(nameToRemove);
+        m_nameToScopeAndTimelinesMap.remove(nameToRemove);
 
     m_removedTimelines.clear();
 }
@@ -295,15 +297,17 @@ void StyleOriginatedTimelinesController::registerNamedViewTimeline(const AtomStr
         updateCSSAnimationsAssociatedWithNamedTimeline(name);
 }
 
+// FIXME: rename styleable to originatingStyleable here?
 void StyleOriginatedTimelinesController::unregisterNamedTimeline(const AtomString& name, const Styleable& styleable)
 {
     LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::unregisterNamedTimeline: " << name << " styleable: " << styleable);
 
-    auto it = m_nameToTimelineMap.find(name);
-    if (it == m_nameToTimelineMap.end())
+    auto it = m_nameToScopeAndTimelinesMap.find(name);
+    if (it == m_nameToScopeAndTimelinesMap.end())
         return;
 
-    auto& timelines = it->value;
+    auto& entry = it->value;
+    auto& timelines = entry.timelines;
 
     auto i = timelines.findIf([&] (auto& entry) {
         return originatingElement(entry) == styleable;
@@ -326,8 +330,8 @@ void StyleOriginatedTimelinesController::unregisterNamedTimeline(const AtomStrin
         }
     }
 
-    if (timelines.isEmpty())
-        m_nameToTimelineMap.remove(it);
+    if (entry.isEmpty())
+        m_nameToScopeAndTimelinesMap.remove(it);
     else
         updateCSSAnimationsAssociatedWithNamedTimeline(name);
 }
@@ -431,8 +435,8 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     switch (scope.type) {
     case NameScope::Type::None: {
         HashSet<Ref<ScrollTimeline>> namedTimelinesToUnregister;
-        for (auto& entry : m_nameToTimelineMap) {
-            for (auto& timeline : entry.value) {
+        for (auto& entry : m_nameToScopeAndTimelinesMap.values()) {
+            for (auto& timeline : entry.timelines) {
                 if (timeline->timelineScopeDeclaredElement() == &styleable.element) {
                     timeline->clearTimelineScopeDeclaredElement();
                     // Make sure to track this time to be unregistered in a separate
@@ -452,15 +456,15 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
         break;
     }
     case NameScope::Type::All:
-        for (auto& entry : m_nameToTimelineMap)
-            updateTimelinesForTimelineScope(entry.value, styleable);
+        for (auto& entry : m_nameToScopeAndTimelinesMap.values())
+            updateTimelinesForTimelineScope(entry.timelines, styleable);
         m_timelineScopeEntries.append(std::make_pair(scope, styleable));
         break;
     case NameScope::Type::Ident:
         for (auto& name : scope.names) {
-            auto it = m_nameToTimelineMap.find(name);
-            if (it != m_nameToTimelineMap.end())
-                updateTimelinesForTimelineScope(it->value, styleable);
+            auto it = m_nameToScopeAndTimelinesMap.find(name);
+            if (it != m_nameToScopeAndTimelinesMap.end())
+                updateTimelinesForTimelineScope(it->value.timelines, styleable);
         }
         m_timelineScopeEntries.append(std::make_pair(scope, styleable));
         break;
@@ -499,8 +503,8 @@ void StyleOriginatedTimelinesController::unregisterNamedTimelinesAssociatedWithE
 
     UncheckedKeyHashSet<AtomString> namesToClear;
 
-    for (auto& entry : m_nameToTimelineMap) {
-        auto& timelines = entry.value;
+    for (auto& [name, entry] : m_nameToScopeAndTimelinesMap) {
+        auto& timelines = entry.timelines;
         for (size_t i = 0; i < timelines.size(); ++i) {
             auto& timeline = timelines[i];
             if (originatingElement(timeline) == styleable) {
@@ -509,12 +513,12 @@ void StyleOriginatedTimelinesController::unregisterNamedTimelinesAssociatedWithE
                 i--;
             }
         }
-        if (timelines.isEmpty())
-            namesToClear.add(entry.key);
+        if (entry.isEmpty())
+            namesToClear.add(name);
     }
 
     for (auto& name : namesToClear)
-        m_nameToTimelineMap.remove(name);
+        m_nameToScopeAndTimelinesMap.remove(name);
 }
 
 void StyleOriginatedTimelinesController::styleableWasRemoved(const Styleable& styleable)

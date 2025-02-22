@@ -85,9 +85,17 @@ private:
     ScrollTimeline* determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Vector<WeakStyleable>&);
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
 
+    struct Entry {
+        WeakStyleable scopeStyleable;
+        Vector<Ref<ScrollTimeline>> timelines;
+
+        bool isEmpty() const { return timelines.isEmpty() && !scopeStyleable; }
+    };
+
     Vector<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
+    UncheckedKeyHashMap<AtomString, Entry> m_nameToScopeAndTimelinesMap;
+    Vector<WeakStyleable> m_allScopeStyleables;
     Vector<std::pair<NameScope, WeakStyleable>> m_timelineScopeEntries;
-    UncheckedKeyHashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
 };
 
