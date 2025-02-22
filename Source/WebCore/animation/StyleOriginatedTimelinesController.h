@@ -91,9 +91,17 @@ private:
         Ref<CSSAnimation> animation;
     };
 
+    struct Entry {
+        WeakStyleable scopeStyleable;
+        Vector<Ref<ScrollTimeline>> timelines;
+
+        bool isEmpty() const { return timelines.isEmpty() && !scopeStyleable; }
+    };
+
     Vector<AttachmentOperation> m_pendingAttachmentOperations;
+    UncheckedKeyHashMap<AtomString, Entry> m_nameToScopeAndTimelinesMap;
+    Vector<WeakStyleable> m_allScopeStyleables;
     Vector<std::pair<NameScope, WeakStyleable>> m_timelineScopeEntries;
-    UncheckedKeyHashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
 };
 
