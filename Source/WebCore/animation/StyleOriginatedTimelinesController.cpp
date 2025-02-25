@@ -438,22 +438,21 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
 {
     LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope: " << scope << " scopeStyleable: " << scopeStyleable);
 
-    // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
-    // This property declares the scope of the specified timeline names to extend across this element’s subtree. This allows a named timeline
-    // (such as a named scroll progress timeline or named view progress timeline) to be referenced by elements outside the timeline-defining element’s
-    // subtree—​for example, by siblings, cousins, or ancestors.
-    switch (scope.type) {
-    case NameScope::Type::None: {
+    UncheckedKeyHashSet<AtomString> namesToClear;
+
+    auto preserveScopeNamesForStyleable = [&](const Vector<AtomString>& namesToKeep)
+    {
         // Start by removing this styleable from the list of styleables with "timeline-scope: all".
         m_scopeStyleablesMatchingAllNames.removeFirstMatching([&](auto& styleable) {
             return styleable == scopeStyleable;
         });
 
-        UncheckedKeyHashSet<AtomString> namesToClear;
-
         // Now, find all scope names that had this styleable as their scope
         // styleable, remove it from that list, and update the associated timelines.
         for (auto& [name, entry] : m_nameToScopeAndTimelinesMap) {
+            if (namesToKeep.contains(name))
+                continue;
+
             auto removed = entry.scopeStyleables.removeFirstMatching([&](auto& styleable) {
                 return styleable == scopeStyleable;
             });
@@ -475,9 +474,15 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
             if (entry.isEmpty())
                 namesToClear.add(name);
         }
+    };
 
-        for (auto& name : namesToClear)
-            m_nameToScopeAndTimelinesMap.remove(name);
+    // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
+    // This property declares the scope of the specified timeline names to extend across this element’s subtree. This allows a named timeline
+    // (such as a named scroll progress timeline or named view progress timeline) to be referenced by elements outside the timeline-defining element’s
+    // subtree—​for example, by siblings, cousins, or ancestors.
+    switch (scope.type) {
+    case NameScope::Type::None: {
+        preserveScopeNamesForStyleable({ });
         break;
     }
     case NameScope::Type::All:
@@ -486,6 +491,7 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
         m_scopeStyleablesMatchingAllNames.append(scopeStyleable);
         break;
     case NameScope::Type::Ident:
+        preserveScopeNamesForStyleable(scope.names);
         for (auto& name : scope.names) {
             auto it = m_nameToScopeAndTimelinesMap.find(name);
             if (it != m_nameToScopeAndTimelinesMap.end()) {
@@ -499,6 +505,9 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
         }
         break;
     }
+
+    for (auto& name : namesToClear)
+        m_nameToScopeAndTimelinesMap.remove(name);
 
     auto effectCanBeListed = [&](const AnimationEffect* effect) {
         if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(effect)) {
