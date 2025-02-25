@@ -365,8 +365,8 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
 
     LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::attachAnimation: " << *timelineName << " target: " << *target);
 
-    auto it = m_nameToTimelineMap.find(*timelineName);
-    auto hasNamedTimeline = it != m_nameToTimelineMap.end() && it->value.containsIf([](auto& timeline) {
+    auto it = m_nameToScopeAndTimelinesMap.find(*timelineName);
+    auto hasNamedTimeline = it != m_nameToScopeAndTimelinesMap.end() && it->value.timelines.containsIf([](auto& timeline) {
         return !timeline->isInactiveStyleOriginatedTimeline();
     });
 
@@ -404,7 +404,7 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
         else
             protectedAnimation->setTimeline(nullptr);
     } else {
-        auto& timelines = it->value;
+        auto& timelines = it->value.timelines;
         RefPtr timeline = determineTimelineForElement(timelines, *target, timelineScopeElements);
         LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::attachAnimation: " << *timelineName << " styleable: " << *target << " attaching to timeline of element: " << originatingElement(*timeline));
         // A deferred inactive timeline means there was a conflict with multiple timelines existing within
