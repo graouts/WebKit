@@ -434,9 +434,9 @@ static void updateTimelinesForTimelineScope(Vector<Ref<ScrollTimeline>> entries,
     }
 }
 
-void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(const NameScope& scope, const Styleable& styleable)
+void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(const NameScope& scope, const Styleable& scopeStyleable)
 {
-    LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope: " << scope << " styleable: " << styleable);
+    LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope: " << scope << " scopeStyleable: " << scopeStyleable);
 
     // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
     // This property declares the scope of the specified timeline names to extend across this element’s subtree. This allows a named timeline
@@ -444,44 +444,57 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     // subtree—​for example, by siblings, cousins, or ancestors.
     switch (scope.type) {
     case NameScope::Type::None: {
-        HashSet<Ref<ScrollTimeline>> namedTimelinesToUnregister;
-        for (auto& entry : m_nameToScopeAndTimelinesMap.values()) {
-            for (auto& timeline : entry.timelines) {
-                if (timeline->timelineScopeDeclaredElement() == &styleable.element) {
-                    timeline->clearTimelineScopeDeclaredElement();
-                    // Make sure to track this time to be unregistered in a separate
-                    // step as it would modify the map we're currently iterating over.
-                    namedTimelinesToUnregister.add(timeline.get());
-                }
-            }
-        }
-        for (auto& entry : m_nameToScopeAndTimelinesMap.values()) {
-            entry.scopeStyleables.removeAllMatching([&] (auto& scopeStyleable) {
-                return scopeStyleable == styleable;
+        // Start by removing this styleable from the list of styleables with "timeline-scope: all".
+        m_scopeStyleablesMatchingAllNames.removeFirstMatching([&](auto& styleable) {
+            return styleable == scopeStyleable;
+        });
+
+        UncheckedKeyHashSet<AtomString> namesToClear;
+
+        // Now, find all scope names that had this styleable as their scope
+        // styleable, remove it from that list, and update the associated timelines.
+        for (auto& [name, entry] : m_nameToScopeAndTimelinesMap) {
+            auto removed = entry.scopeStyleables.removeFirstMatching([&](auto& styleable) {
+                return styleable == scopeStyleable;
             });
+
+            if (!removed)
+                continue;
+
+            auto removedTimelines = std::exchange(entry.timelines, { });
+            for (auto& timeline : removedTimelines) {
+                for (auto& animation : timeline->relevantAnimations()) {
+                    if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation.get())) {
+                        if (cssAnimation->owningElement())
+                            cssAnimation->syncStyleOriginatedTimeline();
+                    }
+                }
+                m_removedTimelines.add(timeline);
+            }
+
+            if (entry.isEmpty())
+                namesToClear.add(name);
         }
-        // We need to unregister all timelines that are no longer within this scope.
-        for (auto& timeline : namedTimelinesToUnregister) {
-            if (auto associatedElement = originatingElement(timeline).styleable())
-                unregisterNamedTimeline(timeline->name(), *associatedElement);
-        }
+
+        for (auto& name : namesToClear)
+            m_nameToScopeAndTimelinesMap.remove(name);
         break;
     }
     case NameScope::Type::All:
         for (auto& entry : m_nameToScopeAndTimelinesMap.values())
-            updateTimelinesForTimelineScope(entry.timelines, styleable);
-        m_scopeStyleablesMatchingAllNames.append(styleable);
+            updateTimelinesForTimelineScope(entry.timelines, scopeStyleable);
+        m_scopeStyleablesMatchingAllNames.append(scopeStyleable);
         break;
     case NameScope::Type::Ident:
         for (auto& name : scope.names) {
             auto it = m_nameToScopeAndTimelinesMap.find(name);
             if (it != m_nameToScopeAndTimelinesMap.end()) {
-                updateTimelinesForTimelineScope(it->value.timelines, styleable);
-                it->value.scopeStyleables.append(styleable);
+                updateTimelinesForTimelineScope(it->value.timelines, scopeStyleable);
+                it->value.scopeStyleables.append(scopeStyleable);
             } else {
                 m_nameToScopeAndTimelinesMap.ensure(name, [] {
                     return Entry { };
-                }).iterator->value.scopeStyleables.append(styleable);
+                }).iterator->value.scopeStyleables.append(scopeStyleable);
             }
         }
         break;
@@ -490,7 +503,7 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     auto effectCanBeListed = [&](const AnimationEffect* effect) {
         if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(effect)) {
             RefPtr target = keyframeEffect->target();
-            return target && target->isConnected() && styleable.element.contains(*target);
+            return target && target->isConnected() && scopeStyleable.element.contains(*target);
         }
         return false;
     };
