@@ -508,22 +508,6 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
 
     for (auto& name : namesToClear)
         m_nameToScopeAndTimelinesMap.remove(name);
-
-    auto effectCanBeListed = [&](const AnimationEffect* effect) {
-        if (RefPtr keyframeEffect = dynamicDowncast<KeyframeEffect>(effect)) {
-            RefPtr target = keyframeEffect->target();
-            return target && target->isConnected() && scopeStyleable.element.contains(*target);
-        }
-        return false;
-    };
-
-    // FIXME: make this more efficient.
-    for (auto* animation : WebAnimation::instances()) {
-        if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
-            if (effectCanBeListed(animation->effect()))
-                cssAnimation->syncStyleOriginatedTimeline();
-        }
-    }
 }
 
 bool StyleOriginatedTimelinesController::isPendingTimelineAttachment(const WebAnimation& animation) const
