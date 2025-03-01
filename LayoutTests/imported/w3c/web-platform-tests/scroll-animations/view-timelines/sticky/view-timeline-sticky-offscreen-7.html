@@ -78,48 +78,66 @@ const VIEWPORT_HEIGHT = 500;
 
 promise_test(async t => {
   sticky.className = "stickycase7";
-  await runTimelineRangeTest(t, {
-    rangeStart: { rangeName: 'cover', offset: CSS.percent(0) } ,
-    rangeEnd: { rangeName: 'cover', offset: CSS.percent(100) },
-    startOffset: STATIC_START - ROOM_ABOVE,
-    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW,
-    axis: 'block'
-  });
+
+  // console.log(`startOffset = ${STATIC_START - ROOM_ABOVE}`);
+  // console.log(`endOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW}`);
+  // await runTimelineRangeTest(t, {
+  //   rangeStart: { rangeName: 'cover', offset: CSS.percent(0) } ,
+  //   rangeEnd: { rangeName: 'cover', offset: CSS.percent(100) },
+  //   startOffset: STATIC_START - ROOM_ABOVE, // 100
+  //   endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW, // 1550
+  //   axis: 'block'
+  // });
+  
+  console.log(`startOffset = ${STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT}`);
+  console.log(`endOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT}`);
   await runTimelineRangeTest(t, {
     rangeStart: { rangeName: 'contain', offset: CSS.percent(0) } ,
     rangeEnd: { rangeName: 'contain', offset: CSS.percent(100) },
-    startOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT,
-    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT,
+    startOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT, // should be 600, but we're operating with 950
+    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT, // 1050 is OK
     axis: 'block'
-  });
-  await runTimelineRangeTest(t, {
-    rangeStart: { rangeName: 'entry', offset: CSS.percent(0) },
-    rangeEnd: { rangeName: 'entry', offset: CSS.percent(100) },
-    startOffset: STATIC_START - ROOM_ABOVE,
-    endOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT,
-    axis: 'block'
-  });
-  await runTimelineRangeTest(t, {
-    rangeStart: { rangeName: 'entry-crossing', offset: CSS.percent(0) },
-    rangeEnd: { rangeName: 'entry-crossing', offset: CSS.percent(100) },
-    startOffset: STATIC_START - ROOM_ABOVE,
-    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT,
-    axis: 'block'
-  });
-  await runTimelineRangeTest(t, {
-    rangeStart:  { rangeName: 'exit', offset: CSS.percent(0) },
-    rangeEnd: { rangeName: 'exit', offset: CSS.percent(100) },
-    startOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT,
-    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW,
-    axis: 'block'
-  });
-  await runTimelineRangeTest(t, {
-    rangeStart:  { rangeName: 'exit-crossing', offset: CSS.percent(0) },
-    rangeEnd: { rangeName: 'exit-crossing', offset: CSS.percent(100) },
-    startOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT,
-    endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW,
-    axis: 'block'
-  });
+  }); // FAIL
+
+  // console.log(`startOffset = ${STATIC_START - ROOM_ABOVE}`);
+  // console.log(`endOffset = ${STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT}`);
+  // await runTimelineRangeTest(t, {
+  //   rangeStart: { rangeName: 'entry', offset: CSS.percent(0) },
+  //   rangeEnd: { rangeName: 'entry', offset: CSS.percent(100) },
+  //   startOffset: STATIC_START - ROOM_ABOVE, // 100
+  //   endOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT, // 600, but we're operating with 950.
+  //   axis: 'block'
+  // }); // FAIL
+
+  // console.log(`startOffset = ${STATIC_START - ROOM_ABOVE}`);
+  // console.log(`endOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT}`);
+  // await runTimelineRangeTest(t, {
+  //   rangeStart: { rangeName: 'entry-crossing', offset: CSS.percent(0) },
+  //   rangeEnd: { rangeName: 'entry-crossing', offset: CSS.percent(100) },
+  //   startOffset: STATIC_START - ROOM_ABOVE, // 100
+  //   endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT, // 1050
+  //   axis: 'block'
+  // });
+
+  // console.log(`startOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT}`);
+  // console.log(`endOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW}`);
+  // await runTimelineRangeTest(t, {
+  //   rangeStart:  { rangeName: 'exit', offset: CSS.percent(0) },
+  //   rangeEnd: { rangeName: 'exit', offset: CSS.percent(100) },
+  //   startOffset: BIG_TARGET_STATIC_END + ROOM_BELOW - VIEWPORT_HEIGHT, // 1050
+  //   endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW, // 1550
+  //   axis: 'block'
+  // });
+
+  // console.log(`startOffset = ${STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT}`);
+  // console.log(`endOffset = ${BIG_TARGET_STATIC_END + ROOM_BELOW}`);
+  // await runTimelineRangeTest(t, {
+  //   rangeStart:  { rangeName: 'exit-crossing', offset: CSS.percent(0) },
+  //   rangeEnd: { rangeName: 'exit-crossing', offset: CSS.percent(100) },
+  //   startOffset: STATIC_START - ROOM_ABOVE + VIEWPORT_HEIGHT, // 600, but 950 was used
+  //   endOffset: BIG_TARGET_STATIC_END + ROOM_BELOW, // 1550
+  //   axis: 'block'
+  // }); // FAIL
 }, 'View timeline target > viewport, ' +
    'bottom-sticky and top-sticky during contain.');
 

@@ -508,6 +508,14 @@ std::pair<double, double> ViewTimeline::intervalForTimelineRangeName(const Scrol
             // 0% is equivalent to 0% of the cover range.
             return intervalForTimelineRangeName(data, SingleTimelineRange::Name::Cover).first;
         case SingleTimelineRange::Name::Contain:
+            // https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-contain
+            // Represents the range during which the principal box is either fully contained by,
+            // or fully covers, its view progress visibility range within the scrollport.
+            // 0% progress represents the earliest position at which either:
+            //     - the start border edge of the element’s principal box coincides with the start
+            //       edge of its view progress visibility range.
+            //     - the end border edge of the element’s principal box coincides with the end edge
+            //       of its view progress visibility range.
             return data.rangeStart + m_cachedCurrentTimeData.subjectSize + m_cachedCurrentTimeData.stickinessData.entryDistanceAdjustment();
         case SingleTimelineRange::Name::Exit:
             // https://drafts.csswg.org/scroll-animations-1/#valdef-animation-timeline-range-exit
