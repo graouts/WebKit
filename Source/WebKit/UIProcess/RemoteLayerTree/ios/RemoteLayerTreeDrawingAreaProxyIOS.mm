@@ -84,13 +84,21 @@ static void* displayRefreshRateObservationContext = &displayRefreshRateObservati
 
             if (drawingAreaProxy && drawingAreaProxy->page() && !drawingAreaProxy->page()->preferences().preferPageRenderingUpdatesNear60FPSEnabled()) {
 #if HAVE(CORE_ANIMATION_FRAME_RATE_RANGE)
+                WTFLogAlways("[GRAOUTS] creating high frame rate display link");
                 [_displayLink setPreferredFrameRateRange:WebKit::highFrameRateRange()];
                 [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
 #else
                 _displayLink.preferredFramesPerSecond = (1.0 / _displayLink.maximumRefreshRate);
 #endif
-            } else
+            } else {
+#if HAVE(CORE_ANIMATION_FRAME_RATE_RANGE)
+                WTFLogAlways("[GRAOUTS] creating 30/60/48 display link");
+                [_displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(30, 60, 48)];
+                [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
+#else
                 _displayLink.preferredFramesPerSecond = DisplayLinkFramesPerSecond;
+#endif
+            }
         }
     }
     return self;
