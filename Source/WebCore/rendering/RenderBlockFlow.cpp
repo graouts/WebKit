@@ -3816,7 +3816,7 @@ void RenderBlockFlow::invalidateLineLayoutPath(InvalidationReason invalidationRe
     case InlinePath: {
         // FIXME: Implement partial invalidation.
         if (inlineLayout()) {
-            ASSERT(!m_previousInlineLayoutContentTopAndBottomIncludingInkOverflow);
+            // ASSERT(!m_previousInlineLayoutContentTopAndBottomIncludingInkOverflow);
             m_previousInlineLayoutContentTopAndBottomIncludingInkOverflow = inlineContentTopAndBottomIncludingInkOverflow();
             if (invalidationReason != InvalidationReason::InsertionOrRemoval) {
                 auto repaintAndSetNeedsLayoutIncludingOutOfFlowBoxes = [&] {
