@@ -41,6 +41,8 @@ ElementAnimationRareData::ElementAnimationRareData()
 
 ElementAnimationRareData::~ElementAnimationRareData()
 {
+    if (m_keyframeEffectStack)
+        m_keyframeEffectStack->clear();
 }
 
 KeyframeEffectStack& ElementAnimationRareData::ensureKeyframeEffectStack()

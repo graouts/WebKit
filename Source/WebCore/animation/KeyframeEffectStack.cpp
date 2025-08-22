@@ -89,6 +89,14 @@ void KeyframeEffectStack::removeEffect(KeyframeEffect& effect)
         startAcceleratedAnimationsIfPossible();
 }
 
+void KeyframeEffectStack::clear()
+{
+    auto effectsToRemove = m_effects;
+    for (auto& effect : effectsToRemove)
+        removeEffect(*effect);
+    m_effects.clear();
+}
+
 bool KeyframeEffectStack::hasMatchingEffect(NOESCAPE const Function<bool(const KeyframeEffect&)>& function) const
 {
     for (auto& effect : m_effects) {

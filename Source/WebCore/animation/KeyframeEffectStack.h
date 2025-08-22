@@ -59,6 +59,7 @@ public:
 
     bool addEffect(KeyframeEffect&);
     void removeEffect(KeyframeEffect&);
+    void clear();
     bool hasEffects() const { return !m_effects.isEmpty(); }
     Vector<WeakPtr<KeyframeEffect>> sortedEffects();
     const AnimationList* cssAnimationList() const { return m_cssAnimationList.get(); }
