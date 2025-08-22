@@ -97,6 +97,20 @@ using namespace JSC;
 
 WTF_MAKE_TZONE_OR_ISO_ALLOCATED_IMPL(KeyframeEffect);
 
+KeyframeEffect::~KeyframeEffect()
+{
+    ASSERT(!m_inTargetEffectStack);
+
+//    if (m_inTargetEffectStack) {
+//        if (auto target = targetStyleable()) {
+//            if (auto* keyframeEffectStack = target->keyframeEffectStack())
+//                keyframeEffectStack->removeEffect(*this);
+//        }
+//    }
+//
+//    WTFLogAlways("[GRAOUTS] Destroying effect %p", this);
+}
+
 KeyframeEffect::ParsedKeyframe::ParsedKeyframe()
     : style(MutableStyleProperties::create())
 {
