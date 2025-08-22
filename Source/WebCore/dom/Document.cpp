@@ -682,6 +682,8 @@ Document::Document(LocalFrame* frame, const Settings& settings, const URL& url, 
     , m_frameIdentifier(frame ? std::optional(frame->frameID()) : std::nullopt)
     , m_syncData(DocumentSyncData::create())
 {
+    WTFLogAlways("[GRAOUTS] creating document for %s", url.string().ascii().data());
+
     setEventTargetFlag(EventTargetFlag::IsConnected);
     addToDocumentsMap();
 

@@ -45,7 +45,10 @@
 
 namespace WebCore {
 
-KeyframeEffectStack::KeyframeEffectStack() = default;
+KeyframeEffectStack::KeyframeEffectStack()
+{
+    WTFLogAlways("[GRAOUTS] Created keyframe effect stack %p", this);
+}
 
 KeyframeEffectStack::~KeyframeEffectStack() = default;
 
@@ -64,6 +67,7 @@ bool KeyframeEffectStack::addEffect(KeyframeEffect& effect)
     if (m_effects.size() > 1 && effect.preventsAcceleration())
         stopAcceleratedAnimations();
 
+    WTFLogAlways("[GRAOUTS] Effect %p was added to stack %p", &effect, this);
     effect.wasAddedToEffectStack();
 
     return true;
@@ -73,8 +77,10 @@ void KeyframeEffectStack::removeEffect(KeyframeEffect& effect)
 {
     auto removedEffect = m_effects.removeFirst(&effect);
 
-    if (removedEffect)
+    if (removedEffect) {
+        WTFLogAlways("[GRAOUTS] Effect %p was removed from stack %p", &effect, this);
         effect.wasRemovedFromEffectStack();
+    }
 
     if (!removedEffect || m_effects.isEmpty())
         return;
