@@ -1443,7 +1443,7 @@ void KeyframeEffect::computeCSSAnimationBlendingKeyframes(const RenderStyle& una
 
     BlendingKeyframes blendingKeyframes(AtomString { backingAnimation->name().name });
     if (m_target) {
-        if (auto* styleScope = Style::Scope::forOrdinal(*m_target, backingAnimation->name().scopeOrdinal))
+        if (auto* styleScope = Style::Scope::forScopedAnimationName(*m_target, backingAnimation->name()))
             styleScope->resolver().keyframeStylesForAnimation(*m_target, unanimatedStyle, resolutionContext, blendingKeyframes, backingAnimation->timingFunction());
 
         // Ensure resource loads for all the frames.

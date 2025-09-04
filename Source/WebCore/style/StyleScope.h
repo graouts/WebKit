@@ -73,6 +73,7 @@ class MatchResultCache;
 class Resolver;
 class RuleSet;
 struct MatchResult;
+struct ScopedName;
 
 class Scope final : public CanMakeWeakPtr<Scope>, public CanMakeCheckedPtr<Scope>, public Identified<ScopeIdentifier> {
     WTF_MAKE_TZONE_ALLOCATED(Scope);
@@ -151,6 +152,7 @@ public:
     static const Scope& forNode(const Node&);
     static Scope* forOrdinal(Element&, ScopeOrdinal);
     static const Scope* forOrdinal(const Element&, ScopeOrdinal);
+    static Scope* forScopedAnimationName(Element&, const ScopedName&);
 
     struct LayoutDependencyUpdateContext {
         HashSet<CheckedRef<const Element>> invalidatedContainers;

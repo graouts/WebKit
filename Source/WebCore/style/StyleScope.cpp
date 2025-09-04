@@ -54,6 +54,7 @@
 #include "RuleSet.h"
 #include "SVGElementTypeHelpers.h"
 #include "SVGStyleElement.h"
+#include "ScopedName.h"
 #include "Settings.h"
 #include "ShadowRoot.h"
 #include "StyleBuilder.h"
@@ -255,6 +256,37 @@ Scope* Scope::forOrdinal(Element& element, ScopeOrdinal ordinal)
 const Scope* Scope::forOrdinal(const Element& element, ScopeOrdinal ordinal)
 {
     return forOrdinal(const_cast<Element&>(element), ordinal);
+}
+
+Scope* Scope::forScopedAnimationName(Element& element, const ScopedName& scopedName)
+{
+    // https://drafts.csswg.org/css-scoping-1/#shadow-names
+
+    // If an at-rule or property defines a name that other CSS constructs can refer to it by,
+    // such as a @font-face font-family name or an @keyframes name, it must be defined as a
+    // tree-scoped name. Tree-scoped names are "global" within a particular node tree; unless
+    // otherwise specified, they’re associated with the root of the element hosting the stylesheet
+    // that the at-rule or property is defined in.
+
+    // Whenever a tree-scoped reference is dereferenced to find the CSS construct it is referencing,
+    // first search only the tree-scoped names associated with the same root as the tree-scoped
+    // reference must be searched. If no relevant tree-scoped name is found, and the root is a
+    // shadow root, then repeat this search in the root’s host’s node tree. (In other words,
+    // tree-scoped names "inherit" into descendant shadow trees, so long as they don’t define
+    // the same name themselves.)
+
+    if (auto* styleScope = forOrdinal(element, scopedName.scopeOrdinal)) {
+        if (styleScope->resolver().isAnimationNameValid(scopedName.name))
+            return styleScope;
+    }
+
+    if (element.containingShadowRoot()) {
+        auto& styleScope = forNode(element);
+        if (styleScope.resolver().isAnimationNameValid(scopedName.name))
+            return &styleScope;
+    }
+
+    return nullptr;
 }
 
 void Scope::setPreferredStylesheetSetName(const String& name)

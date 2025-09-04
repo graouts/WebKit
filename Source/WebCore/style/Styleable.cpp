@@ -348,10 +348,9 @@ void Styleable::cancelStyleOriginatedAnimations(const WeakStyleOriginatedAnimati
     setAnimationsCreatedByMarkup({ });
 }
 
-static bool keyframesRuleExistsForAnimation(Element& element, const Animation& animation, const String& animationName)
+static bool keyframesRuleExistsForAnimation(Element& element, const Animation& animation)
 {
-    auto* styleScope = Style::Scope::forOrdinal(element, animation.name().scopeOrdinal);
-    return styleScope && styleScope->resolver().isAnimationNameValid(animationName);
+    return !!Style::Scope::forScopedAnimationName(element, animation.name());
 }
 
 bool Styleable::animationListContainsNewlyValidAnimation(const AnimationList& animations) const
@@ -362,7 +361,7 @@ bool Styleable::animationListContainsNewlyValidAnimation(const AnimationList& an
 
     for (auto& animation : animations) {
         auto& name = animation->name().name;
-        if (name != noneAtom() && !name.isEmpty() && keyframeEffectStack.containsInvalidCSSAnimationName(name) && keyframesRuleExistsForAnimation(element, animation.get(), name))
+        if (name != noneAtom() && !name.isEmpty() && keyframeEffectStack.containsInvalidCSSAnimationName(name) && keyframesRuleExistsForAnimation(element, animation.get()))
             return true;
     }
 
@@ -407,7 +406,7 @@ void Styleable::updateCSSAnimations(const RenderStyle* currentStyle, const Rende
             if (animationName == noneAtom() || animationName.isEmpty())
                 continue;
 
-            if (!keyframesRuleExistsForAnimation(element, currentAnimation.get(), animationName)) {
+            if (!keyframesRuleExistsForAnimation(element, currentAnimation.get())) {
                 keyframeEffectStack.addInvalidCSSAnimationName(animationName);
                 continue;
             }
