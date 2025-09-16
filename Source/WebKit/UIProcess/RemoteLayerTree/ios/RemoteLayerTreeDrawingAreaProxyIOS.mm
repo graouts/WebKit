@@ -89,8 +89,14 @@ static void* displayRefreshRateObservationContext = &displayRefreshRateObservati
 #else
                 _displayLink.preferredFramesPerSecond = (1.0 / _displayLink.maximumRefreshRate);
 #endif
-            } else
+            } else {
+#if HAVE(CORE_ANIMATION_FRAME_RATE_RANGE)
+                [_displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(24, 48, 48)];
+                [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
+#else
                 _displayLink.preferredFramesPerSecond = DisplayLinkFramesPerSecond;
+#endif
+            }
         }
     }
     return self;
