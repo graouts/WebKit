@@ -39,7 +39,7 @@
 #import <pal/spi/cocoa/QuartzCoreSPI.h>
 #import <wtf/TZoneMallocInlines.h>
 
-constexpr WebCore::FramesPerSecond DisplayLinkFramesPerSecond = 60;
+constexpr WebCore::FramesPerSecond DisplayLinkFramesPerSecond = 48;
 
 @interface WKDisplayLinkHandler : NSObject {
     WebKit::RemoteLayerTreeDrawingAreaProxy* _drawingAreaProxy;
@@ -84,19 +84,12 @@ static void* displayRefreshRateObservationContext = &displayRefreshRateObservati
 
             if (drawingAreaProxy && drawingAreaProxy->page() && !drawingAreaProxy->page()->preferences().preferPageRenderingUpdatesNear60FPSEnabled()) {
 #if HAVE(CORE_ANIMATION_FRAME_RATE_RANGE)
-                [_displayLink setPreferredFrameRateRange:WebKit::highFrameRateRange()];
-                [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
-#else
-                _displayLink.preferredFramesPerSecond = (1.0 / _displayLink.maximumRefreshRate);
+                WebKit::highFrameRateRange();
+                [_displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(DisplayLinkFramesPerSecond / 2, DisplayLinkFramesPerSecond, 0)];
+                // [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
 #endif
-            } else {
-#if HAVE(CORE_ANIMATION_FRAME_RATE_RANGE)
-                [_displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(24, 48, 48)];
-                [_displayLink setHighFrameRateReason:WebKit::preferPageRenderingUpdatesNear60FPSDisabledHighFrameRateReason];
-#else
+            } else
                 _displayLink.preferredFramesPerSecond = DisplayLinkFramesPerSecond;
-#endif
-            }
         }
     }
     return self;
@@ -170,7 +163,7 @@ static void* displayRefreshRateObservationContext = &displayRefreshRateObservati
     if (page && (page->preferences().webAnimationsCustomFrameRateEnabled() || !page->preferences().preferPageRenderingUpdatesNear60FPSEnabled())) {
         auto minimumRefreshInterval = _displayLink.maximumRefreshRate;
         if (minimumRefreshInterval > 0)
-            return std::round(1.0 / minimumRefreshInterval);
+            return DisplayLinkFramesPerSecond;
     }
 
     return DisplayLinkFramesPerSecond;
