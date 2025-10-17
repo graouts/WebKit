@@ -440,7 +440,7 @@ Element* ViewTimeline::bindingsSource() const
     return ScrollTimeline::bindingsSource();
 }
 
-Element* ViewTimeline::source() const
+RefPtr<Element> ViewTimeline::source() const
 {
     if (CheckedPtr sourceRender = sourceScrollerRenderer())
         return sourceRender->element();

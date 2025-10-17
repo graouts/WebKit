@@ -90,7 +90,7 @@ public:
     const RenderBox* sourceScrollerRenderer() const;
     CheckedPtr<const RenderElement> stickyContainer() const;
     Element* bindingsSource() const override;
-    Element* source() const override;
+    RefPtr<Element> source() const override;
     Style::SingleAnimationRange defaultRange() const final;
 
     std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const Style::SingleAnimationRange&) const final;

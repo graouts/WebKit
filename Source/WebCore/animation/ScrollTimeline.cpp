@@ -112,10 +112,10 @@ ScrollTimeline::ScrollTimeline(Scroller scroller, ScrollAxis axis)
 
 Element* ScrollTimeline::bindingsSource() const
 {
-    return source();
+    return source().get();
 }
 
-Element* ScrollTimeline::source() const
+RefPtr<Element> ScrollTimeline::source() const
 {
     auto source = m_source.styleable();
     if (!source)
@@ -129,7 +129,7 @@ Element* ScrollTimeline::source() const
                     Ref document = nearestSource->document();
                     RefPtr documentElement = document->documentElement();
                     if (nearestSource != documentElement)
-                        return nearestSource.unsafeGet();
+                        return nearestSource;
                     // RenderObject::enclosingScrollableContainer() will return the document element even in
                     // quirks mode, but the scrolling element in that case is the <body> element, so we must
                     // make sure to return Document::scrollingElement() in case the document element is

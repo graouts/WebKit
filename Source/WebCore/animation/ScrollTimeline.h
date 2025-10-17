@@ -52,7 +52,7 @@ public:
 
     const WeakStyleable& sourceStyleable() const { return m_source; }
     virtual Element* bindingsSource() const;
-    virtual Element* source() const;
+    virtual RefPtr<Element> source() const;
     void setSource(Element*);
     void setSource(const Styleable&);
 
