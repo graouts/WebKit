@@ -1621,6 +1621,11 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(RenderStyle& targetStyle, const
     if (!m_target)
         return impact;
 
+#if ENABLE(THREADED_ANIMATIONS)
+    if (m_acceleratedRepresentation && isCompletelyAccelerated())
+        return impact;
+#endif
+
     updateBlendingKeyframes(targetStyle, resolutionContext);
 
     auto computedTiming = getComputedTiming(UseCachedCurrentTime::Yes, endpointInclusiveActiveInterval);
@@ -1638,6 +1643,7 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(RenderStyle& targetStyle, const
 
     ASSERT(computedTiming.currentIteration);
     setAnimatedPropertiesInStyle(targetStyle, computedTiming);
+    m_numberOfStyleUpdatesForTesting++;
     return impact;
 }
 

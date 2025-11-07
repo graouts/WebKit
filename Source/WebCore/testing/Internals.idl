@@ -565,6 +565,7 @@ enum ContentsFormat {
     // Web Animations testing.
     sequence<AcceleratedAnimation> acceleratedAnimationsForElement(Element element);
     unsigned long numberOfAnimationTimelineInvalidations();
+    unsigned long numberOfAnimationStyleUpdates(WebAnimation effect);
     double timeToNextAnimationTick(WebAnimation animation);
 
     // For animations testing, we need a way to get at pseudo elements.

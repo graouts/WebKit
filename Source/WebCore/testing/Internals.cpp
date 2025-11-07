@@ -144,6 +144,7 @@
 #include "JSDOMPromiseDeferred.h"
 #include "JSFile.h"
 #include "JSInternals.h"
+#include "KeyframeEffect.h"
 #include "LegacySchemeRegistry.h"
 #include "LoaderStrategy.h"
 #include "LocalDOMWindow.h"
@@ -1447,6 +1448,13 @@ unsigned Internals::numberOfAnimationTimelineInvalidations() const
 {
     RefPtr localFrame = frame();
     return localFrame ? localFrame->document()->timeline().numberOfAnimationTimelineInvalidationsForTesting() : 0;
+}
+
+unsigned Internals::numberOfAnimationStyleUpdates(const WebAnimation& animation) const
+{
+    if (RefPtr effect = Ref { animation }->keyframeEffect())
+        return effect->numberOfStyleUpdatesForTesting();
+    return 0;
 }
 
 double Internals::timeToNextAnimationTick(WebAnimation& animation) const

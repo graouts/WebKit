@@ -1,0 +1,3 @@
+
+PASS Style updates of a scroll-driven animation happen selectively depending on the acceleration statuts.
+

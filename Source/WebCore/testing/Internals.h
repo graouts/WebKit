@@ -324,6 +324,7 @@ public:
     };
     Vector<AcceleratedAnimation> acceleratedAnimationsForElement(Element&);
     unsigned numberOfAnimationTimelineInvalidations() const;
+    unsigned numberOfAnimationStyleUpdates(const WebAnimation&) const;
     double timeToNextAnimationTick(WebAnimation&) const;
 
     // For animations testing, we need a way to get at pseudo elements.

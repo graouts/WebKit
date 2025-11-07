@@ -195,6 +195,8 @@ public:
 
     WebAnimationType animationType() const { return m_animationType; }
 
+    unsigned numberOfStyleUpdatesForTesting() const { return m_numberOfStyleUpdatesForTesting; }
+
 #if ENABLE(THREADED_ANIMATIONS)
     const AcceleratedEffect* acceleratedRepresentation() const { return m_acceleratedRepresentation.get(); }
     void setAcceleratedRepresentation(const AcceleratedEffect* acceleratedRepresentation) { m_acceleratedRepresentation = acceleratedRepresentation; }
@@ -332,6 +334,7 @@ private:
     bool m_animatesSizeAndSizeDependentTransform { false };
     bool m_isAssociatedWithProgressBasedTimeline { false };
     bool m_needsComputedKeyframeOffsetsUpdate { false };
+    unsigned m_numberOfStyleUpdatesForTesting { 0 };
 };
 
 } // namespace WebCore
