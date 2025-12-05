@@ -111,9 +111,6 @@ void RemoteProgressBasedTimelineRegistry::update(const RemoteScrollingTree& scro
         ASSERT_NOT_REACHED();
     });
 
-    if (timelinesUpdate.destroyed.isEmpty())
-        return;
-
     HashSet<WebCore::ScrollingNodeID> emptySources;
     for (auto& destroyedTimelineIdentifier : timelinesUpdate.destroyed) {
         TimelineID destroyedTimelineID { destroyedTimelineIdentifier, processIdentifier };
