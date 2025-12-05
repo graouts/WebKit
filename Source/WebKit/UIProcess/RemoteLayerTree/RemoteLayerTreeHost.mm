@@ -207,11 +207,8 @@ bool RemoteLayerTreeHost::updateLayerTree(const IPC::Connection& connection, con
 #if ENABLE(THREADED_ANIMATIONS)
     // FIXME: with site isolation, a single process can send multiple transactions.
     // https://bugs.webkit.org/show_bug.cgi?id=301261
-    WTFLogAlways("[GRAOUTS] processing transaction");
-    if (threadedAnimationsEnabled() && !transaction.timelinesUpdate().isEmpty()) {
-        WTFLogAlways("[GRAOUTS] timelines update, %d created, %d modified, %d destroyed", transaction.timelinesUpdate().created.size(), transaction.timelinesUpdate().modified.size(), transaction.timelinesUpdate().destroyed.size());
+    if (threadedAnimationsEnabled() && !transaction.timelinesUpdate().isEmpty())
         Ref { *m_drawingArea }->updateTimelinesRegistration(processIdentifier, transaction.timelinesUpdate(), MonotonicTime::now());
-    }
 #endif
 
     for (auto& changedLayer : transaction.changedLayerProperties()) {

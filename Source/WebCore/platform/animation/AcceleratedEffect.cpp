@@ -395,8 +395,6 @@ void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime 
     ASSERT(resolvedTiming.currentIteration);
     auto progress = *resolvedTiming.transformedProgress;
 
-    WTFLogAlways("[GRAOUTS] animation set current time to %f", progress);
-
     // In the case of CSS Transitions we already know that there are only two keyframes, one where offset=0 and one where offset=1,
     // and only a single CSS property so we can simply blend based on the style available on those keyframes with the provided iteration
     // progress which already accounts for the transition's timing function.

@@ -402,18 +402,14 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
 #if ENABLE(THREADED_ANIMATIONS)
         {
             Locker lock { m_animationLock };
-            if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty()) {
-                WTFLogAlways("[GRAOUTS] monotonic timeline found");
+            if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty())
                 return true;
-            }
         }
 #endif
 
         auto scrollingTree = this->scrollingTree();
         return scrollingTree && scrollingTree->hasNodeWithActiveScrollAnimations();
     }();
-
-    WTFLogAlways("[GRAOUTS] startOrStopDisplayLinkOnMainThread(), needsDisplayLink = %s", needsDisplayLink ? "true" : "false");
 
     if (needsDisplayLink)
         startDisplayLinkObserver();
