@@ -300,11 +300,11 @@ void RemoteScrollingTree::tryToApplyLayerPositions()
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
-void RemoteScrollingTree::updateTimelineRegistration(WebCore::ProcessIdentifier processIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
+void RemoteScrollingTree::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate)
 {
     if (!m_progressBasedTimelineRegistry)
         m_progressBasedTimelineRegistry = makeUnique<RemoteProgressBasedTimelineRegistry>();
-    m_progressBasedTimelineRegistry->update(*this, processIdentifier, timelineRepresentations);
+    m_progressBasedTimelineRegistry->update(*this, processIdentifier, timelinesUpdate);
     if (m_progressBasedTimelineRegistry->isEmpty())
         m_progressBasedTimelineRegistry = nullptr;
 }

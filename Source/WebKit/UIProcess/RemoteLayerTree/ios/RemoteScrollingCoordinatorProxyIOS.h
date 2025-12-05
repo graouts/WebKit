@@ -73,7 +73,7 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     void animationsWereAddedToNode(RemoteLayerTreeNode&) override WTF_IGNORES_THREAD_SAFETY_ANALYSIS;
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&) override;
-    void updateTimelineRegistration(WebCore::ProcessIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>&, MonotonicTime) override;
+    void updateTimelinesRegistration(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime) override;
     RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const override;
     void progressBasedTimelinesWereUpdatedForNode(const WebCore::ScrollingTreeScrollingNode&) override;
     void updateAnimations();

@@ -684,12 +684,12 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
         drawingAreaIOS().pauseDisplayRefreshCallbacksForAnimation();
 }
 
-void RemoteScrollingCoordinatorProxyIOS::updateTimelineRegistration(WebCore::ProcessIdentifier processIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations, MonotonicTime now)
+void RemoteScrollingCoordinatorProxyIOS::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
 {
-    scrollingTree().updateTimelineRegistration(processIdentifier, timelineRepresentations);
+    scrollingTree().updateTimelinesRegistration(processIdentifier, timelinesUpdate);
     if (!m_monotonicTimelineRegistry)
         m_monotonicTimelineRegistry = makeUnique<RemoteMonotonicTimelineRegistry>();
-    m_monotonicTimelineRegistry->update(processIdentifier, timelineRepresentations, now);
+    m_monotonicTimelineRegistry->update(processIdentifier, timelinesUpdate, now);
     if (m_monotonicTimelineRegistry->isEmpty())
         m_monotonicTimelineRegistry = nullptr;
 }

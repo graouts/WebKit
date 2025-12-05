@@ -922,10 +922,10 @@ void RemoteLayerTreeDrawingAreaProxy::animationsWereRemovedFromNode(RemoteLayerT
         page->checkedScrollingCoordinatorProxy()->animationsWereRemovedFromNode(node);
 }
 
-void RemoteLayerTreeDrawingAreaProxy::updateTimelineRegistration(WebCore::ProcessIdentifier processIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations, MonotonicTime now)
+void RemoteLayerTreeDrawingAreaProxy::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
 {
     if (RefPtr page = this->page())
-        page->checkedScrollingCoordinatorProxy()->updateTimelineRegistration(processIdentifier, timelineRepresentations, now);
+        page->checkedScrollingCoordinatorProxy()->updateTimelinesRegistration(processIdentifier, timelinesUpdate, now);
 }
 
 RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeDrawingAreaProxy::timeline(const TimelineID& timelineID) const
@@ -939,7 +939,6 @@ RefPtr<const RemoteAnimationStack> RemoteLayerTreeDrawingAreaProxy::animationSta
 {
     return m_remoteLayerTreeHost->animationStackForNodeWithIDForTesting(layerID);
 }
-
 #endif // ENABLE(THREADED_ANIMATIONS)
 
 } // namespace WebKit

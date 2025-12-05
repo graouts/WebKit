@@ -1977,16 +1977,20 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
         return;
 
     Ref page = *corePage();
+
 #if ENABLE(THREADED_ANIMATIONS)
-    HashSet<Ref<AcceleratedTimeline>> timelines;
+    AcceleratedTimelinesUpdate combinedTimelinesUpdate;
     page->forEachDocument([&](const auto& document) {
         if (CheckedPtr timelinesController = document.timelinesController()) {
-            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater())
-                timelines = timelines.unionWith(acceleratedEffectStackUpdater->timelines());
+            if (auto* acceleratedEffectStackUpdater = timelinesController->existingAcceleratedEffectStackUpdater()) {
+                auto timelinesUpdate = acceleratedEffectStackUpdater->takeTimelinesUpdate();
+                combinedTimelinesUpdate.created = combinedTimelinesUpdate.created.unionWith(timelinesUpdate.created);
+                combinedTimelinesUpdate.modified = combinedTimelinesUpdate.modified.unionWith(timelinesUpdate.modified);
+                combinedTimelinesUpdate.destroyed = combinedTimelinesUpdate.destroyed.unionWith(timelinesUpdate.destroyed);
+            }
         }
     });
-    if (!timelines.isEmpty())
-        layerTransaction.setTimelines(WTFMove(timelines));
+    layerTransaction.setTimelinesUpdate(WTFMove(combinedTimelinesUpdate));
 #endif
 
     layerTransaction.setContentsSize(frameView->contentsSize());

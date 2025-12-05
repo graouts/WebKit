@@ -414,10 +414,8 @@ void ViewTimeline::cacheCurrentTime()
         || previousCurrentTimeData.insetEnd != m_cachedCurrentTimeData.insetEnd
         || previousCurrentTimeData.stickinessData != m_cachedCurrentTimeData.stickinessData;
 
-    if (metricsChanged) {
-        for (auto& animation : m_animations)
-            animation->progressBasedTimelineSourceDidChangeMetrics();
-    }
+    if (metricsChanged)
+        sourceMetricsDidChange();
 }
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents ViewTimeline::documentWillUpdateAnimationsAndSendEvents()

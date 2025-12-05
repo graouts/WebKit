@@ -41,7 +41,7 @@ public:
     RemoteProgressBasedTimelineRegistry() = default;
 
     bool isEmpty() const { return m_timelines.isEmpty(); }
-    void update(const RemoteScrollingTree&, WebCore::ProcessIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>&);
+    void update(const RemoteScrollingTree&, WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&);
     RemoteProgressBasedTimeline* get(const TimelineID&) const;
     void updateTimelinesForNode(const WebCore::ScrollingTreeScrollingNode&);
     bool hasTimelineForNode(const WebCore::ScrollingTreeScrollingNode&) const;

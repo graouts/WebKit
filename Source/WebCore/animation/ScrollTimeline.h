@@ -86,6 +86,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATIONS)
     WEBCORE_EXPORT std::optional<ScrollingNodeID> scrollingNodeIDForTesting() const;
+    void updateAcceleratedRepresentation();
 #endif
 
 protected:
@@ -99,8 +100,12 @@ protected:
     virtual Data computeTimelineData(UseCachedCurrentTime = UseCachedCurrentTime::Yes) const;
 
     static ScrollableArea* scrollableAreaForSourceRenderer(const RenderElement*, Document&);
-
     ResolvedScrollDirection resolvedScrollDirection() const;
+    void sourceMetricsDidChange();
+
+#if ENABLE(THREADED_ANIMATIONS)
+    void scheduleAcceleratedRepresentationUpdate();
+#endif
 
 private:
     explicit ScrollTimeline();
@@ -119,6 +124,9 @@ private:
         float maxScrollOffset { 0 };
     };
 
+#if ENABLE(THREADED_ANIMATIONS)
+    ProgressResolutionData computeProgressResolutionData() const;
+#endif
     CurrentTimeData computeCurrentTimeData() const;
     void cacheCurrentTime();
 

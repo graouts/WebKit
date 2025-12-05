@@ -36,31 +36,44 @@ namespace WebKit {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(RemoteProgressBasedTimelineRegistry);
 
-void RemoteProgressBasedTimelineRegistry::update(const RemoteScrollingTree& scrollingTree, WebCore::ProcessIdentifier processIdentifier, const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations)
+void RemoteProgressBasedTimelineRegistry::update(const RemoteScrollingTree& scrollingTree, WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate)
 {
-    // If there are no active timelines for this process identifier, simply remove that entry.
-    if (timelineRepresentations.isEmpty()) {
-        m_timelines.remove(processIdentifier);
-        return;
-    }
-
     auto& processTimelines = m_timelines.ensure(processIdentifier, [] {
         return UncheckedKeyHashMap<WebCore::ScrollingNodeID, HashSet<Ref<RemoteProgressBasedTimeline>>>();
     }).iterator->value;
 
-    for (auto& timelineRepresentation : timelineRepresentations) {
-        if (!timelineRepresentation->isProgressBased())
-            continue;
+    using IterationCallback = const Function<void(const TimelineID&, WebCore::ProgressResolutionData)>;
+    auto forEachProgressBasedTimelineRepresentation = [&](const HashSet<Ref<WebCore::AcceleratedTimeline>>& timelineRepresentations, NOESCAPE IterationCallback& function) {
+        if (timelineRepresentations.isEmpty())
+            return;
+        for (auto& timelineRepresentation : timelineRepresentations) {
+            if (!timelineRepresentation->isProgressBased())
+                continue;
+            ASSERT(timelineRepresentation->progressResolutionData());
+            TimelineID timelineID { timelineRepresentation->identifier(), processIdentifier };
+            function(timelineID, *timelineRepresentation->progressResolutionData());
+        }
+    };
 
-        TimelineID timelineID { timelineRepresentation->identifier(), processIdentifier };
-        ASSERT(timelineRepresentation->progressResolutionData());
-        auto resolutionData = *timelineRepresentation->progressResolutionData();
+    forEachProgressBasedTimelineRepresentation(timelinesUpdate.created, [&](auto timelineID, auto resolutionData) {
+        auto& sourceTimelines = processTimelines.ensure(resolutionData.source, [] {
+            return HashSet<Ref<RemoteProgressBasedTimeline>>();
+        }).iterator->value;
+        // There should not be a pre-existing timeline for this identifier since we're creating it.
+        ASSERT([&] {
+            for (auto& existingTimeline : sourceTimelines) {
+                if (existingTimeline->identifier() == timelineID)
+                    return false;
+            }
+            return true;
+        }());
+        sourceTimelines.add(RemoteProgressBasedTimeline::create(timelineID, resolutionData));
+    });
 
-        // FIXME: we should make it so by the time this function is called we're
+    forEachProgressBasedTimelineRepresentation(timelinesUpdate.modified, [&](auto timelineID, auto resolutionData) {
+        // FIXME: we should make it so that when we call this function we're
         // guaranteed to have a matching source node and turn this into a Ref.
         RefPtr sourceNode = dynamicDowncast<WebCore::ScrollingTreeScrollingNode>(Ref { scrollingTree }->nodeForID(resolutionData.source));
-
-        auto done = false;
 
         auto sourceIterator = processTimelines.find(resolutionData.source);
         if (sourceIterator != processTimelines.end()) {
@@ -68,49 +81,56 @@ void RemoteProgressBasedTimelineRegistry::update(const RemoteScrollingTree& scro
             for (auto& existingTimeline : existingTimelines) {
                 if (existingTimeline->identifier() == timelineID) {
                     existingTimeline->setResolutionData(sourceNode.get(), resolutionData);
-                    done = true;
-                    break;
+                    return;
                 }
             }
         }
 
-        if (done)
-            continue;
-
-        // If we didn't find the timeline within the timelines for this source, it may have been
-        // associated with another source.
+        // If we didn't find the timeline within the existing timelines for this source,
+        // it may previously have been associated with another source.
         for (auto& [source, existingTimelines] : processTimelines) {
             // We've already looked at the exisiting source.
             if (source == resolutionData.source)
                 continue;
-
             auto matchingTimelines = existingTimelines.takeIf([&](const auto& existingTimeline) {
                 return existingTimeline->identifier() == timelineID;
             });
-
             if (matchingTimelines.isEmpty())
                 continue;
-
             ASSERT(matchingTimelines.size() == 1);
             auto& existingTimeline = matchingTimelines[0];
             existingTimeline->setResolutionData(sourceNode.get(), resolutionData);
             // Move it to the right source.
             processTimelines.ensure(existingTimeline->source(), [] {
-                return HashSet<Ref<RemoteProgressBasedTimeline>> { };
+                return HashSet<Ref<RemoteProgressBasedTimeline>>();
             }).iterator->value.add(existingTimeline.releaseNonNull());
-            done = true;
-            break;
+            return;
         }
 
-        if (done)
-            continue;
+        // If we reach this point, we've been told to update a timeline that did not exist.
+        ASSERT_NOT_REACHED();
+    });
 
-        // If we get to this point, we're dealing with a new timeline.
-        auto timeline = RemoteProgressBasedTimeline::create(timelineID, resolutionData);
-        processTimelines.ensure(timeline->source(), [] {
-            return HashSet<Ref<RemoteProgressBasedTimeline>> { };
-        }).iterator->value.add(WTFMove(timeline));
+    if (timelinesUpdate.destroyed.isEmpty())
+        return;
+
+    HashSet<WebCore::ScrollingNodeID> emptySources;
+    for (auto& destroyedTimelineIdentifier : timelinesUpdate.destroyed) {
+        TimelineID destroyedTimelineID { destroyedTimelineIdentifier, processIdentifier };
+        for (auto& [source, existingTimelines] : processTimelines) {
+            existingTimelines.removeIf([destroyedTimelineID](auto& existingTimeline) {
+                return existingTimeline->identifier() == destroyedTimelineID;
+            });
+            if (existingTimelines.isEmpty())
+                emptySources.add(source);
+        }
     }
+
+    for (auto& emptySource : emptySources)
+        processTimelines.remove(emptySource);
+
+    if (processTimelines.isEmpty())
+        m_timelines.remove(processIdentifier);
 }
 
 RemoteProgressBasedTimeline* RemoteProgressBasedTimelineRegistry::get(const TimelineID& timelineID) const

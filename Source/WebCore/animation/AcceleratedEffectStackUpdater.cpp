@@ -28,12 +28,14 @@
 
 #if ENABLE(THREADED_ANIMATIONS)
 
+#include "AcceleratedTimeline.h"
 #include "KeyframeEffectStack.h"
 #include "RenderElement.h"
 #include "RenderLayer.h"
 #include "RenderLayerBacking.h"
 #include "RenderLayerModelObject.h"
 #include "RenderStyleConstants.h"
+#include "ScrollTimeline.h"
 #include "Styleable.h"
 
 namespace WebCore {
@@ -43,7 +45,7 @@ void AcceleratedEffectStackUpdater::update()
     if (!hasTargetsPendingUpdate())
         return;
 
-    m_timelines.clear();
+    HashSet<Ref<AcceleratedTimeline>> timelinesInUpdate;
 
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });
     for (auto [element, pseudoElementIdentifier] : targetsPendingUpdate) {
@@ -58,13 +60,51 @@ void AcceleratedEffectStackUpdater::update()
 
         auto* renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
-        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues(m_timelines);
+        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues(timelinesInUpdate);
+    }
+
+    for (auto& timeline : timelinesInUpdate) {
+        auto& timelineIdentifier = timeline->identifier();
+        if (!m_timelines.contains(timelineIdentifier)) {
+            m_timelines.set(timelineIdentifier, timeline.ptr());
+            m_timelinesUpdate.created.add(timeline);
+        }
     }
 }
 
 void AcceleratedEffectStackUpdater::scheduleUpdateForTarget(const Styleable& target)
 {
     m_targetsPendingUpdate.add({ &target.element, target.pseudoElementIdentifier });
+}
+
+void AcceleratedEffectStackUpdater::scrollTimelineDidChange(ScrollTimeline& timeline)
+{
+    m_scrollTimelinesPendingUpdate.add(timeline);
+}
+
+AcceleratedTimelinesUpdate AcceleratedEffectStackUpdater::takeTimelinesUpdate()
+{
+    // Prune all known accelerated timelines that got destroyed since the last update.
+    for (auto& [timelineIdentifier, timeline] : m_timelines) {
+        if (!timeline)
+            m_timelinesUpdate.destroyed.add(timelineIdentifier);
+    }
+    for (auto& identifierToRemove : m_timelinesUpdate.destroyed)
+        m_timelines.remove(identifierToRemove);
+
+    auto scrollTimelinesPendingUpdate = std::exchange(m_scrollTimelinesPendingUpdate, { });
+    for (auto& scrollTimeline : scrollTimelinesPendingUpdate) {
+        auto timelineIdentifier = scrollTimeline->acceleratedTimelineIdentifier();
+        auto acceleratedTimeline = m_timelines.getOptional(timelineIdentifier);
+        if (acceleratedTimeline && scrollTimeline->canBeAccelerated()) {
+            ASSERT(*acceleratedTimeline);
+            scrollTimeline->updateAcceleratedRepresentation();
+            m_timelinesUpdate.modified.add(**acceleratedTimeline);
+        } else
+            m_timelinesUpdate.destroyed.add(timelineIdentifier);
+    }
+
+    return std::exchange(m_timelinesUpdate, { });
 }
 
 } // namespace WebCore

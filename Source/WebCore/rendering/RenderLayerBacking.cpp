@@ -4512,6 +4512,7 @@ void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
     }();
 
     AcceleratedEffects acceleratedEffects;
+    HashSet<Ref<AcceleratedTimeline>> effectTimelines;
     if (auto* effectStack = target->keyframeEffectStack()) {
         WeakListHashSet<AcceleratedEffect> weakAcceleratedEffects;
         if (effectStack->allowsAcceleration()) {
@@ -4525,17 +4526,16 @@ void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
                     if ((animatesWidth && blendingKeyframes.hasWidthDependentTransform()) || (animatesHeight && blendingKeyframes.hasHeightDependentTransform()))
                         disallowedAcceleratedProperties.add(transformRelatedAcceleratedProperties);
                 }
-                ASSERT(effect->animation());
-                ASSERT(effect->animation()->timeline());
-                Ref acceleratedTimeline = Ref { *effect->animation()->timeline() }->acceleratedRepresentation();
-                RefPtr acceleratedEffect = effect->updatedAcceleratedRepresentation(acceleratedTimeline->identifier(), borderBoxRect, baseValues, disallowedAcceleratedProperties);
-                if (!acceleratedEffect)
+                Ref acceleratedEffect = effect->acceleratedRepresentation(borderBoxRect, baseValues, disallowedAcceleratedProperties);
+                // FIXME: it feels like we should be able to assert here, or perhaps we could just fold this into the logic
+                // to determine whether we have an interpolating effect.
+                if (acceleratedEffect->animatedProperties().isEmpty())
                     continue;
                 if (!hasInterpolatingEffect && effect->isRunningAccelerated())
                     hasInterpolatingEffect = true;
-                weakAcceleratedEffects.add(*acceleratedEffect);
-                acceleratedEffects.append(acceleratedEffect.releaseNonNull());
-                timelines.add(WTFMove(acceleratedTimeline));
+                effectTimelines.add(Ref { *acceleratedEffect->timeline() });
+                weakAcceleratedEffects.add(acceleratedEffect.ptr());
+                acceleratedEffects.append(WTFMove(acceleratedEffect));
             }
         }
         effectStack->setAcceleratedEffects(WTFMove(weakAcceleratedEffects));
@@ -4543,8 +4543,11 @@ void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
 
     // If all of the effects in the stack are either idle, paused or filling, then the
     // effect stack will not produce an interpolated value and we don't need to run
-    // any of these effects.
-    if (!hasInterpolatingEffect)
+    // any of these effects. Otherwise, add the timelines we've encountered for the
+    // effects to the general timelines list.
+    if (hasInterpolatingEffect)
+        timelines.addAll(effectTimelines);
+    else
         acceleratedEffects.clear();
 
     m_graphicsLayer->setAcceleratedEffectsAndBaseValues(WTFMove(acceleratedEffects), WTFMove(baseValues));

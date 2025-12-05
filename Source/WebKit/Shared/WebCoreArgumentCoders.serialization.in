@@ -6528,6 +6528,13 @@ struct WebCore::ProgressResolutionData {
     Variant<Seconds, WebCore::ProgressResolutionData> data();
 };
 
+header: <WebCore/AcceleratedTimeline.h>
+[CustomHeader] struct WebCore::AcceleratedTimelinesUpdate {
+    HashSet<Ref<WebCore::AcceleratedTimeline>> created;
+    HashSet<Ref<WebCore::AcceleratedTimeline>> modified;
+    HashSet<WebCore::TimelineIdentifier> destroyed;
+};
+
 header: <WebCore/AcceleratedEffect.h>
 [CustomHeader, Nested] class WebCore::AcceleratedEffect::Keyframe {
     double offset();
@@ -6551,7 +6558,6 @@ header: <WebCore/AcceleratedEffect.h>
     std::optional<WebCore::WebAnimationTime> startTime();
     std::optional<WebCore::WebAnimationTime> holdTime();
 };
-
 #endif // ENABLE(THREADED_ANIMATIONS)
 
 #if PLATFORM(MAC)
