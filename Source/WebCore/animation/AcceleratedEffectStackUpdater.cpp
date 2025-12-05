@@ -84,14 +84,19 @@ void AcceleratedEffectStackUpdater::scrollTimelineDidChange(ScrollTimeline& time
 
 AcceleratedTimelinesUpdate AcceleratedEffectStackUpdater::takeTimelinesUpdate()
 {
-    // Prune all known accelerated timelines that got destroyed since the last update.
+    // All known accelerated timelines that got destroyed since the last update
+    // will now be null references. Add them to the list of destroyed timelines.
     for (auto& [timelineIdentifier, timeline] : m_timelines) {
         if (!timeline)
             m_timelinesUpdate.destroyed.add(timelineIdentifier);
     }
+
+    // Prune all those destroyed timelines from our list of know accelerated timelines.
     for (auto& identifierToRemove : m_timelinesUpdate.destroyed)
         m_timelines.remove(identifierToRemove);
 
+    // Finally, process all timelines that were marked as requiring an update, either
+    // marking them as modified or destroyed if they no longer are accelerated.
     auto scrollTimelinesPendingUpdate = std::exchange(m_scrollTimelinesPendingUpdate, { });
     for (auto& scrollTimeline : scrollTimelinesPendingUpdate) {
         auto timelineIdentifier = scrollTimeline->acceleratedTimelineIdentifier();

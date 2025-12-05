@@ -3162,10 +3162,6 @@ void KeyframeEffect::animationProgressBasedTimelineSourceDidChangeMetrics(const 
 {
     AnimationEffect::animationProgressBasedTimelineSourceDidChangeMetrics(animationAttachmentRange);
     m_needsComputedKeyframeOffsetsUpdate = true;
-#if ENABLE(THREADED_ANIMATIONS)
-    if (canHaveAcceleratedRepresentation())
-        updateAcceleratedAnimationIfNecessary();
-#endif
 }
 
 void KeyframeEffect::updateComputedKeyframeOffsetsIfNeeded()
