@@ -72,6 +72,8 @@ void RemoteProgressBasedTimeline::updateCurrentTime()
     auto distance = m_resolutionData.isReversed ? m_resolutionData.rangeEnd - m_resolutionData.scrollOffset : m_resolutionData.scrollOffset - m_resolutionData.rangeStart;
     auto progress = distance / range;
     m_currentTime = WebCore::WebAnimationTime::fromPercentage(progress * 100);
+
+    WTFLogAlways("[GRAOUTS] timeline set current time to %f", progress);
 }
 
 } // namespace WebKit
