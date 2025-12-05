@@ -65,6 +65,8 @@ void RemoteMonotonicTimelineRegistry::update(WebCore::ProcessIdentifier processI
             ASSERT(createdTimelineRepresentation->originTime());
             timelines.add(RemoteMonotonicTimeline::create(timelineID, *createdTimelineRepresentation->originTime(), now));
         }
+        if (timelines.isEmpty())
+            m_timelines.remove(processIdentifier);
     };
 
     auto removeDestroyedTimelines = [&] {
