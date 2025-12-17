@@ -154,6 +154,7 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
         auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
         RetainPtr transform = [NSValue valueWithCATransform3D:computedTransform];
         m_transformPresentationModifier = adoptNS([[CAPresentationModifier alloc] initWithKeyPath:@"transform" initialValue:transform.get() additive:NO group:m_presentationModifierGroup.get()]);
+        WTFLogAlways("[GRAOUTS] UI process: init layer ty = %f", computedTransform.f());
         [layer addPresentationModifier:m_transformPresentationModifier.get()];
     }
 
@@ -199,6 +200,7 @@ void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool
 
     if (m_affectedLayerProperties.contains(LayerProperty::Transform)) {
         auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
+        WTFLogAlways("[GRAOUTS] UI process: apply layer ty = %f", computedTransform.f());
         [layer setTransform:computedTransform];
     }
 }

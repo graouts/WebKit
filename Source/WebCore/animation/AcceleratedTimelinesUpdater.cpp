@@ -34,11 +34,13 @@ namespace WebCore {
 
 void AcceleratedTimelinesUpdater::scrollTimelineDidChange(ScrollTimeline& timeline)
 {
+    WTFLogAlways("[GRAOUTS] scrollTimelineDidChange()");
     m_scrollTimelinesPendingUpdate.add(timeline);
 }
 
 void AcceleratedTimelinesUpdater::processTimelinesSeenDuringEffectStacksUpdate(HashSet<Ref<AcceleratedTimeline>>&& timelinesInUpdate)
 {
+    WTFLogAlways("[GRAOUTS] processTimelinesSeenDuringEffectStacksUpdate()");
     for (auto& timeline : timelinesInUpdate) {
         auto& timelineIdentifier = timeline->identifier();
         auto addResult = m_timelines.add(timelineIdentifier, timeline.ptr());
@@ -73,6 +75,8 @@ AcceleratedTimelinesUpdate AcceleratedTimelinesUpdater::takeTimelinesUpdate()
         } else
             m_timelinesUpdate.destroyed.add(timelineIdentifier);
     }
+
+    WTFLogAlways("[GRAOUTS] takeTimelinesUpdate(), is empty? %s", m_timelinesUpdate.isEmpty() ? "true" : "false");
 
     return std::exchange(m_timelinesUpdate, { });
 }

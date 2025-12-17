@@ -401,6 +401,7 @@ void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
     if (!source || !animation.pending() || animation.isEffectInvalidationSuspended())
         return;
 
+    WTFLogAlways("[GRAOUTS] ScrollTimeline::animationTimingDidChange()");
     if (RefPtr page = protect(source->element.document())->page())
         page->scheduleRenderingUpdate(RenderingUpdateStep::Animations);
 }

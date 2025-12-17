@@ -461,6 +461,7 @@ void RemoteLayerTreeDrawingAreaProxyMac::sendCommitTransientZoom(double scale, F
 
 void RemoteLayerTreeDrawingAreaProxyMac::scheduleDisplayRefreshCallbacks()
 {
+    WTFLogAlways("[GRAOUTS] scheduleDisplayRefreshCallbacks()");
     LOG_WITH_STREAM(DisplayLink, stream << "[UI ] RemoteLayerTreeDrawingAreaProxyMac " << this << " scheduleDisplayLink for display " << m_displayID << " - existing observer " << m_displayRefreshObserverID);
     m_needsDisplayRefreshCallbacksForDrawing = true;
     if (m_displayRefreshObserverID)

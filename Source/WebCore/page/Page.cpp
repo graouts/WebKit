@@ -2214,6 +2214,8 @@ void Page::updateRendering()
         return;
     }
 
+    WTFLogAlways("[GRAOUTS] web process updating the page rendering");
+
     m_lastRenderingUpdateTimestamp = MonotonicTime::now();
     m_renderingUpdateIsScheduled = false;
 

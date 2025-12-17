@@ -607,13 +607,17 @@ void RenderElement::setStyle(RenderStyle&& style, Style::DifferenceResult minima
     auto diff = Style::Difference { };
     if (m_hasInitializedStyle) {
         diff = Style::difference(m_style, style);
+        if (diff == Style::DifferenceResult::RecompositeLayer)
+            WTFLogAlways("[GRAOUTS] RenderElement::setStyle() saw RecompositeLayer under m_hasInitializedStyle");
 #if !LOG_DISABLED
         logStyleDifference(*this, m_style, style, diff);
 #endif
     }
 
     diff.result = std::max(diff.result, minimalStyleDifference);
+    WTFLogAlways("[GRAOUTS] RenderElement::setStyle() saw RecompositeLayer after std::max()");
     diff = adjustStyleDifference(diff);
+    WTFLogAlways("[GRAOUTS] RenderElement::setStyle() saw RecompositeLayer after calling adjustStyleDifference");
 
     Style::loadPendingResources(style, protect(document()), protect(element()).get());
 
@@ -623,6 +627,9 @@ void RenderElement::setStyle(RenderStyle&& style, Style::DifferenceResult minima
     bool detachedFromParent = !parent();
 
     adjustFragmentedFlowStateOnContainingBlockChangeIfNeeded(oldStyle, m_style);
+
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderElement::setStyle() saw RecompositeLayer");
 
     styleDidChange(diff, &oldStyle);
 

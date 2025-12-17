@@ -1638,6 +1638,7 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(RenderStyle& targetStyle, const
 
     if (m_phaseAtLastApplication != computedTiming.phase) {
         m_phaseAtLastApplication = computedTiming.phase;
+        WTFLogAlways("[GRAOUTS] adding AnimationImpact::RequiresRecomposite in KeyframeEffect::apply()");
         impact.add(AnimationImpact::RequiresRecomposite);
     }
 
@@ -1646,6 +1647,8 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(RenderStyle& targetStyle, const
 
     if (!computedTiming.progress)
         return impact;
+
+    // WTFLogAlways("[GRAOUTS] Web process: %f", *computedTiming.progress);
 
     ASSERT(computedTiming.currentIteration);
     setAnimatedPropertiesInStyle(targetStyle, computedTiming);

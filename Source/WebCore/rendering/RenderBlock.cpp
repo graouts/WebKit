@@ -336,6 +336,9 @@ bool RenderBlock::paddingBoxLogicaHeightChanged(const RenderStyle& oldStyle, con
 
 void RenderBlock::styleDidChange(Style::Difference diff, const RenderStyle* oldStyle)
 {
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderBlock saw RecompositeLayer");
+
     RenderBox::styleDidChange(diff, oldStyle);
 
     if (oldStyle)

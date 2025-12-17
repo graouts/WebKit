@@ -855,6 +855,8 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
         auto animatedStyle = RenderStyle::clonePtr(*resolvedStyle.style);
 
         auto animationImpact = styleable.applyKeyframeEffects(*animatedStyle, animatedProperties, previousLastStyleChangeEventStyle.get(), resolutionContext);
+        if (animationImpact.contains(AnimationImpact::RequiresRecomposite))
+            WTFLogAlways("[GRAOUTS] applyAnimations set animation impact to RequiresRecomposite after applying keyframe effects");
 
         if (*resolvedStyle.style == *animatedStyle && animationImpact.isEmpty() && previousLastStyleChangeEventStyle)
             return { WTF::move(resolvedStyle.style), animationImpact };
@@ -871,6 +873,8 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
 
         Adjuster adjuster(document, *resolutionContext.parentStyle, resolutionContext.parentBoxStyle, !styleable.pseudoElementIdentifier ? &styleable.element : nullptr);
         adjuster.adjustAnimatedStyle(*animatedStyle, animationImpact);
+        if (animationImpact.contains(AnimationImpact::RequiresRecomposite))
+            WTFLogAlways("[GRAOUTS] applyAnimations set animation impact to RequiresRecomposite after adjustAnimatedStyle");
 
         return { WTF::move(animatedStyle), animationImpact };
     };
@@ -927,6 +931,10 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
         newStyle->setHasDisplayAffectedByAnimations();
 
     bool shouldRecompositeLayer = animationImpact.contains(AnimationImpact::RequiresRecomposite) || element->styleResolutionShouldRecompositeLayer();
+    if (animationImpact.contains(AnimationImpact::RequiresRecomposite))
+        WTFLogAlways("[GRAOUTS] Style::TreeResolver::createAnimatedElementUpdate creating element update due to animation impact");
+    if (element.styleResolutionShouldRecompositeLayer())
+        WTFLogAlways("[GRAOUTS] Style::TreeResolver::createAnimatedElementUpdate creating element update due to element.styleResolutionShouldRecompositeLayer()");
 
     auto mayNeedRebuildRoot = [&, newStyle = newStyle.get()] {
         if (changes.contains(Change::Renderer))

@@ -792,6 +792,7 @@ bool RenderLayerCompositor::backdropRootIsOpaque(const GraphicsLayer* layer) con
 
 void RenderLayerCompositor::notifyFlushRequired(const GraphicsLayer*)
 {
+    WTFLogAlways("[GRAOUTS] RenderLayerCompositor::notifyFlushRequired()");
     scheduleRenderingUpdate();
 }
 
@@ -799,6 +800,7 @@ void RenderLayerCompositor::scheduleRenderingUpdate()
 {
     ASSERT(!m_flushingLayers);
 
+    WTFLogAlways("[GRAOUTS] RenderLayerCompositor::scheduleRenderingUpdate()");
     protect(page())->scheduleRenderingUpdate(RenderingUpdateStep::LayerFlush);
 }
 

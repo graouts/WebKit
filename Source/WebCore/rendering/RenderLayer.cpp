@@ -6286,6 +6286,8 @@ void RenderLayer::styleChanged(Style::Difference diff, const RenderStyle* oldSty
         dirtyAncestorChainHasViewportConstrainedDescendantStatus();
 
 #if PLATFORM(IOS_FAMILY) && ENABLE(TOUCH_EVENTS)
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderLayer saw RecompositeLayer");
     if (diff == Style::DifferenceResult::RecompositeLayer || diff >= Style::DifferenceResult::LayoutOutOfFlowMovementOnly)
         renderer().document().invalidateRenderingDependentRegions();
 #else

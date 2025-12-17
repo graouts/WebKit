@@ -329,6 +329,9 @@ void RenderBox::invalidateAncestorBackgroundObscurationStatus()
 
 void RenderBox::styleDidChange(Style::Difference diff, const RenderStyle* oldStyle)
 {
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderBox saw RecompositeLayer");
+
     // Horizontal writing mode definition is updated in RenderBoxModelObject::updateFromStyle,
     // (as part of the RenderBoxModelObject::styleDidChange call below). So, we can safely cache the horizontal
     // writing mode value before style change here.

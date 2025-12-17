@@ -908,8 +908,10 @@ public:
 
     static bool changeRequiresRecompositeLayer(const RenderStyle& a, const RenderStyle& b, OptionSet<DifferenceContextSensitiveProperty>&)
     {
-        if (a.inheritedFlags().pointerEvents != b.inheritedFlags().pointerEvents)
+        if (a.inheritedFlags().pointerEvents != b.inheritedFlags().pointerEvents) {
+            WTFLogAlways("[GRAOUTS] changeRequiresRecompositeLayer - pointer events case");
             return true;
+        }
 
         if (&a.nonInheritedData() != &b.nonInheritedData() && a.nonInheritedData().rareData.ptr() != b.nonInheritedData().rareData.ptr()) {
             if (a.usedTransformStyle3D() != b.usedTransformStyle3D()
@@ -917,12 +919,16 @@ public:
                 || a.nonInheritedData().rareData->perspective != b.nonInheritedData().rareData->perspective
                 || a.nonInheritedData().rareData->perspectiveOrigin != b.nonInheritedData().rareData->perspectiveOrigin
                 || a.nonInheritedData().rareData->overscrollBehaviorX != b.nonInheritedData().rareData->overscrollBehaviorX
-                || a.nonInheritedData().rareData->overscrollBehaviorY != b.nonInheritedData().rareData->overscrollBehaviorY)
-                return true;
+                || a.nonInheritedData().rareData->overscrollBehaviorY != b.nonInheritedData().rareData->overscrollBehaviorY) {
+                    WTFLogAlways("[GRAOUTS] changeRequiresRecompositeLayer - case with transform stuff");
+                    return true;
+                }
         }
 
-        if (&a.inheritedRareData() != &b.inheritedRareData() && a.inheritedRareData().effectiveInert != b.inheritedRareData().effectiveInert)
+        if (&a.inheritedRareData() != &b.inheritedRareData() && a.inheritedRareData().effectiveInert != b.inheritedRareData().effectiveInert) {
+            WTFLogAlways("[GRAOUTS] changeRequiresRecompositeLayer - inert case");
             return true;
+        }
 
         return false;
     }

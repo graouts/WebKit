@@ -5271,8 +5271,10 @@ void GraphicsLayerCA::noteLayerPropertyChanged(LayerChangeFlags flags, ScheduleF
 
     if (scheduleFlush == ScheduleFlush) {
         bool needsFlush = !hadUncommittedChanges;
-        if (needsFlush)
+        if (needsFlush) {
+            WTFLogAlways("[GRAOUTS] noteLayerPropertyChanged()");
             client().notifyFlushRequired(this);
+        }
     }
 }
 

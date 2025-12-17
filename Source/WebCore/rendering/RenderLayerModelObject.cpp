@@ -135,6 +135,8 @@ void RenderLayerModelObject::styleWillChange(Style::Difference diff, const Rende
 
 void RenderLayerModelObject::styleDidChange(Style::Difference diff, const RenderStyle* oldStyle)
 {
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderLayerModelObject saw RecompositeLayer");
     updateFromStyle();
     RenderElement::styleDidChange(diff, oldStyle);
 

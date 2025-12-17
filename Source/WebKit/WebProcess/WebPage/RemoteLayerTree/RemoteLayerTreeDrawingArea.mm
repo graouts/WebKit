@@ -313,6 +313,8 @@ void RemoteLayerTreeDrawingArea::triggerRenderingUpdate()
         return;
     }
 
+    WTFLogAlways("[GRAOUTS] RemoteLayerTreeDrawingArea::triggerRenderingUpdate()");
+    WTFReportBacktrace();
     startRenderingUpdateTimer();
 }
 
@@ -560,6 +562,8 @@ bool RemoteLayerTreeDrawingArea::scheduleRenderingUpdate()
 {
     if (m_isScheduled)
         return true;
+
+    WTFLogAlways("[GRAOUTS] RemoteLayerTreeDrawingArea::scheduleRenderingUpdate()");
 
     tracePoint(RemoteLayerTreeScheduleRenderingUpdate, m_waitingForBackingStoreSwap);
 

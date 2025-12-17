@@ -2025,6 +2025,7 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
     Ref page = *corePage();
 
 #if ENABLE(THREADED_ANIMATIONS)
+    WTFLogAlways("[GRAOUTS] willCommitLayerTree()");
     if (auto* acceleratedTimelinesUpdater = page->acceleratedTimelinesUpdater())
         layerTransaction.setTimelinesUpdate(acceleratedTimelinesUpdater->takeTimelinesUpdate());
 #endif

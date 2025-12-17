@@ -401,8 +401,10 @@ void RemoteLayerTreePropertyApplier::applyPropertiesToLayer(CALayer *layer, Remo
     if (properties.changedProperties & LayerChange::BoundsChanged)
         layer.bounds = properties.bounds;
 
-    if (properties.changedProperties & LayerChange::TransformChanged)
+    if (properties.changedProperties & LayerChange::TransformChanged) {
         layer.transform = properties.transform ? (CATransform3D)*properties.transform.get() : CATransform3DIdentity;
+        WTFLogAlways("[GRAOUTS] applyPropertiesToLayer(): set transform ty = %f", layer.transform.m42);
+    }
 
     if (properties.changedProperties & LayerChange::SublayerTransformChanged)
         layer.sublayerTransform = properties.sublayerTransform ? (CATransform3D)*properties.sublayerTransform.get() : CATransform3DIdentity;

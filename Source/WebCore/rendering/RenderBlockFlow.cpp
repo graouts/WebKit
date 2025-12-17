@@ -2415,8 +2415,11 @@ bool RenderBlockFlow::subtreeContainsFloats() const
 
 void RenderBlockFlow::styleDidChange(Style::Difference diff, const RenderStyle* oldStyle)
 {
+    if (diff == Style::DifferenceResult::RecompositeLayer)
+        WTFLogAlways("[GRAOUTS] RenderBlockFlow saw RecompositeLayer");
+
     RenderBlock::styleDidChange(diff, oldStyle);
-    
+
     // After our style changed, if we lose our ability to propagate floats into next sibling
     // blocks, then we need to find the top most parent containing that overhanging float and
     // then mark its descendants with floats for layout and clear all floats from its next

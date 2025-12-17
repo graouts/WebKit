@@ -163,6 +163,7 @@ void DocumentTimeline::scheduleAnimationResolution()
     if (!havePendingActivity)
         return;
 
+    WTFLogAlways("[GRAOUTS] DocumentTimeline::scheduleAnimationResolution()");
     m_document->page()->scheduleRenderingUpdate(RenderingUpdateStep::Animations);
     m_animationResolutionScheduled = true;
 }

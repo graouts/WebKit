@@ -361,24 +361,28 @@ void RemoteLayerTreeDrawingAreaProxyIOS::didRefreshDisplay()
 
 void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayRefreshCallbacks()
 {
+    WTFLogAlways("[GRAOUTS] scheduleDisplayRefreshCallbacks()");
     m_needsDisplayRefreshCallbacksForDrawing = true;
     scheduleDisplayLinkAndSetFrameRate();
 }
 
 void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacks()
 {
+    WTFLogAlways("[GRAOUTS] pauseDisplayRefreshCallbacks()");
     m_needsDisplayRefreshCallbacksForDrawing = false;
     pauseDisplayLinkIfNeeded();
 }
 
 void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayRefreshCallbacksForMonotonicAnimations()
 {
+    WTFLogAlways("[GRAOUTS] scheduleDisplayRefreshCallbacksForMonotonicAnimations()");
     m_needsDisplayRefreshCallbacksForMonotonicAnimations = true;
     scheduleDisplayLinkAndSetFrameRate();
 }
 
 void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacksForMonotonicAnimations()
 {
+    WTFLogAlways("[GRAOUTS] pauseDisplayRefreshCallbacksForMonotonicAnimations()");
     m_needsDisplayRefreshCallbacksForMonotonicAnimations = false;
     pauseDisplayLinkIfNeeded();
 }
@@ -402,8 +406,10 @@ void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayLinkAndSetFrameRate()
 
 void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayLinkIfNeeded()
 {
-    if (!m_needsDisplayRefreshCallbacksForDrawing && !m_needsDisplayRefreshCallbacksForMonotonicAnimations)
+    if (!m_needsDisplayRefreshCallbacksForDrawing && !m_needsDisplayRefreshCallbacksForMonotonicAnimations) {
+        WTFLogAlways("[GRAOUTS] pausing display link");
         [protect(displayLinkHandler()) pause];
+    }
 }
 
 std::optional<WebCore::FramesPerSecond> RemoteLayerTreeDrawingAreaProxyIOS::displayNominalFramesPerSecond()
