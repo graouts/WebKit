@@ -49,6 +49,10 @@ namespace WebKit {
 class RemoteLayerTreeHost;
 class RemoteLayerTreeScrollbars;
 
+#if ENABLE(THREADED_ANIMATIONS)
+    struct LayerProperties;
+#endif
+
 class RemoteLayerTreeNode final : public RefCountedAndCanMakeWeakPtr<RemoteLayerTreeNode> {
     WTF_MAKE_TZONE_ALLOCATED(RemoteLayerTreeNode);
 public:
@@ -155,6 +159,7 @@ public:
 
 #if ENABLE(THREADED_ANIMATIONS)
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&, RemoteLayerTreeHost&);
+    void updateAcceleratedEffectsIfNeeded(const LayerProperties&);
     const RemoteAnimationStack* animationStack() const { return m_animationStack.get(); }
     RefPtr<RemoteAnimationStack> takeAnimationStack() { return std::exchange(m_animationStack, nullptr); }
 #endif

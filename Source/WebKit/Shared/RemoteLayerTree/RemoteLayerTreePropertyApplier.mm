@@ -513,7 +513,8 @@ void RemoteLayerTreePropertyApplier::applyPropertiesToLayer(CALayer *layer, Remo
     if (properties.changedProperties & LayerChange::FiltersChanged)
         PlatformCAFilters::setFiltersOnLayer(layer, properties.filters ? *properties.filters : FilterOperations(), layerTreeNode && layerTreeNode->backdropRootIsOpaque());
 
-    if (properties.changedProperties & LayerChange::AnimationsChanged) {
+    auto animationsChanged = properties.changedProperties & LayerChange::AnimationsChanged;
+    if (animationsChanged) {
 #if ENABLE(THREADED_ANIMATIONS)
         if (layerTreeHost->threadedAnimationsEnabled()) {
             LOG_WITH_STREAM(Animations, stream << "RemoteLayerTreePropertyApplier::applyProperties() for layer " << layerTreeNode->layerID() << " found " << properties.animationChanges.effects.size() << " effects.");
@@ -522,6 +523,11 @@ void RemoteLayerTreePropertyApplier::applyPropertiesToLayer(CALayer *layer, Remo
 #endif
         PlatformCAAnimationRemote::updateLayerAnimations(layer, layerTreeHost, properties.animationChanges.addedAnimations, properties.animationChanges.keysOfAnimationsToRemove);
     }
+
+#if ENABLE(THREADED_ANIMATIONS)
+    if (!animationsChanged && layerTreeHost->threadedAnimationsEnabled())
+        layerTreeNode->updateAcceleratedEffectsIfNeeded(properties);
+#endif
 
     if (properties.changedProperties & LayerChange::AntialiasesEdgesChanged)
         layer.edgeAntialiasingMask = properties.antialiasesEdges ? (kCALayerLeftEdge | kCALayerRightEdge | kCALayerBottomEdge | kCALayerTopEdge) : 0;

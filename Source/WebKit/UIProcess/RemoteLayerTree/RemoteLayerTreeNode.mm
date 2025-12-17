@@ -45,6 +45,7 @@
 #endif
 
 #if ENABLE(THREADED_ANIMATIONS)
+#import "LayerProperties.h"
 #import "RemoteAnimation.h"
 #import "RemoteAnimationStack.h"
 #endif
@@ -441,6 +442,27 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
 #endif
 
     host.animationsWereAddedToNode(*this);
+}
+
+void RemoteLayerTreeNode::updateAcceleratedEffectsIfNeeded(const LayerProperties& properties)
+{
+    ASSERT(isUIThread());
+
+    RefPtr animationStack = m_animationStack;
+    if (!animationStack || animationStack->isEmpty())
+        return;
+
+    // FIXME: we could narrow this down to apply animations just for the layer that has changed
+    // but the mere fact that we have an animation stack and one of those properties changed on
+    // the layer indicates that we need to apply animations.
+    auto needsUpdate = properties.changedProperties & LayerChange::TransformChanged
+        || properties.changedProperties & LayerChange::OpacityChanged
+        || properties.changedProperties & LayerChange::FiltersChanged;
+    if (!needsUpdate)
+        return;
+
+    RetainPtr layer = this->layer();
+    animationStack->applyEffectsFromMainThread(layer.get(), backdropRootIsOpaque());
 }
 #endif
 
