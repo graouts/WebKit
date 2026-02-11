@@ -36,12 +36,10 @@
 #include <wtf/OptionSet.h>
 #include <wtf/TZoneMalloc.h>
 
-#if PLATFORM(MAC)
 #include <wtf/RetainPtr.h>
 
 OBJC_CLASS CAPresentationModifierGroup;
 OBJC_CLASS CAPresentationModifier;
-#endif
 
 namespace WebKit {
 
@@ -57,12 +55,8 @@ public:
     auto begin() const LIFETIME_BOUND { return m_animations.begin(); }
     auto end() const LIFETIME_BOUND { return m_animations.end(); }
 
-#if PLATFORM(MAC)
     void initEffectsFromMainThread(PlatformLayer*);
     void applyEffects() const;
-#endif
-
-    void applyEffectsFromMainThread(PlatformLayer*, bool backdropRootIsOpaque) const;
 
     bool isDependentOnScrollingNodeWithID(WebCore::ScrollingNodeID) const;
     bool isTimeDependent() const;
@@ -76,9 +70,7 @@ private:
 
     WebCore::AcceleratedEffectValues computeValues() const;
 
-#if PLATFORM(MAC)
     const WebCore::FilterOperations* longestFilterList() const;
-#endif
 
     enum class LayerProperty : uint8_t {
         Opacity = 1 << 1,
@@ -92,12 +84,10 @@ private:
     WebCore::AcceleratedEffectValues m_baseValues;
     WebCore::FloatRect m_bounds;
 
-#if PLATFORM(MAC)
     RetainPtr<CAPresentationModifierGroup> m_presentationModifierGroup;
     RetainPtr<CAPresentationModifier> m_opacityPresentationModifier;
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
     Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
-#endif
 };
 
 } // namespace WebKit

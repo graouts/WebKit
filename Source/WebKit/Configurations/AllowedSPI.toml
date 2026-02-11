@@ -293,14 +293,6 @@ requires = ["HAVE_WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST"]
 [[temporary-usage]]
 request = "rdar://OOPS!"
 cleanup = "rdar://OOPS!"
-selectors = [
-    { name = "rectValue", class = "?" },
-    { name = "valueWithRect:", class = "?" },
-]
-
-[[temporary-usage]]
-request = "rdar://OOPS!"
-cleanup = "rdar://OOPS!"
 classes = [
     "CAPresentationModifierGroup",
     "CAPresentationModifier",

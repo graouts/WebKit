@@ -880,7 +880,7 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Fu
         RefPtr animationStack = animatedNode->animationStack();
         ASSERT(animationStack);
         if (predicate(*animationStack))
-            animationStack->applyEffectsFromMainThread(protect(animatedNode->layer()), animatedNode->backdropRootIsOpaque());
+            animationStack->applyEffects();
 
         // We can clear the effect stack if it's empty, but the previous
         // call to applyEffects() is important so that the base values

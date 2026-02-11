@@ -70,7 +70,6 @@ RemoteAnimationStack::RemoteAnimationStack(RemoteAnimations&& animations, WebCor
         m_affectedLayerProperties.add(LayerProperty::Transform);
 }
 
-#if PLATFORM(MAC)
 const WebCore::FilterOperations* RemoteAnimationStack::longestFilterList() const
 {
     if (!m_affectedLayerProperties.contains(LayerProperty::Filter))
@@ -185,23 +184,6 @@ void RemoteAnimationStack::applyEffects() const
     else
         [m_presentationModifierGroup flush];
 }
-#endif
-
-void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool backdropRootIsOpaque) const
-{
-    auto computedValues = computeValues();
-
-    if (m_affectedLayerProperties.contains(LayerProperty::Filter))
-        WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
-
-    if (m_affectedLayerProperties.contains(LayerProperty::Opacity))
-        [layer setOpacity:computedValues.opacity.value];
-
-    if (m_affectedLayerProperties.contains(LayerProperty::Transform)) {
-        auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
-        [layer setTransform:computedTransform];
-    }
-}
 
 WebCore::AcceleratedEffectValues RemoteAnimationStack::computeValues() const
 {
@@ -213,7 +195,6 @@ WebCore::AcceleratedEffectValues RemoteAnimationStack::computeValues() const
 
 void RemoteAnimationStack::clear(PlatformLayer *layer)
 {
-#if PLATFORM(MAC)
     ASSERT(m_presentationModifierGroup);
 
     for (auto& filterPresentationModifier : m_filterPresentationModifiers)
@@ -229,7 +210,6 @@ void RemoteAnimationStack::clear(PlatformLayer *layer)
     m_opacityPresentationModifier = nil;
     m_transformPresentationModifier = nil;
     m_presentationModifierGroup = nil;
-#endif
 }
 
 bool RemoteAnimationStack::isDependentOnScrollingNodeWithID(WebCore::ScrollingNodeID scrollingNodeID) const

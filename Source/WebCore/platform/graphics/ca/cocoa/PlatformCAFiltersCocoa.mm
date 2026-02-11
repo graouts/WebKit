@@ -37,7 +37,6 @@
 
 namespace WebCore {
 
-#if PLATFORM(MAC)
 static unsigned keyValueCountForFilter(const FilterOperation& filterOperation)
 {
     switch (filterOperation.type()) {
@@ -209,7 +208,6 @@ void PlatformCAFilters::updatePresentationModifiers(const FilterOperations& filt
         return;
     }
 }
-#endif // PLATFORM(MAC)
 
 void PlatformCAFilters::setFiltersOnLayer(PlatformLayer* layer, const FilterOperations& filters, bool backdropIsOpaque)
 {

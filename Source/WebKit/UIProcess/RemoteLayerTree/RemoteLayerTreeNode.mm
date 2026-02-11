@@ -438,11 +438,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     }), baseValues.clone(), layer.get().bounds);
     m_animationStack = animationStack.copyRef();
 
-#if PLATFORM(IOS_FAMILY)
-    animationStack->applyEffectsFromMainThread(layer.get(), backdropRootIsOpaque());
-#else
     animationStack->initEffectsFromMainThread(layer.get());
-#endif
 
     host.animationsWereAddedToNode(*this);
 }
