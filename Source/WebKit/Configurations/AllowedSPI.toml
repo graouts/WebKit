@@ -290,6 +290,29 @@ selectors = [
 ]
 requires = ["HAVE_WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST"]
 
+[[temporary-usage]]
+request = "rdar://OOPS!"
+cleanup = "rdar://OOPS!"
+selectors = [
+    { name = "rectValue", class = "?" },
+    { name = "valueWithRect:", class = "?" },
+]
+
+[[temporary-usage]]
+request = "rdar://OOPS!"
+cleanup = "rdar://OOPS!"
+classes = [
+    "CAPresentationModifierGroup",
+    "CAPresentationModifier",
+]
+selectors = [
+    { name = "addPresentationModifier:", class = "?" },
+    { name = "flushWithTransaction", class = "?" },
+    { name = "groupWithCapacity:", class = "?" },
+    { name = "removePresentationModifier:", class = "?" },
+    { name = "initWithKeyPath:initialValue:additive:group:", class = "?" },
+]
+
 [[staging]]
 request = "rdar://169648700"
 cleanup = "rdar://169648700"
@@ -606,4 +629,3 @@ symbols = [
     "$s6USDKit8UsdStageCMn",
 ]
 requires = ["ENABLE_GPU_PROCESS_MODEL"]
-

@@ -115,3 +115,13 @@ selectors = [
     { name = "evaluateURL:mainDocumentURL:withCompletion:onCompletionQueue:", class = "WCRBrowserEngineClient" },
 ]
 requires = ["HAVE_WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST"]
+
+[[temporary-usage]]
+request = "rdar://OOPS!"
+cleanup = "rdar://OOPS!"
+classes = [
+    "CAPresentationModifier",
+]
+selectors = [
+    { name = "initWithKeyPath:initialValue:additive:group:", class = "?" },
+]
