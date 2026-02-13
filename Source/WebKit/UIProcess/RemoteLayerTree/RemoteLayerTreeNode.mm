@@ -435,7 +435,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
         RefPtr timeline = host.timeline(timelineID);
         RELEASE_ASSERT(timeline, "Remote layer tree animations should have a pre-registered timeline.");
         if (!m_hasHighImpactMonotonicAnimations && timeline->isMonotonic())
-            m_hasHighImpactMonotonicAnimations = effect->hasHighImpact();
+            m_hasHighImpactMonotonicAnimations = effect->hasHighImpact(baseValues);
         return RemoteAnimation::create(Ref { effect }.get(), *timeline);
     }), baseValues.clone(), layer.get().bounds);
     m_animationStack = animationStack.copyRef();

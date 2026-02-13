@@ -592,12 +592,55 @@ bool AcceleratedEffect::animatesTransformRelatedProperty() const
     return m_animatedProperties.containsAny(transformRelatedAcceleratedProperties);
 }
 
-bool AcceleratedEffect::hasHighImpact() const
+bool AcceleratedEffect::hasHighImpact(const AcceleratedEffectValues& baseValues) const
 {
-    // FIXME: This is just an initial implementation. A logical next step would be to
-    // compute the distance traveled over time and only mark effects with distance traveled
-    // over a certain threshold (over 60px, 90px, 120px per second?) as high impact.
-    return animatesTransformRelatedProperty();
+    if (!animatesTransformRelatedProperty())
+        return false;
+
+    auto isKeyframeIntervalHighImpact = [](Seconds intervalDuration, const AcceleratedEffectValues& from, const AcceleratedEffectValues& to) {
+        UNUSED_PARAM(intervalDuration);
+        UNUSED_PARAM(from);
+        UNUSED_PARAM(to);
+        return false;
+    };
+
+    auto iterationDuration = m_timing.iterationDuration;
+    const Keyframe* previousKeyframe = nullptr;
+
+    for (auto& keyframe : m_keyframes) {
+        if (!keyframe.animatedProperties().containsAny(transformRelatedAcceleratedProperties))
+            continue;
+
+        auto offset = keyframe.offset();
+
+        // Skipping over the 0 keyframe.
+        if (!offset) {
+            previousKeyframe = &keyframe;
+            continue;
+        }
+
+        // First interval with an implicit from keyframe.
+        if (!previousKeyframe) {
+            auto intervalDuration = offset * iterationDuration;
+            if (isKeyframeIntervalHighImpact(intervalDuration, baseValues, keyframe.values()))
+                return true;
+        } else {
+            auto intervalDuration = (offset - previousKeyframe->offset()) * iterationDuration;
+            if (isKeyframeIntervalHighImpact(intervalDuration, previousKeyframe->values(), keyframe.values()))
+                return true;
+        }
+
+        previousKeyframe = &keyframe;
+    }
+
+    // Last interval with an implicit to keyframe.
+    if (previousKeyframe && previousKeyframe->offset() != 1.0) {
+        auto intervalDuration = (1.0 - previousKeyframe->offset()) * iterationDuration;
+        if (isKeyframeIntervalHighImpact(intervalDuration, previousKeyframe->values(), baseValues))
+            return true;
+    }
+
+    return false;
 }
 
 const KeyframeInterpolation::Keyframe& AcceleratedEffect::keyframeAtIndex(size_t index) const
