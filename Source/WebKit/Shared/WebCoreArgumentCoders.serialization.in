@@ -6512,6 +6512,7 @@ struct WebCore::ProgressResolutionData {
     bool isVertical;
     bool isReversed;
     float scrollOffset;
+    float maxScrollOffset;
     float rangeStart;
     float rangeEnd;
 };

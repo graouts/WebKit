@@ -151,31 +151,6 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
         if (!localTime)
             return AnimationEffectPhase::Idle;
 
-        auto atProgressTimelineBoundary = [&]() {
-            // https://drafts.csswg.org/web-animations-2/#at-progress-timeline-boundary
-            // If any of the following conditions are true:
-            // - the associated animation's timeline is not a progress-based timeline, or
-            // - the associated animation's timeline duration is unresolved or zero, or
-            // - the animation’s playback rate is zero
-            // return false
-            if (!data.timelineDuration || data.timelineDuration->isZero())
-                return false;
-            if (!data.playbackRate)
-                return false;
-            // Let effective start time be the animation’s start time if resolved, or zero otherwise.
-            auto effectiveStartTime = data.startTime.value_or(WebAnimationTime::fromPercentage(0));
-            // Set unlimited current time based on the first matching condition:
-            // - start time is resolved: (timeline time - start time) × playback rate
-            // - Otherwise: animation's current time
-            auto unlimitedCurrentTime = (data.startTime && data.timelineTime) ? (*data.timelineTime - *data.startTime) * data.playbackRate : *data.localTime;
-            // Let effective timeline time be unlimited current time / animation’s playback rate + effective start time
-            auto effectiveTimelineTime = unlimitedCurrentTime / data.playbackRate + effectiveStartTime;
-            // Let effective timeline progress be effective timeline time / timeline duration
-            auto effectiveTimelineProgress = effectiveTimelineTime / *data.timelineDuration;
-            // If effective timeline progress is 0 or 1, return true, otherwise false.
-            return !effectiveTimelineProgress || effectiveTimelineProgress == 1;
-        };
-
         auto animationIsBackwards = data.playbackRate < 0;
 
         // https://drafts.csswg.org/web-animations-1/#before-active-boundary-time
@@ -186,7 +161,7 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
         //     1. the local time is less than the before-active boundary time, or
         //     2. the animation direction is "backwards", the endpoint-inclusive active interval flag is false,
         //        and the local time is equal to the before-active boundary time and not at progress timeline boundary.
-        if (localTime->approximatelyLessThan(beforeActiveBoundaryTime) || (animationIsBackwards && data.endpointInclusiveActiveInterval == EndpointInclusiveActiveInterval::No && localTime->approximatelyEqualTo(beforeActiveBoundaryTime) && !atProgressTimelineBoundary()))
+        if (localTime->approximatelyLessThan(beforeActiveBoundaryTime) || (animationIsBackwards && data.endpointInclusiveActiveInterval == EndpointInclusiveActiveInterval::No && localTime->approximatelyEqualTo(beforeActiveBoundaryTime) && !data.atProgressTimelineBoundary))
             return AnimationEffectPhase::Before;
 
         // https://drafts.csswg.org/web-animations-1/#active-after-boundary-time
@@ -197,7 +172,7 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
         //     1. the local time is greater than the active-after boundary time, or
         //     2. the animation direction is "forwards", the endpoint-inclusive active interval flag is false,
         //        and the local time is equal to the active-after boundary time and not at progress timeline boundary.
-        if (localTime->approximatelyGreaterThan(activeAfterBoundaryTime) || (!animationIsBackwards && data.endpointInclusiveActiveInterval == EndpointInclusiveActiveInterval::No && localTime->approximatelyEqualTo(activeAfterBoundaryTime) && !atProgressTimelineBoundary()))
+        if (localTime->approximatelyGreaterThan(activeAfterBoundaryTime) || (!animationIsBackwards && data.endpointInclusiveActiveInterval == EndpointInclusiveActiveInterval::No && localTime->approximatelyEqualTo(activeAfterBoundaryTime) && !data.atProgressTimelineBoundary))
             return AnimationEffectPhase::After;
 
         // An animation effect is in the active phase if the animation effect’s local time is not unresolved and it is not

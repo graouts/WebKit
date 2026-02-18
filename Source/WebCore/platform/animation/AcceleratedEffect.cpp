@@ -421,12 +421,12 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-ResolvedEffectTiming AcceleratedEffect::resolvedTimingForTesting(WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
+ResolvedEffectTiming AcceleratedEffect::resolvedTimingForTesting(WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
-    return resolvedTiming(timelineTime, timelineDuration);
+    return resolvedTiming(timelineTime, atProgressTimelineBoundary);
 }
 
-ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
+ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
     ASSERT_IMPLIES(m_paused, m_holdTime);
     ASSERT_IMPLIES(!m_paused, m_startTime);
@@ -438,8 +438,7 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
     }();
 
     return m_timing.resolve({
-        timelineTime,
-        timelineDuration,
+        atProgressTimelineBoundary == AtProgressTimelineBoundary::Yes,
         m_paused ? *m_holdTime : *m_startTime,
         localTime,
         EndpointInclusiveActiveInterval::No,
@@ -447,9 +446,9 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
     });
 }
 
-void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
+void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
-    auto resolvedTiming = this->resolvedTiming(timelineTime, timelineDuration);
+    auto resolvedTiming = this->resolvedTiming(timelineTime, atProgressTimelineBoundary);
     if (!resolvedTiming.transformedProgress)
         return;
 

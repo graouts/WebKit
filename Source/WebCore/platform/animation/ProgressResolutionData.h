@@ -39,6 +39,7 @@ struct ProgressResolutionData {
     bool isVertical { true };
     bool isReversed { false };
     float scrollOffset { 0 };
+    float maxScrollOffset { 0 };
     float rangeStart { 0 };
     float rangeEnd { 0 };
 };

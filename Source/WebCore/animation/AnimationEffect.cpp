@@ -84,10 +84,9 @@ AnimationEffectTiming::ResolutionData AnimationEffect::resolutionData(UseCachedC
         return { };
 
     RefPtr animation = m_animation.get();
-    RefPtr timeline = animation->timeline();
+    RefPtr timeline = dynamicDowncast<ScrollTimeline>(animation->timeline());
     return {
-        timeline ? timeline->currentTime(useCachedCurrentTime) : std::nullopt,
-        timeline ? timeline->duration() : std::nullopt,
+        timeline ? timeline->isAtBoundary(useCachedCurrentTime) : false,
         animation->startTime(),
         animation->currentTime(useCachedCurrentTime),
         endpointInclusiveActiveInterval,

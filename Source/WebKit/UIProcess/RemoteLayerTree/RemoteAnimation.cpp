@@ -25,6 +25,7 @@
 
 #import "config.h"
 #import "RemoteAnimation.h"
+#import "RemoteProgressBasedTimeline.h"
 
 #if ENABLE(THREADED_ANIMATIONS)
 
@@ -46,9 +47,15 @@ RemoteAnimation::RemoteAnimation(const WebCore::AcceleratedEffect& effect, const
 {
 }
 
+WebCore::AcceleratedEffect::AtProgressTimelineBoundary RemoteAnimation::progressTimelineIsAtBoundary() const
+{
+    RefPtr progressBasedTimeline = dynamicDowncast<RemoteProgressBasedTimeline>(m_timeline);
+    return progressBasedTimeline && progressBasedTimeline->isAtBoundary() ? WebCore::AcceleratedEffect::AtProgressTimelineBoundary::Yes : WebCore::AcceleratedEffect::AtProgressTimelineBoundary::No;
+}
+
 void RemoteAnimation::apply(WebCore::AcceleratedEffectValues& values)
 {
-    m_effect->apply(values, m_timeline->currentTime(), m_timeline->duration());
+    m_effect->apply(values, m_timeline->currentTime(), progressTimelineIsAtBoundary());
 }
 
 Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const
@@ -72,7 +79,7 @@ Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const
         return convertedKeyframes;
     };
 
-    auto resolvedTiming = m_effect->resolvedTimingForTesting(m_timeline->currentTime(), m_timeline->duration());
+    auto resolvedTiming = m_effect->resolvedTimingForTesting(m_timeline->currentTime(), progressTimelineIsAtBoundary());
 
     Ref object = JSON::Object::create();
     object->setValue("composite"_s, WebKit::toJSONForTesting(m_effect->compositeOperation()));

@@ -7087,9 +7087,6 @@ webkit.org/b/237552 imported/w3c/web-platform-tests/html/browsers/history/the-lo
 webkit.org/b/283702 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/constructor-no-document.html [ Skip ]
 webkit.org/b/283107 imported/w3c/web-platform-tests/scroll-animations/scroll-timelines/updating-the-finished-state.html [ Skip ]
 
-# webkit.org/b/263872 [scroll-animations] some WPT tests are ImageOnlyFailure
-imported/w3c/web-platform-tests/scroll-animations/view-timelines/range-boundary.html [ ImageOnlyFailure ]
-
 # webkit.org/b/281482 [scroll-animations] some WPT reftests can't find their reference
 imported/w3c/web-platform-tests/scroll-animations/css/printing/animation-timeline-none-with-progress-print.tentative.html [ Skip ]
 imported/w3c/web-platform-tests/scroll-animations/css/printing/scroll-timeline-default-iframe-print.html [ Skip ]

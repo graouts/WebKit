@@ -395,6 +395,14 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(UseCachedCurrentTime
     return WebAnimationTime::fromPercentage(progress * 100);
 }
 
+bool ScrollTimeline::isAtBoundary(UseCachedCurrentTime useCachedCurrentTime) const
+{
+    auto currentTimeData = useCachedCurrentTime == UseCachedCurrentTime::Yes ? m_cachedCurrentTimeData : computeCurrentTimeData();
+    if (!currentTimeData.maxScrollOffset)
+        return false;
+    return !currentTimeData.scrollOffset || currentTimeData.scrollOffset == currentTimeData.maxScrollOffset;
+}
+
 void ScrollTimeline::animationTimingDidChange(WebAnimation& animation)
 {
     AnimationTimeline::animationTimingDidChange(animation);
@@ -454,6 +462,7 @@ ProgressResolutionData ScrollTimeline::computeProgressResolutionData() const
         .isVertical = direction.isVertical,
         .isReversed = direction.isReversed,
         .scrollOffset = data.scrollOffset,
+        .maxScrollOffset = m_cachedCurrentTimeData.maxScrollOffset,
         .rangeStart = data.rangeStart,
         .rangeEnd = data.rangeEnd
     };

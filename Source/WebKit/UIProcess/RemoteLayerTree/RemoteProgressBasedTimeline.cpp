@@ -74,6 +74,11 @@ void RemoteProgressBasedTimeline::updateCurrentTime()
     m_currentTime = WebCore::WebAnimationTime::fromPercentage(progress * 100);
 }
 
+bool RemoteProgressBasedTimeline::isAtBoundary() const
+{
+    return !m_resolutionData.scrollOffset || m_resolutionData.scrollOffset == m_resolutionData.maxScrollOffset;
+}
+
 } // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATIONS)

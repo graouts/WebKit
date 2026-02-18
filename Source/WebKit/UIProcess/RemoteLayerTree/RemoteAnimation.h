@@ -53,6 +53,8 @@ public:
 private:
     RemoteAnimation(const WebCore::AcceleratedEffect&, const RemoteAnimationTimeline&);
 
+    WebCore::AcceleratedEffect::AtProgressTimelineBoundary progressTimelineIsAtBoundary() const;
+
     const Ref<const WebCore::AcceleratedEffect> m_effect;
     const Ref<const RemoteAnimationTimeline> m_timeline;
 };

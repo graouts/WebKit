@@ -315,6 +315,10 @@ void ViewTimeline::cacheCurrentTime()
         auto scrollDirection = resolvedScrollDirection();
         float scrollOffset = scrollDirection.isVertical ? sourceScrollableArea->scrollOffset().y() : sourceScrollableArea->scrollOffset().x();
         float maxScrollOffset = scrollDirection.isVertical ? sourceScrollableArea->maximumScrollOffset().y() : sourceScrollableArea->maximumScrollOffset().x();
+        // Chrome appears to clip the current time of a scroll timeline in the [0-100] range.
+        // We match this behavior for compatibility reasons, see https://github.com/w3c/csswg-drafts/issues/11033.
+        if (maxScrollOffset > 0)
+            scrollOffset = std::clamp(scrollOffset, 0.f, maxScrollOffset);
         float scrollContainerSize = scrollDirection.isVertical ? sourceScrollableArea->visibleHeight() : sourceScrollableArea->visibleWidth();
 
         // https://drafts.csswg.org/scroll-animations-1/#view-timelines-ranges
@@ -419,6 +423,13 @@ void ViewTimeline::cacheCurrentTime()
 
     if (metricsChanged)
         sourceMetricsDidChange();
+}
+
+bool ViewTimeline::isAtBoundary(UseCachedCurrentTime) const
+{
+    if (!m_cachedCurrentTimeData.maxScrollOffset)
+        return false;
+    return !m_cachedCurrentTimeData.scrollOffset || m_cachedCurrentTimeData.scrollOffset == m_cachedCurrentTimeData.maxScrollOffset;
 }
 
 WebAnimationTime ViewTimeline::epsilon() const

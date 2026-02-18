@@ -94,6 +94,7 @@ public:
     RefPtr<Element> source() const override;
     Style::SingleAnimationRange defaultRange() const final;
 
+    bool isAtBoundary(UseCachedCurrentTime = UseCachedCurrentTime::Yes) const final;
     std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const Style::SingleAnimationRange&) const final;
     std::pair<double, double> offsetIntervalForAttachmentRange(const Style::SingleAnimationRange&) const;
     std::pair<double, double> offsetIntervalForTimelineRangeName(Style::SingleAnimationRangeName) const;

@@ -50,6 +50,7 @@ public:
     void setResolutionData(const WebCore::ScrollingTreeScrollingNode*, WebCore::ProgressResolutionData);
 
     void updateCurrentTime(const WebCore::ScrollingTreeScrollingNode&);
+    bool isAtBoundary() const;
 
 private:
     RemoteProgressBasedTimeline(TimelineID, const WebCore::ProgressResolutionData&);
