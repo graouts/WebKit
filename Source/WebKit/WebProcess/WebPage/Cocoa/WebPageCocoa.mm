@@ -2079,41 +2079,8 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
     Ref page = *corePage();
 
 #if ENABLE(THREADED_ANIMATIONS)
-    if (auto* acceleratedTimelinesUpdater = page->acceleratedTimelinesUpdater()) {
-        auto timelinesUpdate = acceleratedTimelinesUpdater->takeTimelinesUpdate();
-
-        using TimelineIdentifiers = Vector<TimelineIdentifier>;
-        auto stringFromIdentifiers = [](const TimelineIdentifiers& timelineIdentifiers) {
-            TextStream ts;
-            bool first = true;
-            for (auto timelineIdentifier : timelineIdentifiers) {
-                if (!first)
-                    ts << ", ";
-                ts << timelineIdentifier.loggingString();
-            }
-            return ts.release();
-        };
-
-        if (!timelinesUpdate.created.isEmpty()) {
-            TimelineIdentifiers createdIdentifiers;
-            for (auto& timeline : timelinesUpdate.created)
-                createdIdentifiers.append(timeline->identifier());
-            WTFLogAlways("[GRAOUTS] Timelines update for page %p created %s", page.ptr(), stringFromIdentifiers(createdIdentifiers).ascii().data());
-        }
-        if (!timelinesUpdate.modified.isEmpty()) {
-            TimelineIdentifiers modifiedIdentifiers;
-            for (auto& timeline : timelinesUpdate.modified)
-                modifiedIdentifiers.append(timeline->identifier());
-            WTFLogAlways("[GRAOUTS] Timelines update for page %p modified %s", page.ptr(), stringFromIdentifiers(modifiedIdentifiers).ascii().data());
-        }
-        if (!timelinesUpdate.destroyed.isEmpty()) {
-            TimelineIdentifiers destroyedIdentifiers;
-            for (auto& timelineIdentifier : timelinesUpdate.destroyed)
-                destroyedIdentifiers.append(timelineIdentifier);
-            WTFLogAlways("[GRAOUTS] Timelines update for page %p destroyed %s", page.ptr(), stringFromIdentifiers(destroyedIdentifiers).ascii().data());
-        }
-        layerTransaction.setTimelinesUpdate(WTF::move(timelinesUpdate));
-    }
+    if (auto* acceleratedTimelinesUpdater = page->acceleratedTimelinesUpdater())
+        layerTransaction.setTimelinesUpdate(acceleratedTimelinesUpdater->takeTimelinesUpdate());
 #endif
 
     layerTransaction.setContentsSize(frameView->contentsSize());

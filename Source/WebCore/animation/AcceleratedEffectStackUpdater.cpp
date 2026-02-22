@@ -51,6 +51,13 @@ void AcceleratedEffectStackUpdater::update()
 
     RefPtr<Page> page;
     HashSet<Ref<AcceleratedTimeline>> timelinesInUpdate;
+    // We keep a list of all the accelerated effect stacks that will change
+    // during this update so that the AcceleratedTimeline that were referenced
+    // from effects contained in those stacks are kept alive for the duration
+    // of this function. Once this function is done, timelines are not sure by
+    // any remaining effect on any accelerated stack will be released and this
+    // will be picked up in `AcceleratedTimelinesUpdater::takeTimelinesUpdate()`
+    // to work out a list of destroyed accelerated timelines.
     Vector<RefPtr<const AcceleratedEffectStack>> previousEffectStacks;
 
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });

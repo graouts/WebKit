@@ -44,10 +44,6 @@ void RemoteMonotonicTimelineRegistry::update(WebCore::ProcessIdentifier processI
         ASSERT(!changedTimelineRepresentation->isMonotonic());
 #endif
 
-    using TimelineIDs = Vector<TimelineID>;
-    TimelineIDs createdTimelineIDs;
-    TimelineIDs destroyedTimelineIDs;
-
     auto addCreatedTimelines = [&] {
         if (timelinesUpdate.created.isEmpty())
             return;
@@ -68,7 +64,6 @@ void RemoteMonotonicTimelineRegistry::update(WebCore::ProcessIdentifier processI
             }());
             ASSERT(createdTimelineRepresentation->originTime());
             timelines.add(RemoteMonotonicTimeline::create(timelineID, *createdTimelineRepresentation->originTime(), now));
-            createdTimelineIDs.append(timelineID);
         }
         if (timelines.isEmpty())
             m_timelines.remove(processIdentifier);
@@ -83,11 +78,9 @@ void RemoteMonotonicTimelineRegistry::update(WebCore::ProcessIdentifier processI
         auto& existingTimelines = iterator->value;
         for (auto& destroyedTimelineIdentifier : timelinesUpdate.destroyed) {
             TimelineID destroyedTimelineID { destroyedTimelineIdentifier, processIdentifier };
-            auto removed = existingTimelines.removeIf([destroyedTimelineID](auto& existingTimeline) {
+            existingTimelines.removeIf([destroyedTimelineID](auto& existingTimeline) {
                 return existingTimeline->identifier() == destroyedTimelineID;
             });
-            if (removed)
-                destroyedTimelineIDs.append(destroyedTimelineID);
         }
         if (existingTimelines.isEmpty())
             m_timelines.remove(processIdentifier);
@@ -95,32 +88,6 @@ void RemoteMonotonicTimelineRegistry::update(WebCore::ProcessIdentifier processI
 
     addCreatedTimelines();
     removeDestroyedTimelines();
-
-    auto stringFromIdentifiers = [](const TimelineIDs& timelineIDs) {
-        TextStream ts;
-        bool first = true;
-        for (auto timelineID : timelineIDs) {
-            if (!first)
-                ts << ", ";
-            ts << timelineID.loggingString();
-        }
-        return ts.release();
-    };
-
-    if (!destroyedTimelineIDs.isEmpty())
-        WTFLogAlways("[GRAOUTS] Destroyed remote monotonic timelines: %s", stringFromIdentifiers(destroyedTimelineIDs).ascii().data());
-    if (!createdTimelineIDs.isEmpty())
-        WTFLogAlways("[GRAOUTS] Created remote monotonic timelines: %s", stringFromIdentifiers(createdTimelineIDs).ascii().data());
-
-    TimelineIDs allRegisteredTimelineIDs;
-    for (auto& timelines : m_timelines.values()) {
-        for (auto& timeline : timelines)
-            allRegisteredTimelineIDs.append(timeline->identifier());
-    }
-    if (allRegisteredTimelineIDs.isEmpty())
-        WTFLogAlways("[GRAOUTS] No remote monotonic timeline found in registry");
-    else
-        WTFLogAlways("[GRAOUTS] Registered remote monotonic timelines after update: %s", stringFromIdentifiers(allRegisteredTimelineIDs).ascii().data());
 }
 
 RemoteMonotonicTimeline* RemoteMonotonicTimelineRegistry::get(const TimelineID& timelineID) const
