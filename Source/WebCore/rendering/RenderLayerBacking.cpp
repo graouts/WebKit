@@ -4517,6 +4517,11 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const GraphicsLayerAn
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
+const AcceleratedEffectStack* RenderLayerBacking::acceleratedEffectStack() const
+{
+    return m_graphicsLayer->acceleratedEffectStack();
+}
+
 void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<AcceleratedTimeline>>& timelines)
 {
     auto& renderer = this->renderer();

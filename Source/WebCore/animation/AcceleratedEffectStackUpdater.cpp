@@ -28,6 +28,7 @@
 
 #if ENABLE(THREADED_ANIMATIONS)
 
+#include "AcceleratedEffectStack.h"
 #include "AcceleratedTimeline.h"
 #include "AcceleratedTimelinesUpdater.h"
 #include "DocumentPage.h"
@@ -50,6 +51,7 @@ void AcceleratedEffectStackUpdater::update()
 
     RefPtr<Page> page;
     HashSet<Ref<AcceleratedTimeline>> timelinesInUpdate;
+    Vector<RefPtr<const AcceleratedEffectStack>> previousEffectStacks;
 
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });
     for (auto weakTarget : targetsPendingUpdate) {
@@ -66,7 +68,9 @@ void AcceleratedEffectStackUpdater::update()
 
         CheckedPtr renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
-        renderLayer->backing()->updateAcceleratedEffectsAndBaseValues(timelinesInUpdate);
+        auto* backing = renderLayer->backing();
+        previousEffectStacks.append(protect(backing->acceleratedEffectStack()));
+        backing->updateAcceleratedEffectsAndBaseValues(timelinesInUpdate);
     }
 
     if (page && !timelinesInUpdate.isEmpty())
