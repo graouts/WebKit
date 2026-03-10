@@ -99,7 +99,6 @@ public:
     CALayer *layerWithIDForTesting(WebCore::PlatformLayerIdentifier) const;
 
     bool NODELETE replayDynamicContentScalingDisplayListsIntoBackingStore() const;
-    bool threadedAnimationsEnabled() const;
 
     bool cssUnprefixedBackdropFilterEnabled() const;
 

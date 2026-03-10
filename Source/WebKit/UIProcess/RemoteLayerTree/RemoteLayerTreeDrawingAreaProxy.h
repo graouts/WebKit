@@ -139,6 +139,7 @@ public:
     void viewWillEndLiveResize() final;
 
 #if ENABLE(THREADED_ANIMATIONS)
+    bool threadedAnimationsEnabled() const;
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
     void updateTimelinesRegistration(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime);
