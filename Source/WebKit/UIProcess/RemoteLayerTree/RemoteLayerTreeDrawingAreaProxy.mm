@@ -342,32 +342,6 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTree(IPC::Connection& connectio
         MESSAGE_CHECK_BASE(state.pendingCommits.last().pendingMessage == PendingCommitMessage::CommitLayerTree, connection);
         MESSAGE_CHECK_BASE(state.pendingCommits.last().transactionID == bundle.transactionID, connection);
         MESSAGE_CHECK_BASE(!state.committedLayerTreeTransactionID || bundle.transactionID == state.committedLayerTreeTransactionID->next(), connection);
-
-
-
-#if ENABLE(THREADED_ANIMATIONS)
-        if (threadedAnimationsEnabled()) {
-            for (auto& transaction : bundle.transactions) {
-                CheckedRef layerTreeTransaction = transaction.first;
-                // auto& timelinesUpdate = layerTreeTransaction->timelinesUpdate();
-
-                auto isValidTimelineID = [&](TimelineID timelineID) {
-                    // FIXME: check timelinesUpdate as well.
-                    // struct AcceleratedTimelinesUpdate {
-                    //     HashSet<Ref<AcceleratedTimeline>> created;
-                    //     HashSet<Ref<AcceleratedTimeline>> modified;
-                    //     HashSet<TimelineIdentifier> destroyed;
-                    // };
-                    return m_remoteLayerTreeHost->timeline(timelineID);
-                };
-
-                for (auto& [layerID, layerProperties] : layerTreeTransaction->changedLayerProperties()) {
-                    for (auto& effect : layerProperties->animationChanges.effects)
-                        MESSAGE_CHECK_BASE(isValidTimelineID({ effect->timelineIdentifier(), layerID.processIdentifier() }), connection);
-                }
-            }
-        }
-#endif
     }
 
     if (bundle.mainFrameData)
@@ -513,6 +487,26 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
         };
 
         scrollingCoordinatorProxy->willCommitLayerAndScrollingTrees();
+
+#if ENABLE(THREADED_ANIMATIONS)
+        if (threadedAnimationsEnabled()) {
+            auto& timelinesUpdate = layerTreeTransaction.timelinesUpdate();
+
+            auto isValidTimelineID = [&](TimelineID timelineID) {
+                for (auto& createdTimeline : timelinesUpdate.created) {
+                    if (createdTimeline->identifier() == timelineID.object())
+                        return true;
+                }
+                return !!timeline(timelineID);
+            };
+
+            for (auto& [layerID, layerProperties] : layerTreeTransaction.changedLayerProperties()) {
+                for (auto& effect : layerProperties->animationChanges.effects)
+                    MESSAGE_CHECK_BASE(isValidTimelineID({ effect->timelineIdentifier(), layerID.processIdentifier() }), connection);
+            }
+        }
+#endif
+
         commitLayerAndScrollingTrees();
         scrollingCoordinatorProxy->didCommitLayerAndScrollingTrees();
 
