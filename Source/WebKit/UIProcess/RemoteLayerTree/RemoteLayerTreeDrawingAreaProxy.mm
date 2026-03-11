@@ -503,7 +503,7 @@ void RemoteLayerTreeDrawingAreaProxy::commitLayerTreeTransaction(IPC::Connection
 
             for (auto& [layerID, layerProperties] : layerTreeTransaction.changedLayerProperties()) {
                 for (auto& effect : layerProperties->animationChanges.effects)
-                    MESSAGE_CHECK_BASE(isValidTimelineID({ effect->timelineIdentifier(), layerID.processIdentifier() }), connection);
+                    MESSAGE_CHECK_WITH_MESSAGE_BASE(isValidTimelineID({ effect->timelineIdentifier(), layerID.processIdentifier() }), connection, "Animation effects in a layer tree transaction must have a matching timeline.");
             }
         }
 #endif
