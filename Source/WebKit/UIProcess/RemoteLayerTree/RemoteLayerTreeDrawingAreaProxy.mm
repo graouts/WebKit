@@ -320,6 +320,7 @@ void RemoteLayerTreeDrawingAreaProxy::notifyFlushingLayerTree(IPC::Connection& c
     ProcessState& state = processStateForConnection(connection);
     LOG_WITH_STREAM(RemoteLayerTree, stream << "RemoteLayerTreeDrawingAreaProxy::notifyFlushingLayerTree " << transactionID << " old state: " << state.pendingCommits);
 
+    MESSAGE_CHECK_BASE(!state.pendingCommits.isEmpty(), connection);
     MESSAGE_CHECK_BASE(state.pendingCommits[0].pendingMessage == PendingCommitMessage::NotifyFlushingLayerTree && state.pendingCommits[0].transactionID == transactionID, connection);
     state.pendingCommits[0].pendingMessage = PendingCommitMessage::CommitLayerTree;
 
