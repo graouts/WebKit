@@ -77,6 +77,12 @@ AcceleratedTimelinesUpdate AcceleratedTimelinesUpdater::takeTimelinesUpdate()
     return std::exchange(m_timelinesUpdate, { });
 }
 
+bool AcceleratedTimelinesUpdater::hasTimelineForIdentifier(const TimelineIdentifier& timelineIdentifier) const
+{
+    auto iterator = m_timelines.find(timelineIdentifier);
+    return iterator != m_timelines.end() && !!iterator->value;
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(THREADED_ANIMATIONS)

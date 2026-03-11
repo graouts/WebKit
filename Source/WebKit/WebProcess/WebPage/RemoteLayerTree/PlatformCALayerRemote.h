@@ -105,6 +105,9 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     void clearAcceleratedEffectsAndBaseValues() override;
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&) override;
+#ifndef NDEBUG
+    const WebCore::AcceleratedEffects& acceleratedEffects() const { return m_properties.animationChanges.effects; }
+#endif
 #endif
 
     void setMaskLayer(RefPtr<WebCore::PlatformCALayer>&&) override;

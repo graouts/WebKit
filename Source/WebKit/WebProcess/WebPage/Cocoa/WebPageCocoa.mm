@@ -167,6 +167,9 @@
 
 #if ENABLE(THREADED_ANIMATIONS)
 #import <WebCore/AcceleratedEffectStackUpdater.h>
+#ifndef NDEBUG
+#import "PlatformCALayerRemote.h"
+#endif
 #endif
 
 #if HAVE(PDFKIT)
@@ -2231,8 +2234,15 @@ void WebPage::willCommitLayerTree(RemoteLayerTreeTransaction& layerTransaction, 
     Ref page = *corePage();
 
 #if ENABLE(THREADED_ANIMATIONS)
-    if (auto* acceleratedTimelinesUpdater = page->acceleratedTimelinesUpdater())
+    if (auto* acceleratedTimelinesUpdater = page->acceleratedTimelinesUpdater()) {
         layerTransaction.setTimelinesUpdate(acceleratedTimelinesUpdater->takeTimelinesUpdate());
+#ifndef NDEBUG
+        for (Ref layer : layerTransaction.changedLayers()) {
+            for (Ref effect : layer->acceleratedEffects())
+                ASSERT(acceleratedTimelinesUpdater->hasTimelineForIdentifier(effect->timelineIdentifier()));
+        }
+#endif
+    }
 #endif
 
     layerTransaction.setContentsSize(frameView->contentsSize());

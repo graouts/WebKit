@@ -45,6 +45,10 @@ public:
     void processTimelinesSeenDuringEffectStacksUpdate(HashSet<Ref<AcceleratedTimeline>>&&);
     WEBCORE_EXPORT AcceleratedTimelinesUpdate takeTimelinesUpdate();
 
+#ifndef NDEBUG
+    WEBCORE_EXPORT bool hasTimelineForIdentifier(const TimelineIdentifier&) const;
+#endif
+
 private:
     HashSet<Ref<ScrollTimeline>> m_scrollTimelinesPendingUpdate;
     HashMap<TimelineIdentifier, WeakPtr<AcceleratedTimeline>> m_timelines;
