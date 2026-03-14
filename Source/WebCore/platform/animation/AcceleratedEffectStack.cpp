@@ -73,6 +73,7 @@ void AcceleratedEffectStack::setEffects(AcceleratedEffects&& effects)
         // Otherwise, this means we have effects targeting both the primary and backdrop
         // layers, so we must split the effect in two: one for backdrop-filter, and one
         // for all other properties.
+        // FIXME: this is where we must do something wrong!!!
         OptionSet<AcceleratedEffectProperty> primaryProperties = animatedProperties - AcceleratedEffectProperty::BackdropFilter;
         m_primaryLayerEffects.append(effect->copyWithProperties(primaryProperties));
         OptionSet<AcceleratedEffectProperty> backdropProperties = { AcceleratedEffectProperty::BackdropFilter };

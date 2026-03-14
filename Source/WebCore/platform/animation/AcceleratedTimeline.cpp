@@ -53,18 +53,26 @@ AcceleratedTimeline::AcceleratedTimeline(const TimelineIdentifier& identifier, S
     : m_identifier(identifier)
     , m_data(originTime)
 {
+    WTFLogAlways("[GRAOUTS] Creating accelerated monotonic timeline %p with identifier %s", this, m_identifier.loggingString().ascii().data());
 }
 
 AcceleratedTimeline::AcceleratedTimeline(const TimelineIdentifier& identifier, ProgressResolutionData progressResolutionData)
     : m_identifier(identifier)
     , m_data(progressResolutionData)
 {
+    WTFLogAlways("[GRAOUTS] Creating accelerated progress timeline %p with identifier %s", this, m_identifier.loggingString().ascii().data());
 }
 
 AcceleratedTimeline::AcceleratedTimeline(TimelineIdentifier&& identifier, Data&& data)
     : m_identifier(WTF::move(identifier))
     , m_data(WTF::move(data))
 {
+    WTFLogAlways("[GRAOUTS] Creating accelerated encoding timeline %p with identifier %s", this, m_identifier.loggingString().ascii().data());
+}
+
+AcceleratedTimeline::~AcceleratedTimeline()
+{
+    WTFLogAlways("[GRAOUTS] Destroying accelerated timeline %p with identifier %s", this, m_identifier.loggingString().ascii().data());
 }
 
 std::optional<Seconds> AcceleratedTimeline::originTime() const

@@ -74,6 +74,28 @@ AcceleratedTimelinesUpdate AcceleratedTimelinesUpdater::takeTimelinesUpdate()
             m_timelinesUpdate.destroyed.add(timelineIdentifier);
     }
 
+    auto logIdentifers = [](String title, Vector<TimelineIdentifier> identifiers) {
+        TextStream ts;
+        ts << title << ": ";
+        if (identifiers.isEmpty())
+            ts << "none";
+        else
+            ts << identifiers;
+        WTFLogAlways("[GRAOUTS] %s", ts.release().ascii().data());
+    };
+
+    WTFLogAlways("[GRAOUTS] AcceleratedTimelinesUpdater::takeTimelinesUpdate()");
+
+    logIdentifers("created"_s, copyToVector(m_timelinesUpdate.created).map([](auto& timeline) {
+        return timeline->identifier();
+    }));
+
+    logIdentifers("modified"_s, copyToVector(m_timelinesUpdate.modified).map([](auto& timeline) {
+        return timeline->identifier();
+    }));
+
+    logIdentifers("destroyed"_s, copyToVector(m_timelinesUpdate.destroyed));
+
     return std::exchange(m_timelinesUpdate, { });
 }
 

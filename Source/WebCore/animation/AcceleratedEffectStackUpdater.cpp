@@ -60,6 +60,8 @@ void AcceleratedEffectStackUpdater::update()
     // to work out a list of destroyed accelerated timelines.
     Vector<RefPtr<const AcceleratedEffectStack>> previousEffectStacks;
 
+    WTFLogAlways("[GRAOUTS] [%p] AcceleratedEffectStackUpdater::update()", this);
+
     auto targetsPendingUpdate = std::exchange(m_targetsPendingUpdate, { });
     for (auto weakTarget : targetsPendingUpdate) {
         auto target = weakTarget.styleable();
@@ -76,7 +78,20 @@ void AcceleratedEffectStackUpdater::update()
         CheckedPtr renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
         auto* backing = renderLayer->backing();
-        previousEffectStacks.append(protect(backing->acceleratedEffectStack()));
+
+        RefPtr previousEffects = backing->acceleratedEffectStack();
+        if (previousEffects && !previousEffects->primaryLayerEffects().isEmpty()) {
+            TextStream ts;
+            ts << previousEffects->primaryLayerEffects().map([&](auto& effect) { return effect->timelineIdentifier(); });
+            WTFLogAlways("[GRAOUTS] Previous primary layer effects use timelines: %s", ts.release().ascii().data());
+        }
+        if (previousEffects && !previousEffects->backdropLayerEffects().isEmpty()) {
+            TextStream ts;
+            ts << previousEffects->backdropLayerEffects().map([&](auto& effect) { return effect->timelineIdentifier(); });
+            WTFLogAlways("[GRAOUTS] Previous backdrop layer effects use timelines: %s", ts.release().ascii().data());
+        }
+
+        previousEffectStacks.append(previousEffects);
         backing->updateAcceleratedEffectsAndBaseValues(timelinesInUpdate);
     }
 

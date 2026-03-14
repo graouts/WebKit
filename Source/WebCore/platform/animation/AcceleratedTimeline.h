@@ -58,7 +58,7 @@ public:
     const TimelineIdentifier& identifier() const LIFETIME_BOUND { return m_identifier; }
     const Data& data() const LIFETIME_BOUND { return m_data; }
 
-    virtual ~AcceleratedTimeline() = default;
+    virtual ~AcceleratedTimeline();
 
 private:
     AcceleratedTimeline(const TimelineIdentifier&, Seconds originTime);
