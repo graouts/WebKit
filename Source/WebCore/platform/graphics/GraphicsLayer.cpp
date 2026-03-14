@@ -850,7 +850,6 @@ int GraphicsLayer::validateFilterOperations(const GraphicsLayerKeyframeValueList
 void GraphicsLayer::setAcceleratedEffectsAndBaseValues(AcceleratedEffects&& effects, AcceleratedEffectValues&& baseValues)
 {
     if (effects.isEmpty()) {
-        WTFLogAlways("[GRAOUTS] removing effect stack from graphics layer");
         m_effectStack = nullptr;
         return;
     }

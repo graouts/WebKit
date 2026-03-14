@@ -444,9 +444,6 @@ void GraphicsLayerCA::initialize(Type layerType)
 
 GraphicsLayerCA::~GraphicsLayerCA()
 {
-    if (acceleratedEffectStack())
-        WTFLogAlways("[GRAOUTS] Destroying GraphicsLayerCA with animated effects");
-
     if (isTrackingDisplayListReplay()) [[unlikely]]
         layerDisplayListMap().remove(this);
 

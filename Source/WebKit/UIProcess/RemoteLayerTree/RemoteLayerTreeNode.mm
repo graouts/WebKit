@@ -430,10 +430,6 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     if (effects.isEmpty())
         return;
 
-    TextStream ts;
-    ts << effects.map([&](auto& effect) { return effect->timelineIdentifier(); });
-    WTFLogAlways("[GRAOUTS] RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues() with timelines: %s", ts.release().ascii().data());
-
     Ref animationStack = RemoteAnimationStack::create(effects.map([&](const Ref<WebCore::AcceleratedEffect>& effect) {
         TimelineID timelineID { effect->timelineIdentifier(), m_layerID.processIdentifier() };
         RefPtr timeline = host.timeline(timelineID);

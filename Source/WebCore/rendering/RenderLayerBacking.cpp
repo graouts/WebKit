@@ -4646,18 +4646,6 @@ void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
 
     m_graphicsLayer->setAcceleratedEffectsAndBaseValues(WTF::move(acceleratedEffects), WTF::move(baseValues));
 
-    RefPtr newEffects = m_graphicsLayer->acceleratedEffectStack();
-    if (newEffects && !newEffects->primaryLayerEffects().isEmpty()) {
-        TextStream ts;
-        ts << newEffects->primaryLayerEffects().map([&](auto& effect) { return effect->timelineIdentifier(); });
-        WTFLogAlways("[GRAOUTS] New primary layer effects use timelines: %s", ts.release().ascii().data());
-    }
-    if (newEffects && !newEffects->backdropLayerEffects().isEmpty()) {
-        TextStream ts;
-        ts << newEffects->backdropLayerEffects().map([&](auto& effect) { return effect->timelineIdentifier(); });
-        WTFLogAlways("[GRAOUTS] New backdrop layer effects use timelines: %s", ts.release().ascii().data());
-    }
-
     m_owningLayer.setNeedsPostLayoutCompositingUpdate();
     m_owningLayer.setNeedsCompositingGeometryUpdate();
 }
