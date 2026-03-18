@@ -395,6 +395,11 @@ std::optional<WebAnimationTime> ScrollTimeline::currentTime(UseCachedCurrentTime
     return WebAnimationTime::fromPercentage(progress * 100);
 }
 
+std::optional<WebAnimationTime> ScrollTimeline::unlimitedCurrentTime(UseCachedCurrentTime useCachedCurrentTime)
+{
+    return currentTime(useCachedCurrentTime);
+}
+
 bool ScrollTimeline::isAtBoundary(UseCachedCurrentTime useCachedCurrentTime) const
 {
     auto currentTimeData = useCachedCurrentTime == UseCachedCurrentTime::Yes ? m_cachedCurrentTimeData : computeCurrentTimeData();

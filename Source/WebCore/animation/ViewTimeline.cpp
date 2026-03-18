@@ -425,6 +425,14 @@ void ViewTimeline::cacheCurrentTime()
         sourceMetricsDidChange();
 }
 
+std::optional<WebAnimationTime> ViewTimeline::unlimitedCurrentTime(UseCachedCurrentTime)
+{
+    if (!m_cachedCurrentTimeData.maxScrollOffset)
+        return std::nullopt;
+    auto progress = m_cachedCurrentTimeData.scrollOffset / m_cachedCurrentTimeData.maxScrollOffset;
+    return WebAnimationTime::fromPercentage(progress * 100);
+}
+
 bool ViewTimeline::isAtBoundary(UseCachedCurrentTime) const
 {
     if (!m_cachedCurrentTimeData.maxScrollOffset)

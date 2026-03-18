@@ -78,6 +78,7 @@ public:
     void setTimelineScopeElement(const Element&);
     void clearTimelineScopeDeclaredElement() { m_timelineScopeElement = nullptr; }
 
+    virtual std::optional<WebAnimationTime> unlimitedCurrentTime(UseCachedCurrentTime = UseCachedCurrentTime::Yes);
     virtual bool isAtBoundary(UseCachedCurrentTime = UseCachedCurrentTime::Yes) const;
     virtual std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const Style::SingleAnimationRange&) const;
 
