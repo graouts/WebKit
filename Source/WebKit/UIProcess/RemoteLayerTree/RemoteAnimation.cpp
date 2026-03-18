@@ -55,7 +55,7 @@ WebCore::AcceleratedEffect::AtProgressTimelineBoundary RemoteAnimation::progress
 
 void RemoteAnimation::apply(WebCore::AcceleratedEffectValues& values)
 {
-    m_effect->apply(values, m_timeline->currentTime(), progressTimelineIsAtBoundary());
+    m_effect->apply(values, m_timeline->currentTime(), m_timeline->duration(), progressTimelineIsAtBoundary());
 }
 
 Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const
@@ -79,7 +79,7 @@ Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const
         return convertedKeyframes;
     };
 
-    auto resolvedTiming = m_effect->resolvedTimingForTesting(m_timeline->currentTime(), progressTimelineIsAtBoundary());
+    auto resolvedTiming = m_effect->resolvedTimingForTesting(m_timeline->currentTime(), m_timeline->duration(), progressTimelineIsAtBoundary());
 
     Ref object = JSON::Object::create();
     object->setValue("composite"_s, WebKit::toJSONForTesting(m_effect->compositeOperation()));

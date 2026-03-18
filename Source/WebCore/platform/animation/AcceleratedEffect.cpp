@@ -421,12 +421,12 @@ static void blend(AcceleratedEffectProperty property, AcceleratedEffectValues& o
     }
 }
 
-ResolvedEffectTiming AcceleratedEffect::resolvedTimingForTesting(WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
+ResolvedEffectTiming AcceleratedEffect::resolvedTimingForTesting(WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
-    return resolvedTiming(timelineTime, atProgressTimelineBoundary);
+    return resolvedTiming(timelineTime, timelineDuration, atProgressTimelineBoundary);
 }
 
-ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
+ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
     ASSERT_IMPLIES(m_paused, m_holdTime);
     ASSERT_IMPLIES(!m_paused, m_startTime);
@@ -439,6 +439,8 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
 
     return m_timing.resolve({
         atProgressTimelineBoundary == AtProgressTimelineBoundary::Yes,
+        timelineTime,
+        timelineDuration,
         m_paused ? *m_holdTime : *m_startTime,
         localTime,
         EndpointInclusiveActiveInterval::No,
@@ -446,9 +448,9 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
     });
 }
 
-void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, AtProgressTimelineBoundary atProgressTimelineBoundary) const
+void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration, AtProgressTimelineBoundary atProgressTimelineBoundary) const
 {
-    auto resolvedTiming = this->resolvedTiming(timelineTime, atProgressTimelineBoundary);
+    auto resolvedTiming = this->resolvedTiming(timelineTime, timelineDuration, atProgressTimelineBoundary);
     if (!resolvedTiming.transformedProgress)
         return;
 

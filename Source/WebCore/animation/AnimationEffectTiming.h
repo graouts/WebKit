@@ -63,7 +63,9 @@ struct AnimationEffectTiming {
     std::optional<Seconds> specifiedIterationDuration;
 
     struct ResolutionData {
-        bool atProgressTimelineBoundary;
+        bool timelineIsAtBoundary;
+        std::optional<WebAnimationTime> timelineTime;
+        std::optional<WebAnimationTime> timelineDuration;
         std::optional<WebAnimationTime> startTime;
         std::optional<WebAnimationTime> localTime;
         EndpointInclusiveActiveInterval endpointInclusiveActiveInterval { EndpointInclusiveActiveInterval::No };

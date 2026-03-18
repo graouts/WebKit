@@ -18,12 +18,17 @@
   }
 
   .scroller {
-    display:  inline-block;
+    display:  none;
     border: 2px solid black;
     height:  100px;
     width:  100px;
-    overflow: hidden;
+    overflow: scroll;
   }
+
+  #scroller-1 {
+      display: inline-block;
+  }
+
   .spacer {
     height: 300px;
     margin:  0;
@@ -36,6 +41,17 @@
     animation:  transform auto, background auto;
     animation-timeline: view(), view();
     animation-range: entry 0% entry 100%, contain 0% contain 100%;
+  }
+
+  .box {
+      animation:  transform auto;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+  }
+
+  .box:not(:last-of-type) {
+      animation: none;
+      visibility: hidden;
   }
 </style>
 <body>
@@ -140,14 +156,19 @@
     });
     // Playing forward
     scrollTo('scroller-1', 1);
-    scrollTo('scroller-2', 0);
-    scrollTo('scroller-3', 0.5);
-    // Playing reverse
-    scrollTo('scroller-4', 1);
-    scrollTo('scroller-5', 0);
-    scrollTo('scroller-6', 0.5);
+    // scrollTo('scroller-2', 0);
+    // scrollTo('scroller-3', 0.5);
+    // // Playing reverse
+    // scrollTo('scroller-4', 1);
+    // scrollTo('scroller-5', 0);
+    // scrollTo('scroller-6', 0.5);
     await waitForNextFrame();
     takeScreenshot();
+
+    document.getAnimations().forEach(animation => {
+        console.log(animation.startTime);
+        console.log(animation.effect.getComputedTiming());
+    });
   };
 </script>
 </html>
