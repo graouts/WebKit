@@ -152,6 +152,8 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             return AnimationEffectPhase::Idle;
 
         auto atProgressTimelineBoundary = [&]() {
+            if (!data.timelineIsAtBoundary)
+                return false;
             // https://drafts.csswg.org/web-animations-2/#at-progress-timeline-boundary
             // If any of the following conditions are true:
             // - the associated animation's timeline is not a progress-based timeline, or

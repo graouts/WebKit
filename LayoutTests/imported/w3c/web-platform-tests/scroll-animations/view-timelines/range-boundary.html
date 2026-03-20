@@ -44,16 +44,16 @@
   }
 
 /*  .box {
-      animation:  transform auto;
+      animation:  background auto;
       animation-timeline: view();
-      animation-range: entry 0% entry 100%;
+      animation-range: contain 0% contain 100%;
   }
 
-  .box:not(:last-of-type) {
+  .box:last-of-type {
       animation: none;
       visibility: hidden;
-  }
-*/</style>
+  }*/
+</style>
 <body>
   <!-- scroll to bottom
        top-box:
@@ -168,6 +168,8 @@
     document.getAnimations().forEach(animation => {
         console.log(animation.startTime);
         console.log(animation.effect.getComputedTiming());
+        console.log(animation.timeline.startOffset);
+        console.log(animation.timeline.endOffset);
     });
   };
 </script>
