@@ -88,6 +88,7 @@ AnimationEffectTiming::ResolutionData AnimationEffect::resolutionData(UseCachedC
     return {
         timeline ? timeline->isAtBoundary(useCachedCurrentTime) : false,
         timeline ? timeline->currentTime(useCachedCurrentTime) : std::nullopt,
+        timeline ? timeline->unlimitedCurrentTime() : std::nullopt,
         timeline ? timeline->duration() : std::nullopt,
         animation->startTime(),
         animation->currentTime(useCachedCurrentTime),

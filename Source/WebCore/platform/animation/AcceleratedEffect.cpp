@@ -440,6 +440,7 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
     return m_timing.resolve({
         atProgressTimelineBoundary == AtProgressTimelineBoundary::Yes,
         timelineTime,
+        timelineTime,
         timelineDuration,
         m_paused ? *m_holdTime : *m_startTime,
         localTime,

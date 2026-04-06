@@ -65,6 +65,7 @@ struct AnimationEffectTiming {
     struct ResolutionData {
         bool timelineIsAtBoundary;
         std::optional<WebAnimationTime> timelineTime;
+        std::optional<WebAnimationTime> unlimitedTimelineTime;
         std::optional<WebAnimationTime> timelineDuration;
         std::optional<WebAnimationTime> startTime;
         std::optional<WebAnimationTime> localTime;

@@ -38,7 +38,7 @@
     height: 50px;
     width: 50px;
     margin: 0;
-    animation:  transform auto, background auto;
+    animation: transform auto, background auto;
     animation-timeline: view(), view();
     animation-range: entry 0% entry 100%, contain 0% contain 100%;
   }
@@ -48,11 +48,9 @@
       animation-timeline: view();
       animation-range: contain 0% contain 100%;
   }
+*/
+  .box:last-of-type { animation: none; }
 
-  .box:last-of-type {
-      animation: none;
-      visibility: hidden;
-  }*/
 </style>
 <body>
   <!-- scroll to bottom
@@ -63,6 +61,11 @@
          transform: 100px (at active-after boundary with inclusive endpoint)
          bg-color: #99f (at active-before boundary with inclusive endpoint)
   -->
+
+  <button onclick="toggleScrollOffset()">Toggle</button>
+  <br>
+  <br>
+
   <div id="scroller-1" class="scroller">
     <div class="spacer"></div>
     <div class="box"></div>
@@ -164,13 +167,21 @@
     // scrollTo('scroller-6', 0.5);
     await waitForNextFrame();
     takeScreenshot();
-
-    document.getAnimations().forEach(animation => {
-        console.log(animation.startTime);
-        console.log(animation.effect.getComputedTiming());
-        console.log(animation.timeline.startOffset);
-        console.log(animation.timeline.endOffset);
-    });
   };
+
+  const toggleScrollOffset = () => {
+      const scroller = document.getElementById("scroller-1");
+      const maxScrollTop = scroller.scrollHeight - 100;
+      const isAtMaxScrollTop = scroller.scrollTop == maxScrollTop;
+      if (isAtMaxScrollTop)
+          scroller.scrollTop = maxScrollTop - 1;
+      else
+          scroller.scrollTop = maxScrollTop;
+
+      document.getAnimations().forEach(animation => {
+          console.log(`animation.startTime = ${animation.startTime}`);
+      });
+  };
+
 </script>
 </html>

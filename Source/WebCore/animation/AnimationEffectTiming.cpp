@@ -152,8 +152,6 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             return AnimationEffectPhase::Idle;
 
         auto atProgressTimelineBoundary = [&]() {
-            if (!data.timelineIsAtBoundary)
-                return false;
             // https://drafts.csswg.org/web-animations-2/#at-progress-timeline-boundary
             // If any of the following conditions are true:
             // - the associated animation's timeline is not a progress-based timeline, or
@@ -175,6 +173,12 @@ BasicEffectTiming AnimationEffectTiming::getBasicTiming(const ResolutionData& da
             // Let effective timeline progress be effective timeline time / timeline duration
             auto effectiveTimelineProgress = effectiveTimelineTime / *data.timelineDuration;
             // If effective timeline progress is 0 or 1, return true, otherwise false.
+
+            TextStream ts;
+            ts << "localTime = " << localTime << ", data.startTime = " << data.startTime << ", data.timelineTime = " << data.timelineTime << ", data.unlimitedTimelineTime = " << data.unlimitedTimelineTime;
+            WTFLogAlways("[GRAOUTS] %p %s", this, ts.release().ascii().data());
+
+
             return !effectiveTimelineProgress || effectiveTimelineProgress == 1;
         };
 
