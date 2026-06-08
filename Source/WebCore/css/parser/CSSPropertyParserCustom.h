@@ -172,6 +172,7 @@ public:
     static bool consumeContainerShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
     static bool consumeContainIntrinsicSizeShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
     static bool consumeAnimationRangeShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
+    static bool consumeTimelineTriggerActivationRangeShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
     static bool consumeScrollTimelineShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
     static bool consumeViewTimelineShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
     static bool consumeLineClampShorthand(CSSParserTokenRange&, PropertyParserState&, const StylePropertyShorthand&, PropertyParserResult&);
@@ -2121,6 +2122,53 @@ inline bool PropertyParserCustom::consumeAnimationRangeShorthand(CSSParserTokenR
 
     result.addPropertyForCurrentShorthand(state, CSSPropertyAnimationRangeStart, CSSValueList::createCommaSeparated(WTF::move(startList)));
     result.addPropertyForCurrentShorthand(state, CSSPropertyAnimationRangeEnd, CSSValueList::createCommaSeparated(WTF::move(endList)));
+    return true;
+}
+
+// FIXME: find a way to refactor this?
+inline bool PropertyParserCustom::consumeTimelineTriggerActivationRangeShorthand(CSSParserTokenRange& range, PropertyParserState& state, const StylePropertyShorthand&, PropertyParserResult& result)
+{
+    CSSValueListBuilder startList;
+    CSSValueListBuilder endList;
+    do {
+        RefPtr start = consumeSingleAnimationRangeStart(range, state);
+        if (!start)
+            return false;
+
+        RefPtr<CSSValue> end;
+        range.consumeWhitespace();
+        if (range.atEnd() || range.peek().type() == CommaToken) {
+            // From the spec: If <'animation-range-end'> is omitted and <'animation-range-start'> includes a component, then
+            // animation-range-end is set to that same and 100%. Otherwise, any omitted longhand is set to its initial value.
+            auto rangeEndValueForStartValue = [](const CSSValue& value) {
+                auto isRangeOffset = [](const CSSPrimitiveValue& value) {
+                    return value.isLength() || value.isPercentage() || value.isCalculatedPercentageWithLength();
+                };
+
+                if (RefPtr primitiveValue = dynamicDowncast<CSSPrimitiveValue>(value); primitiveValue && isRangeOffset(*primitiveValue))
+                    return CSSKeywordValue::create(CSSValueNormal);
+                return CSSKeywordValue::create(valueID(value));
+            };
+
+            if (RefPtr startPair = dynamicDowncast<CSSValuePair>(start))
+                end = rangeEndValueForStartValue(startPair->first());
+            else
+                end = rangeEndValueForStartValue(*start);
+        } else {
+            end = consumeSingleAnimationRangeEnd(range, state);
+            range.consumeWhitespace();
+            if (!end)
+                return false;
+        }
+        startList.append(start.releaseNonNull());
+        endList.append(end.releaseNonNull());
+    } while (consumeCommaIncludingWhitespace(range));
+
+    if (!range.atEnd())
+        return false;
+
+    result.addPropertyForCurrentShorthand(state, CSSPropertyTimelineTriggerActivationRangeStart, CSSValueList::createCommaSeparated(WTF::move(startList)));
+    result.addPropertyForCurrentShorthand(state, CSSPropertyTimelineTriggerActivationRangeEnd, CSSValueList::createCommaSeparated(WTF::move(endList)));
     return true;
 }
 
