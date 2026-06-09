@@ -173,6 +173,7 @@ inline SingleAnimationRangeStart forwardInheritedValue(const SingleAnimationRang
 inline SingleAnimationRangeEnd forwardInheritedValue(const SingleAnimationRangeEnd& value) { auto copy = value; return copy; }
 inline SingleAnimationRange forwardInheritedValue(const SingleAnimationRange& value) { auto copy = value; return copy; }
 inline SingleAnimationTimeline forwardInheritedValue(const SingleAnimationTimeline& value) { auto copy = value; return copy; }
+inline SingleAnimationTrigger forwardInheritedValue(const SingleAnimationTrigger& value) { auto copy = value; return copy; }
 inline SingleTransitionProperty forwardInheritedValue(const SingleTransitionProperty& value) { auto copy = value; return copy; }
 inline StrokeWidth forwardInheritedValue(const StrokeWidth& value) { auto copy = value; return copy; }
 inline TabSize forwardInheritedValue(const TabSize& value) { auto copy = value; return copy; }
