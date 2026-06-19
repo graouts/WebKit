@@ -26,9 +26,11 @@
 #pragma once
 
 #include <WebCore/StyleAnimation.h>
+#include <WebCore/StyleSingleAnimationRange.h>
 #include <WebCore/StyleOriginatedAnimation.h>
 #include <WebCore/Styleable.h>
 #include <WebCore/TimelineRangeValue.h>
+#include <WebCore/ViewTimeline.h>
 #include <wtf/OptionSet.h>
 #include <wtf/Ref.h>
 
@@ -65,6 +67,8 @@ private:
     CSSAnimation(const Styleable&, Style::ScopedName&&, Style::Animation&&, Style::ZoomFactor);
 
     bool isCSSAnimation() const final { return true; }
+    void tick(WebAnimation::ShouldDispatchProgressEvent) final;
+    Seconds timeToNextTick() const final;
 
     void syncPropertiesWithBackingAnimation() final;
     AnimationPlayState backingAnimationPlayState() const final;
@@ -80,6 +84,8 @@ private:
     ExceptionOr<void> bindingsReverse() final;
     ExceptionOr<void> setBindingsRangeStart(Document&, TimelineRangeValue&&) final;
     ExceptionOr<void> setBindingsRangeEnd(Document&, TimelineRangeValue&&) final;
+
+    void updateTriggerTimeline(const Style::ComputedStyle&);
 
     enum class Property : uint16_t {
         Name = 1 << 0,
@@ -97,6 +103,8 @@ private:
         RangeEnd = 1 << 12,
     };
 
+    RefPtr<ViewTimeline> m_triggerTimeline;
+    std::optional<ResolvableTimelineRange> m_triggerTimelineActivationRange;
     Style::ScopedName m_animationName;
     OptionSet<Property> m_overriddenProperties;
     std::optional<AnimationPlayState> m_lastStyleOriginatedPlayState;
