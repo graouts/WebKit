@@ -32,7 +32,11 @@
 #include "InspectorInstrumentation.h"
 #include "KeyframeEffect.h"
 #include "StyleComputedStyle.h"
+#include "StyleComputedStyleBase+GettersInlines.h"
 #include "StyleOriginatedTimelinesController.h"
+#include "StyleSingleAnimationTrigger.h"
+#include "StyleTimelineTrigger.h"
+#include "StyleTimelineTriggers.h"
 #include "ViewTimeline.h"
 #include <wtf/TZoneMallocInlines.h>
 
@@ -48,6 +52,7 @@ Ref<CSSAnimation> CSSAnimation::create(const Styleable& owningElement, Style::An
 
     auto result = adoptRef(*new CSSAnimation(owningElement, WTF::move(*name), WTF::move(backingStyleAnimation)));
     result->initialize(oldStyle, newStyle, resolutionContext);
+    result->updateTriggerTimeline(newStyle);
 
     InspectorInstrumentation::didCreateWebAnimation(result.get());
 
@@ -438,6 +443,68 @@ void CSSAnimation::updateKeyframesIfNeeded(const Style::ComputedStyle* oldStyle,
 Ref<StyleOriginatedAnimationEvent> CSSAnimation::createEvent(const AtomString& eventType, std::optional<Seconds> scheduledTime, double elapsedTime, const std::optional<Style::PseudoElementIdentifier>& pseudoElementIdentifier)
 {
     return CSSAnimationEvent::create(eventType, this, scheduledTime, elapsedTime, pseudoElementIdentifier, m_animationName.name);
+}
+
+void CSSAnimation::updateTriggerTimeline(const Style::ComputedStyle& style)
+{
+    auto& trigger = m_backingStyleAnimation.trigger();
+    if (trigger.isNone())
+        return;
+
+    // FIXME: support mulitple named triggers
+    ASSERT(trigger.size());
+    auto& triggerName = trigger[0].name;
+    // FIXME: use a utility to look the name up accounting for scope.
+    auto& timelineTriggers = style.timelineTriggers();
+    for (auto& timelineTrigger : timelineTriggers.computedValues()) {
+        if (triggerName != timelineTrigger.name().tryValue())
+            continue;
+        WTFLogAlways("[GRAOUTS] Creating trigger timeline named %s", triggerName.value.string().ascii().data());
+        m_triggerTimeline = ViewTimeline::create(triggerName.value, ScrollAxis::Block, CSS::Keyword::Auto { });
+        ASSERT(owningElement());
+        m_triggerTimeline->setSubject(*owningElement());
+        m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd() };
+        return;
+    }
+
+    m_triggerTimeline = nullptr;
+    m_triggerTimelineActivationRange = std::nullopt;
+}
+
+void CSSAnimation::tick()
+{
+    if (m_triggerTimeline && !startTime()) {
+        m_triggerTimeline->documentWillUpdateAnimationsAndSendEvents();
+        auto triggerTimelineTime = m_triggerTimeline->currentTime(UseCachedCurrentTime::No);
+        if (!triggerTimelineTime)
+            WTFLogAlways("[GRAOUTS] Trigger timeline has no current time.");
+        else {
+            ASSERT(m_triggerTimelineActivationRange);
+            auto activationInterval = m_triggerTimeline->intervalForAttachmentRange(*m_triggerTimelineActivationRange);
+            auto activationRangeStart = activationInterval.first;
+            auto activationRangeEnd = activationInterval.second;
+
+            TextStream ts;
+            ts << "[GRAOUTS] Trigger activation range start = " << activationRangeStart << ", Trigger activation range end = " << activationRangeEnd << ", trigger timeline time = " << *triggerTimelineTime << ".";
+            WTFLogAlways("%s", ts.release().ascii().data());
+
+            if (*triggerTimelineTime >= activationRangeStart && *triggerTimelineTime <= activationRangeEnd) {
+                WTFLogAlways("[GRAOUTS] Triggering CSS Animation.");
+                setStartTime(timeline()->currentTime());
+                play();
+            } else
+                WTFLogAlways("[GRAOUTS] Will try to trigger CSS Animation when the scroll offset changes.");
+        }
+    }
+
+    StyleOriginatedAnimation::tick();
+}
+
+Seconds CSSAnimation::timeToNextTick() const
+{
+    if (m_triggerTimeline && !startTime())
+        return 0_s;
+    return StyleOriginatedAnimation::timeToNextTick();
 }
 
 } // namespace WebCore

@@ -160,7 +160,7 @@ public:
 
     bool needsTick() const;
     virtual void tick();
-    WEBCORE_EXPORT Seconds timeToNextTick() const;
+    WEBCORE_EXPORT virtual Seconds timeToNextTick() const;
     OptionSet<AnimationImpact> resolve(Style::ComputedStyle& targetStyle, const Style::ResolutionContext&, EndpointInclusiveActiveInterval = EndpointInclusiveActiveInterval::No);
     void effectTargetDidChange(const std::optional<const Styleable>& previousTarget, const std::optional<const Styleable>& newTarget);
     void acceleratedStateDidChange();
