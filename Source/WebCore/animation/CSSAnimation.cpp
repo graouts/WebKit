@@ -190,7 +190,10 @@ void CSSAnimation::syncPropertiesWithBackingAnimation()
 
 AnimationPlayState CSSAnimation::backingAnimationPlayState() const
 {
-    return m_backingStyleAnimation.playState();
+    auto& trigger = m_backingStyleAnimation.trigger();
+    if (trigger.isNone())
+        return m_backingStyleAnimation.playState();
+    return AnimationPlayState::Paused;
 }
 
 TimingFunction* CSSAnimation::backingAnimationTimingFunction() const
