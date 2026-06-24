@@ -54,8 +54,8 @@ struct Styleable {
     std::optional<Style::PseudoElementIdentifier> pseudoElementIdentifier;
 
     Styleable(Element& element, const std::optional<Style::PseudoElementIdentifier>& pseudoElementIdentifier)
-        : element(element)
-        , pseudoElementIdentifier(pseudoElementIdentifier)
+    : element(element)
+    , pseudoElementIdentifier(pseudoElementIdentifier)
     {
     }
 
@@ -198,6 +198,7 @@ struct Styleable {
     void updateCSSTransitions(const Style::ComputedStyle& currentStyle, const Style::ComputedStyle& newStyle, WeakStyleOriginatedAnimations&) const;
     void updateCSSScrollTimelines(const Style::ComputedStyle* currentStyle, const Style::ComputedStyle& afterChangeStyle) const;
     void updateCSSViewTimelines(const Style::ComputedStyle* currentStyle, const Style::ComputedStyle& afterChangeStyle) const;
+    void updateTriggerTimelines(const Style::ComputedStyle* currentStyle, const Style::ComputedStyle& afterChangeStyle) const;
 };
 
 class WeakStyleable {

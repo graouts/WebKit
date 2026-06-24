@@ -74,6 +74,7 @@
 #include "StyleTreeResolverInlines.h"
 #include "SVGElement.h"
 #include "Text.h"
+#include "TriggerTimelinesController.h"
 #include "TypedElementDescendantIteratorInlines.h"
 #include "ViewTransition.h"
 #include "WebAnimationTypes.h"
@@ -861,9 +862,17 @@ ElementUpdate TreeResolver::createAnimatedElementUpdate(ResolvedStyle&& resolved
         if ((oldStyle && !oldStyle->viewTimelines().isInitial()) || !resolvedStyle.style->viewTimelines().isInitial())
             styleable.updateCSSViewTimelines(oldStyle, *resolvedStyle.style);
 
+        if ((oldStyle && !oldStyle->timelineTriggers().isInitial()) || !resolvedStyle.style->timelineTriggers().isInitial())
+            styleable.updateTriggerTimelines(oldStyle, *resolvedStyle.style);
+
         if ((oldStyle && oldStyle->timelineScope().type != NameScope::Type::None) || resolvedStyle.style->timelineScope().type != NameScope::Type::None) {
             CheckedRef styleOriginatedTimelinesController = protect(element->document())->ensureStyleOriginatedTimelinesController();
             styleOriginatedTimelinesController->updateNamedTimelineMapForTimelineScope(resolvedStyle.style->timelineScope(), styleable);
+        }
+
+        if ((oldStyle && oldStyle->triggerScope().type != NameScope::Type::None) || resolvedStyle.style->triggerScope().type != NameScope::Type::None) {
+            CheckedRef triggerTimelinesController = protect(element->document())->ensureTriggerTimelinesController();
+            triggerTimelinesController->updateNamedTimelineMapForTimelineScope(resolvedStyle.style->triggerScope(), styleable);
         }
     };
 

@@ -58,6 +58,7 @@
 #include "StyleResolver.h"
 #include "StyleScope.h"
 #include "StyleTreeResolver.h"
+#include "TriggerTimelinesController.h"
 #include "ViewTransition.h"
 #include "WebAnimation.h"
 #include "WebAnimationUtilities.h"
@@ -929,6 +930,45 @@ void Styleable::updateCSSViewTimelines(const Style::ComputedStyle* currentStyle,
             [&](const Style::CustomIdent& identifier) {
                 if (!registeredViewTimelineNames.contains(identifier.value))
                     styleOriginatedTimelinesController->unregisterNamedTimeline(identifier.value, *this);
+            }
+        );
+    }
+};
+
+void Styleable::updateTriggerTimelines(const Style::ComputedStyle* currentStyle, const Style::ComputedStyle& afterChangeStyle) const
+{
+    if (currentStyle && currentStyle->timelineTriggers() == afterChangeStyle.timelineTriggers())
+        return;
+
+    CheckedRef triggerTimelinesController = protect(element.document())->ensureTriggerTimelinesController();
+
+    HashSet<AtomString> registeredTimelineNames;
+
+    for (auto& timelineTrigger : afterChangeStyle.timelineTriggers().usedValues()) {
+        WTF::switchOn(timelineTrigger.name(),
+            [](CSS::Keyword::None) {
+                // Nothing to register.
+            },
+            [&](const Style::CustomIdent& identifier) {
+                if (auto viewFunction = timelineTrigger.source().tryViewFunction()) {
+                    triggerTimelinesController->registerNamedTimeline(identifier.value, *this, viewFunction->parameters.axis, viewFunction->parameters.insets);
+                    registeredTimelineNames.add(identifier.value);
+                }
+            }
+        );
+    }
+
+    if (!currentStyle)
+        return;
+
+    for (auto& previousTimelineTrigger : currentStyle->timelineTriggers().usedValues()) {
+        WTF::switchOn(previousTimelineTrigger.name(),
+            [](CSS::Keyword::None) {
+                // Nothing to unregister.
+            },
+            [&](const Style::CustomIdent& identifier) {
+                if (!registeredTimelineNames.contains(identifier.value))
+                    triggerTimelinesController->unregisterNamedTimeline(identifier.value, *this);
             }
         );
     }

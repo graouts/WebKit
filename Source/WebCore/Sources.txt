@@ -662,6 +662,7 @@ animation/StyleOriginatedAnimation.cpp
 animation/StyleOriginatedAnimationEvent.cpp
 animation/StyleOriginatedTimelinesController.cpp
 animation/TimelineRangeValue.cpp
+animation/TriggerTimelinesController.cpp
 animation/ViewTimeline.cpp @header:RenderStyleGetters
 animation/WebAnimation.cpp
 animation/WebAnimationTime.cpp

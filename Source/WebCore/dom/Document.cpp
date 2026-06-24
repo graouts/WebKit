@@ -345,6 +345,7 @@
 #include "TransformSource.h"
 #include "TreeScopeInlines.h"
 #include "TreeWalker.h"
+#include "TriggerTimelinesController.h"
 #include "TrustedType.h"
 #include "TypedElementDescendantIteratorInlines.h"
 #include "UndoManager.h"
@@ -2951,6 +2952,9 @@ void Document::resolveStyle(ResolveStyleType type)
 
     if (CheckedPtr styleOriginatedTimelinesController = this->styleOriginatedTimelinesController())
         styleOriginatedTimelinesController->documentDidResolveStyle();
+
+    if (CheckedPtr triggerTimelinesController = this->triggerTimelinesController())
+        triggerTimelinesController->documentDidResolveStyle();
 
     // Re-evaluate speculation rules after DOM changes that trigger style recalculation.
     // That helps ensure CSS selector matching works correctly.
@@ -10933,6 +10937,13 @@ StyleOriginatedTimelinesController& Document::ensureStyleOriginatedTimelinesCont
     if (!m_styleOriginatedTimelinesController)
         lazyInitialize(m_styleOriginatedTimelinesController, makeUnique<StyleOriginatedTimelinesController>());
     return *m_styleOriginatedTimelinesController.get();
+}
+
+TriggerTimelinesController& Document::ensureTriggerTimelinesController()
+{
+    if (!m_triggerTimelinesController)
+        lazyInitialize(m_triggerTimelinesController, makeUnique<TriggerTimelinesController>());
+    return *m_triggerTimelinesController.get();
 }
 
 void Document::updateAnimationsAndSendEvents()

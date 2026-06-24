@@ -2975,6 +2975,7 @@
 		71BF4C3229B098A8008344FC /* AcceleratedEffectStack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71BF4C2E29B098A7008344FC /* AcceleratedEffectStack.cpp */; };
 		71BF4C3529B098A8008344FC /* AcceleratedEffectStack.h in Headers */ = {isa = PBXBuildFile; fileRef = 71BF4C3129B098A7008344FC /* AcceleratedEffectStack.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		71C29E32203CE781008F36D2 /* CSSAnimation.h in Headers */ = {isa = PBXBuildFile; fileRef = 71C29E30203CE76B008F36D2 /* CSSAnimation.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		71C465E7300935EE00EF14B2 /* TriggerTimelinesController.h in Headers */ = {isa = PBXBuildFile; fileRef = 71C465E5300935DE00EF14B2 /* TriggerTimelinesController.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		71C916081D1483A300ACA47D /* UserInterfaceLayoutDirection.h in Headers */ = {isa = PBXBuildFile; fileRef = 71C916071D1483A300ACA47D /* UserInterfaceLayoutDirection.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		71D195762D61E2AB0085EB01 /* StyleOriginatedTimelinesController.h in Headers */ = {isa = PBXBuildFile; fileRef = 71D195742D61E2940085EB01 /* StyleOriginatedTimelinesController.h */; };
 		71D6EAFB2AFA914600A323CF /* AnimationEffectTiming.h in Headers */ = {isa = PBXBuildFile; fileRef = 71D6EAFA2AFA913800A323CF /* AnimationEffectTiming.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -14369,6 +14370,8 @@
 		71C29E2E203CE76B008F36D2 /* CSSAnimation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSSAnimation.cpp; sourceTree = "<group>"; };
 		71C29E30203CE76B008F36D2 /* CSSAnimation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSSAnimation.h; sourceTree = "<group>"; };
 		71C29E31203CE76C008F36D2 /* CSSAnimation.idl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CSSAnimation.idl; sourceTree = "<group>"; };
+		71C465E5300935DE00EF14B2 /* TriggerTimelinesController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TriggerTimelinesController.h; sourceTree = "<group>"; };
+		71C465E6300935DE00EF14B2 /* TriggerTimelinesController.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TriggerTimelinesController.cpp; sourceTree = "<group>"; };
 		71C5BB1B1FB611EA0007A2AE /* Animatable.idl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Animatable.idl; sourceTree = "<group>"; };
 		71C916071D1483A300ACA47D /* UserInterfaceLayoutDirection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserInterfaceLayoutDirection.h; sourceTree = "<group>"; };
 		71CE2C512209DC7F00C494BD /* MouseEventIOS.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MouseEventIOS.cpp; sourceTree = "<group>"; };
@@ -31746,6 +31749,8 @@
 				1A7398452CA4A08700FDD4F8 /* TimelineRangeOffset.idl */,
 				BC9CC61D2E79E53200592740 /* TimelineRangeValue.cpp */,
 				BC9CC61B2E79E4ED00592740 /* TimelineRangeValue.h */,
+				71C465E6300935DE00EF14B2 /* TriggerTimelinesController.cpp */,
+				71C465E5300935DE00EF14B2 /* TriggerTimelinesController.h */,
 				7135169D2AE6EF2800718EBE /* ViewTimeline.cpp */,
 				7135169F2AE6EF2900718EBE /* ViewTimeline.h */,
 				713516A12AE6EF2A00718EBE /* ViewTimeline.idl */,
@@ -38231,8 +38236,8 @@
 				BCCE029B2E789AD90028EA38 /* StyleSingleAnimationRangeName.h */,
 				BC73202B2E73487A00A6584F /* StyleSingleAnimationTimeline.cpp */,
 				BC73201B2E7343D900A6584F /* StyleSingleAnimationTimeline.h */,
-				715FD2F6300838CD00E41A1C /* StyleSingleAnimationTrigger.h */,
 				715FD2F7300838CD00E41A1C /* StyleSingleAnimationTrigger.cpp */,
+				715FD2F6300838CD00E41A1C /* StyleSingleAnimationTrigger.h */,
 			);
 			path = animations;
 			sourceTree = "<group>";
@@ -47265,7 +47270,6 @@
 				E451C6322394031A00993190 /* MarginTypes.h in Headers */,
 				CE1866451F72E5B400A0CAB6 /* MarkedText.h in Headers */,
 				93309DF8099E64920056E581 /* markup.h in Headers */,
-				715FD2F8300838D500E41A1C /* StyleSingleAnimationTrigger.h in Headers */,
 				9728C3141268E4390041E89B /* MarkupAccumulator.h in Headers */,
 				3A18A2ED2AFEAA7C00DB976C /* MarkupExclusionRule.h in Headers */,
 				00C60E3F13D76D7E0092A275 /* MarkupTokenizerInlines.h in Headers */,
@@ -49122,6 +49126,7 @@
 				BC73201F2E7343E800A6584F /* StyleSingleAnimationRange.h in Headers */,
 				BCCE029C2E789AD90028EA38 /* StyleSingleAnimationRangeName.h in Headers */,
 				BC73201D2E7343E800A6584F /* StyleSingleAnimationTimeline.h in Headers */,
+				715FD2F8300838D500E41A1C /* StyleSingleAnimationTrigger.h in Headers */,
 				BCCE02912E766AA30028EA38 /* StyleSingleTransitionDelay.h in Headers */,
 				BCCE02922E766AAA0028EA38 /* StyleSingleTransitionDuration.h in Headers */,
 				BC7320022E732F3F00A6584F /* StyleSingleTransitionProperty.h in Headers */,
@@ -49604,6 +49609,7 @@
 				4644BDC52ADBA502000A2245 /* TreeScopeInlines.h in Headers */,
 				14947FFE12F80CD200A0F631 /* TreeScopeOrderedMap.h in Headers */,
 				854FE7390A2297BE0058D7AD /* TreeWalker.h in Headers */,
+				71C465E7300935EE00EF14B2 /* TriggerTimelinesController.h in Headers */,
 				4C15D8D0294786F000A220AD /* TrustedFonts.h in Headers */,
 				A336CF332B8649B100464599 /* TrustedHTML.h in Headers */,
 				A336CF342B8649B800464599 /* TrustedScript.h in Headers */,

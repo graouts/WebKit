@@ -261,6 +261,7 @@ class TextManipulationController;
 class TextResourceDecoder;
 class TransformSource;
 class TreeWalker;
+class TriggerTimelinesController;
 class UndoManager;
 class ValidationMessage;
 class VisibilityChangeClient;
@@ -1877,6 +1878,8 @@ public:
     WEBCORE_EXPORT AnimationTimelinesController& ensureTimelinesController();
     StyleOriginatedTimelinesController* styleOriginatedTimelinesController() { return m_styleOriginatedTimelinesController.get(); }
     StyleOriginatedTimelinesController& ensureStyleOriginatedTimelinesController();
+    TriggerTimelinesController* triggerTimelinesController() { return m_triggerTimelinesController.get(); }
+    TriggerTimelinesController& ensureTriggerTimelinesController();
     void keyframesRuleDidChange(const String& name);
 
     void addTopLayerElement(Element&);
@@ -2582,6 +2585,7 @@ private:
     RefPtr<DocumentTimeline> m_timeline;
     const std::unique_ptr<AnimationTimelinesController> m_timelinesController;
     const std::unique_ptr<StyleOriginatedTimelinesController> m_styleOriginatedTimelinesController;
+    const std::unique_ptr<TriggerTimelinesController> m_triggerTimelinesController;
 
     RefPtr<WindowEventLoop> m_eventLoop;
     std::unique_ptr<EventLoopTaskGroup> m_documentTaskGroup;
