@@ -63,6 +63,10 @@ public:
 
     void setBackingStyleAnimation(const Style::Animation&, Style::ZoomFactor);
 
+    void syncTriggerTimeline();
+    void setTriggerTimeline(RefPtr<ViewTimeline>&& timeline) { m_triggerTimeline = WTF::move(timeline); }
+    void updateTriggerTimeline(const Style::ComputedStyle&);
+
 private:
     CSSAnimation(const Styleable&, Style::ScopedName&&, Style::Animation&&, Style::ZoomFactor);
 
@@ -84,8 +88,6 @@ private:
     ExceptionOr<void> bindingsReverse() final;
     ExceptionOr<void> setBindingsRangeStart(Document&, TimelineRangeValue&&) final;
     ExceptionOr<void> setBindingsRangeEnd(Document&, TimelineRangeValue&&) final;
-
-    void updateTriggerTimeline(const Style::ComputedStyle&);
 
     enum class Property : uint16_t {
         Name = 1 << 0,

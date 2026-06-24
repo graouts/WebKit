@@ -37,6 +37,7 @@
 #include "StyleSingleAnimationTrigger.h"
 #include "StyleTimelineTrigger.h"
 #include "StyleTimelineTriggers.h"
+#include "TriggerTimelinesController.h"
 #include "ViewTimeline.h"
 #include <wtf/TZoneMallocInlines.h>
 
@@ -54,7 +55,6 @@ Ref<CSSAnimation> CSSAnimation::create(const Styleable& owningElement, Style::An
 
     auto result = adoptRef(*new CSSAnimation(owningElement, WTF::move(*name), WTF::move(backingStyleAnimation), backingStyleZoomForLength));
     result->initialize(oldStyle, newStyle, resolutionContext);
-    result->updateTriggerTimeline(newStyle);
 
     InspectorInstrumentation::didCreateWebAnimation(result.get());
 
@@ -95,6 +95,8 @@ void CSSAnimation::syncPropertiesWithBackingAnimation()
     // is updated first, so e.g. a change to animation-play-state applies to the
     // simultaneously-applied timeline specified in animation-timeline.
     syncStyleOriginatedTimeline();
+
+    syncTriggerTimeline();
 
     auto animation = m_backingStyleAnimation;
     RefPtr animationEffect = effect();
@@ -259,6 +261,41 @@ void CSSAnimation::syncStyleOriginatedTimeline()
     }
 
     unsuspendEffectInvalidation();
+}
+
+void CSSAnimation::syncTriggerTimeline()
+{
+    auto& trigger = m_backingStyleAnimation.trigger();
+    if (trigger.isNone()) {
+        m_triggerTimeline = nullptr;
+        m_triggerTimelineActivationRange = std::nullopt;
+        return;
+    }
+
+    ASSERT(owningElement());
+    Ref document = owningElement()->element->document();
+
+    CheckedRef triggerTimelinesController = document->ensureTriggerTimelinesController();
+    triggerTimelinesController->attachAnimation(*this);
+
+//    // FIXME: support mulitple named triggers
+//    ASSERT(trigger.size());
+//    auto& triggerName = trigger[0].name;
+//    // FIXME: use a utility to look the name up accounting for scope.
+//    auto& timelineTriggers = style.timelineTriggers();
+//    for (auto& timelineTrigger : timelineTriggers.computedValues()) {
+//        if (triggerName != timelineTrigger.name().tryValue())
+//            continue;
+//        WTFLogAlways("[GRAOUTS] Creating trigger timeline named %s", triggerName.value.string().ascii().data());
+//        m_triggerTimeline = ViewTimeline::create(triggerName.value, ScrollAxis::Block, CSS::Keyword::Auto { });
+//        ASSERT(owningElement());
+//        m_triggerTimeline->setSubject(*owningElement());
+//        m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd() };
+//        return;
+//    }
+//
+//    m_triggerTimeline = nullptr;
+//    m_triggerTimelineActivationRange = std::nullopt;
 }
 
 AnimationTimeline* CSSAnimation::bindingsTimeline() const
