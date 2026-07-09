@@ -696,6 +696,8 @@ void RemoteLayerTreeEventDispatcher::animationsWereAddedToNode(RemoteLayerTreeNo
     ASSERT(isMainRunLoop());
     assertIsHeld(m_animationLock);
     auto animationStack = node.takeAnimationStack();
+    if (!m_hasProgressBasedAnimations)
+        m_hasProgressBasedAnimations = animationStack->hasProgressBasedAnimations();
     ASSERT(animationStack);
     m_animationStacks.set(node.layerID(), animationStack.releaseNonNull());
 }
@@ -739,6 +741,14 @@ void RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate an
     ASSERT(isMainRunLoop() || ScrollingThread::isCurrentThread());
     Locker lock { m_animationLock };
 
+    // Nothing to do if we don't have any animation stacks to update.
+    if (m_animationStacks.isEmpty())
+        return;
+
+    // Nothing to do if we only want to update progress-based animations and we don't have any.
+    if (animationStacksToUpdate == AnimationStacksToUpdate::ProgressBasedOnly && !m_hasProgressBasedAnimations)
+        return;
+
     TraceScope scope(RemoteLayerTreeAnimationsUpdateStart, RemoteLayerTreeAnimationsUpdateEnd, m_animationStacks.size());
 
     // FIXME: Rather than using 'now' at the point this is called, we
@@ -747,11 +757,15 @@ void RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate an
     if (m_monotonicTimelineRegistry && animationStacksToUpdate == AnimationStacksToUpdate::All)
         m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
 
+    m_hasProgressBasedAnimations = false;
     auto animationStacks = std::exchange(m_animationStacks, { });
     for (auto [layerID, currentAnimationStack] : animationStacks) {
         Ref animationStack = currentAnimationStack;
         if (animationStacksToUpdate == AnimationStacksToUpdate::All || animationStack->hasProgressBasedAnimations())
             animationStack->applyEffects();
+
+        if (!m_hasProgressBasedAnimations)
+            m_hasProgressBasedAnimations = animationStack->hasProgressBasedAnimations();
 
         // We can clear the effect stack if it's empty, but the previous
         // call to applyEffects() is important so that the base values

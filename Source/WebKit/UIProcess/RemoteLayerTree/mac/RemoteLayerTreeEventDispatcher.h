@@ -215,6 +215,7 @@ private:
     Lock m_animationLock;
     HashMap<WebCore::PlatformLayerIdentifier, Ref<RemoteAnimationStack>> m_animationStacks WTF_GUARDED_BY_LOCK(m_animationLock);
     std::unique_ptr<RemoteMonotonicTimelineRegistry> m_monotonicTimelineRegistry WTF_GUARDED_BY_LOCK(m_animationLock);
+    bool m_hasProgressBasedAnimations WTF_GUARDED_BY_LOCK(m_animationLock) { false };
 #endif
 
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
