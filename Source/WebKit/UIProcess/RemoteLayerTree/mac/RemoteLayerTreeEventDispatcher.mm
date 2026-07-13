@@ -739,14 +739,15 @@ RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeEventDispatcher::timeline(c
 void RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate animationStacksToUpdate)
 {
     ASSERT(isMainRunLoop() || ScrollingThread::isCurrentThread());
+
+    // Nothing to do if we only want to update progress-based animations and we don't have any.
+    if (animationStacksToUpdate == AnimationStacksToUpdate::ProgressBasedOnly && !m_hasProgressBasedAnimations)
+        return;
+
     Locker lock { m_animationLock };
 
     // Nothing to do if we don't have any animation stacks to update.
     if (m_animationStacks.isEmpty())
-        return;
-
-    // Nothing to do if we only want to update progress-based animations and we don't have any.
-    if (animationStacksToUpdate == AnimationStacksToUpdate::ProgressBasedOnly && !m_hasProgressBasedAnimations)
         return;
 
     TraceScope scope(RemoteLayerTreeAnimationsUpdateStart, RemoteLayerTreeAnimationsUpdateEnd, m_animationStacks.size());
