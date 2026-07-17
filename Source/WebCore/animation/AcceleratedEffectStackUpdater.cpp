@@ -41,6 +41,7 @@
 #include "RenderStyleConstants.h"
 #include "ScrollTimeline.h"
 #include "Styleable.h"
+#import <wtf/SystemTracing.h>
 
 namespace WebCore {
 
@@ -48,6 +49,8 @@ void AcceleratedEffectStackUpdater::update()
 {
     if (!hasTargetsPendingUpdate())
         return;
+
+    TraceScope tracingScope(AcceleratedEffectStackUpdateStart, AcceleratedEffectStackUpdateEnd);
 
     RefPtr<Page> page;
     HashSet<Ref<AcceleratedTimeline>> timelinesInUpdate;

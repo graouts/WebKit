@@ -598,6 +598,40 @@
              </dict>
              <dict>
                  <key>Name</key>
+                 <string>Update accelerated effect stacks</string>
+                 <key>Type</key>
+                 <string>Interval</string>
+                 <key>Component</key>
+                 <string>47</string>
+                 <key>CodeBegin</key>
+                 <string>5064</string>
+                 <key>CodeEnd</key>
+                 <string>5065</string>
+             </dict>
+             <dict>
+                 <key>Name</key>
+                 <string>Set GraphicsLayer effects</string>
+                 <key>Type</key>
+                 <string>Interval</string>
+                 <key>Component</key>
+                 <string>47</string>
+                 <key>CodeBegin</key>
+                 <string>5066</string>
+                 <key>CodeEnd</key>
+                 <string>5067</string>
+                 <key>ArgNamesBegin</key>
+                 <dict>
+                     <key>Arg1</key>
+                     <string>Effects</string>
+                 </dict>
+                 <key>ArgValueTypesBegin</key>
+                 <dict>
+                     <key>Arg1</key>
+                     <string>UInt64</string>
+                 </dict>
+             </dict>
+             <dict>
+                 <key>Name</key>
                  <string>Paint WebHTMLView</string>
                  <key>Type</key>
                  <string>Interval</string>
@@ -1009,6 +1043,28 @@
                  <dict>
                      <key>Arg1</key>
                      <string>Effect stacks</string>
+                 </dict>
+                 <key>ArgValueTypesBegin</key>
+                 <dict>
+                     <key>Arg1</key>
+                     <string>UInt64</string>
+                 </dict>
+             </dict>
+             <dict>
+                 <key>Name</key>
+                 <string>Set RemoteLayerTreeNode effect stack</string>
+                 <key>Type</key>
+                 <string>Interval</string>
+                 <key>Component</key>
+                 <string>47</string>
+                 <key>CodeBegin</key>
+                 <string>14017</string>
+                 <key>CodeEnd</key>
+                 <string>14018</string>
+                 <key>ArgNamesBegin</key>
+                 <dict>
+                     <key>Arg1</key>
+                     <string>Effects</string>
                  </dict>
                  <key>ArgValueTypesBegin</key>
                  <dict>

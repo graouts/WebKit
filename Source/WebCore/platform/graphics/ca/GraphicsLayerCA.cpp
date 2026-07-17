@@ -3445,6 +3445,8 @@ RefPtr<PlatformCALayer> GraphicsLayerCA::replicatedLayerRoot(ReplicaState& repli
 
 void GraphicsLayerCA::updateAnimations()
 {
+    TraceScope tracingScope(GraphicsLayerAnimationUpdateStart, GraphicsLayerAnimationUpdateEnd, m_animations.size());
+
     // In order to guarantee that transform animations are applied in the expected order (translate, rotate, scale and transform),
     // we need to have them wrapped individually in an animation group because Core Animation sorts animations first by their begin
     // time, and then by the order in which they were added (for those with the same begin time). Since a rotate animation can have

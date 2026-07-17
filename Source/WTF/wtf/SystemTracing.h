@@ -127,6 +127,10 @@ enum TracePointCode {
     TimerFiredEnd,
     CoreImageRenderStart,
     CoreImageRenderEnd,
+    AcceleratedEffectStackUpdateStart,
+    AcceleratedEffectStackUpdateEnd,
+    GraphicsLayerAnimationUpdateStart,
+    GraphicsLayerAnimationUpdateEnd,
 
     WebKitRange = 10000,
     WebHTMLViewPaintStart,
@@ -182,6 +186,8 @@ enum TracePointCode {
     TextExtractionEnd,
     RemoteLayerTreeAnimationsUpdateStart,
     RemoteLayerTreeAnimationsUpdateEnd,
+    RemoteLayerTreeNodeSetEffectStackStart,
+    RemoteLayerTreeNodeSetEffectStackEnd,
 
     GPUProcessRange = 16000,
     WakeUpAndApplyDisplayListStart,

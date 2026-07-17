@@ -420,6 +420,8 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
 {
     ASSERT(isUIThread());
 
+    TraceScope scope(RemoteLayerTreeNodeSetEffectStackStart, RemoteLayerTreeNodeSetEffectStackEnd, effects.size());
+
     RetainPtr layer = this->layer();
     if (RefPtr animationStack = m_animationStack)
         animationStack->clear(layer.get());
