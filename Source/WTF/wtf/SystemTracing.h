@@ -131,6 +131,8 @@ enum TracePointCode {
     AcceleratedEffectStackUpdateEnd,
     GraphicsLayerAnimationUpdateStart,
     GraphicsLayerAnimationUpdateEnd,
+    KeyframeEffectApplicationStart,
+    KeyframeEffectApplicationEnd,
 
     WebKitRange = 10000,
     WebHTMLViewPaintStart,

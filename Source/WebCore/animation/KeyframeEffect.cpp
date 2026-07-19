@@ -96,6 +96,7 @@
 #include <ranges>
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/UUID.h>
+#include <wtf/SystemTracing.h>
 #include <wtf/text/TextStream.h>
 
 #if ENABLE(THREADED_ANIMATIONS)
@@ -1648,6 +1649,8 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(Style::ComputedStyle& targetSty
     OptionSet<AnimationImpact> impact;
     if (!m_target)
         return impact;
+
+    TraceScope tracingScope(KeyframeEffectApplicationStart, KeyframeEffectApplicationEnd);
 
     updateBlendingKeyframes(targetStyle, resolutionContext);
 
