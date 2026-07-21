@@ -133,6 +133,7 @@ enum TracePointCode {
     GraphicsLayerAnimationUpdateEnd,
     KeyframeEffectApplicationStart,
     KeyframeEffectApplicationEnd,
+    ScheduleAnimationResolution,
 
     WebKitRange = 10000,
     WebHTMLViewPaintStart,

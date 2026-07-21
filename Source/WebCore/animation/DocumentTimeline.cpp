@@ -46,6 +46,7 @@
 #include "StyleOriginatedAnimation.h"
 #include "WebAnimationTypes.h"
 #include <ranges>
+#include <wtf/SystemTracing.h>
 
 #if ENABLE(THREADED_ANIMATIONS)
 #include "AcceleratedEffectStackUpdater.h"
@@ -164,6 +165,8 @@ void DocumentTimeline::scheduleAnimationResolution()
     // We need some relevant animations or pending events to proceed.
     if (!havePendingActivity)
         return;
+
+    tracePoint(ScheduleAnimationResolution);
 
     protect(m_document->page())->scheduleRenderingUpdate(RenderingUpdateStep::Animations);
     m_animationResolutionScheduled = true;
