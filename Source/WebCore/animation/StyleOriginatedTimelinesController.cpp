@@ -36,6 +36,7 @@
 #include "KeyframeEffect.h"
 #include "LocalDOMWindow.h"
 #include "Logging.h"
+#include "Node.h"
 #include "Page.h"
 #include "ScrollTimeline.h"
 #include "Settings.h"
@@ -122,8 +123,26 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTreeOrder(const Vec
         element = element->parentElementInComposedTree();
     }
 
-    ASSERT_NOT_REACHED();
-    return nullptr;
+    // If we get to this point, this means we haven't found a matching timeline that has
+    // its originating element as the provided styleable or one of its parent. Since
+    // timelines match globally, we must find the nearest timeline available.
+    ASSERT(!timelineScopeElement);
+    auto sortedTimelines = ancestorTimelines;
+    std::ranges::stable_sort(sortedTimelines, [](auto& lhs, auto& rhs) {
+        auto lhsStyleable = originatingElement(lhs).styleable();
+        auto rhsStyleable = originatingElement(rhs).styleable();
+        ASSERT(lhsStyleable);
+        ASSERT(rhsStyleable);
+
+        if (lhsStyleable == rhsStyleable) {
+            ASSERT(is<ViewTimeline>(lhs) != is<ViewTimeline>(rhs));
+            if (!is<ViewTimeline>(lhs))
+                return false;
+        }
+
+        return is_lt(treeOrder<Tree>(lhsStyleable->element, rhsStyleable->element));
+    });
+    return sortedTimelines.first().unsafePtr();
 }
 
 static bool timelineIsInScopeForTarget(const Ref<ScrollTimeline>& timeline, Element& targetElement, Style::ScopeOrdinal animationTimelineNameScopeOrdinal)
@@ -156,9 +175,7 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTimelineForElement(
         Ref targetElement { styleable.element };
         if (!timelineIsInScopeForTarget(timeline, targetElement.get(), targetTimelineScopeOrdinal))
             continue;
-        Ref protectedElementForTimeline { styleableForTimeline->element };
-        if (&styleableForTimeline->element == &styleable.element || styleable.element.isComposedTreeDescendantOf(protectedElementForTimeline.get()))
-            matchedTimelines.append(timeline);
+        matchedTimelines.append(timeline);
     }
     if (matchedTimelines.isEmpty())
         return nullptr;
