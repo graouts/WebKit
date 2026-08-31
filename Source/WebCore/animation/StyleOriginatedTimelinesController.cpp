@@ -124,7 +124,7 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTreeOrder(const Vec
         }
         // Has blocking timeline scope element
         if (timelineScopeElement == element.get())
-            return nullptr;
+            return &inactiveNamedTimeline(ancestorTimelines.first()->name().name);
         element = element->parentElementInComposedTree();
     }
 
