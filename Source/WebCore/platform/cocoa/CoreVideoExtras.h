@@ -28,6 +28,7 @@
 #if PLATFORM(MAC)
 #include <CoreVideo/CVDisplayLink.h>
 
+#if !HAVE(CA_DISPLAY_LINK_MAC)
 namespace WTF {
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 template<> struct DefaultRefDerefTraits<__CVDisplayLink> {
@@ -35,5 +36,6 @@ template<> struct DefaultRefDerefTraits<__CVDisplayLink> {
     static void derefIfNotNull(CVDisplayLinkRef displayLink) { CVDisplayLinkRelease(displayLink); }
 };
 }
+#endif // !HAVE(CA_DISPLAY_LINK_MAC)
 
 #endif // PLATFORM(MAC)
