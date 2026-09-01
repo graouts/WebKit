@@ -6989,6 +6989,7 @@
 		7121A3CE2B73727B00C8F7A4 /* CAFrameRateRangeUtilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CAFrameRateRangeUtilities.h; sourceTree = "<group>"; };
 		71371D1E2B1F89C00092C32D /* RemoteAnimationStack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RemoteAnimationStack.h; sourceTree = "<group>"; };
 		71371D1F2B1F89C10092C32D /* RemoteAnimationStack.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RemoteAnimationStack.mm; sourceTree = "<group>"; };
+		71536BAB30470096005303EE /* LegacyDisplayLinkMac.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LegacyDisplayLinkMac.cpp; sourceTree = "<group>"; };
 		71722EAF2EA919E9004218E6 /* RemoteProgressBasedTimelineRegistry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteProgressBasedTimelineRegistry.h; sourceTree = "<group>"; };
 		71722EB02EA919E9004218E6 /* RemoteProgressBasedTimelineRegistry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteProgressBasedTimelineRegistry.cpp; sourceTree = "<group>"; };
 		71983F0F2EA6397000594BCE /* RemoteMonotonicTimelineRegistry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteMonotonicTimelineRegistry.h; sourceTree = "<group>"; };
@@ -7074,7 +7075,7 @@
 		7AF2361E1E79A3B400438A05 /* WebErrors.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebErrors.cpp; sourceTree = "<group>"; };
 		7AF2361F1E79A3D800438A05 /* WebErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebErrors.h; sourceTree = "<group>"; };
 		7AF236221E79A43100438A05 /* WebErrorsCocoa.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WebErrorsCocoa.mm; sourceTree = "<group>"; };
-		7AFA6F682A9F57C50055322A /* DisplayLinkMac.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DisplayLinkMac.cpp; sourceTree = "<group>"; };
+		7AFA6F682A9F57C50055322A /* DisplayLinkMac.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayLinkMac.mm; sourceTree = "<group>"; };
 		7AFA6F692A9F58300055322A /* DisplayLink.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DisplayLink.h; sourceTree = "<group>"; };
 		7AFA6F6A2A9F58300055322A /* DisplayLinkProcessProxyClient.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DisplayLinkProcessProxyClient.cpp; sourceTree = "<group>"; };
 		7AFA6F6B2A9F58300055322A /* DisplayLink.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DisplayLink.cpp; sourceTree = "<group>"; };
@@ -17160,7 +17161,8 @@
 				CD89ACBB2EA696A300C76423 /* _WKCaptionStyleMenuControllerMac.mm */,
 				B878B613133428DC006888E9 /* CorrectionPanel.h */,
 				B878B614133428DC006888E9 /* CorrectionPanel.mm */,
-				7AFA6F682A9F57C50055322A /* DisplayLinkMac.cpp */,
+				7AFA6F682A9F57C50055322A /* DisplayLinkMac.mm */,
+				71536BAB30470096005303EE /* LegacyDisplayLinkMac.cpp */,
 				0FCB4E5818BBE3D9000FCFC9 /* PageClientImplMac.h */,
 				0FCB4E5918BBE3D9000FCFC9 /* PageClientImplMac.mm */,
 				33F1A0112FEFB66B00BD5D70 /* PositionInformationManager.cpp */,
