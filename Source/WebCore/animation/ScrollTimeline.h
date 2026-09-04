@@ -122,6 +122,7 @@ private:
     explicit ScrollTimeline(Scroller, ScrollAxis);
 
     bool isScrollTimeline() const final { return true; }
+    bool isActive(UseCachedCurrentTime useCachedCurrentTime = UseCachedCurrentTime::Yes) final { return currentTime(useCachedCurrentTime).has_value(); }
 #if ENABLE(THREADED_ANIMATIONS)
     Ref<AcceleratedTimeline> createAcceleratedRepresentation() const final;
 #endif

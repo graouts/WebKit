@@ -56,6 +56,8 @@ public:
     bool isMonotonic() const { return !m_duration; }
     bool isProgressBased() const { return !isMonotonic(); }
 
+    virtual bool isActive(UseCachedCurrentTime = UseCachedCurrentTime::Yes) { return false; }
+
     const AnimationCollection& relevantAnimations() const LIFETIME_BOUND { return m_animations; }
 
     virtual void animationTimingDidChange(WebAnimation&);

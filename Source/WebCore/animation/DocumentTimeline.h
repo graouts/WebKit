@@ -95,6 +95,7 @@ private:
     DocumentTimeline(Document&, Seconds);
 
     bool isDocumentTimeline() const final { return true; }
+    bool isActive(UseCachedCurrentTime useCachedCurrentTime = UseCachedCurrentTime::Yes) final { return currentTime(useCachedCurrentTime).has_value(); }
 
     AnimationTimelinesController* controller() const override;
 #if ENABLE(THREADED_ANIMATIONS)

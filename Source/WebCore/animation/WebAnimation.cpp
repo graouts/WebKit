@@ -456,7 +456,7 @@ void WebAnimation::setStartTime(std::optional<WebAnimationTime> newStartTime)
     // 4. Let timeline time be the current time value of the timeline that animation is associated with. If
     //    there is no timeline associated with animation or the associated timeline is inactive, let the timeline
     //    time be unresolved.
-    auto timelineTime = m_timeline ? protect(m_timeline)->currentTime() : std::nullopt;
+    auto timelineTime = m_timeline && protect(m_timeline)->isActive() ? protect(m_timeline)->currentTime() : std::nullopt;
 
     // 5. If timeline time is unresolved and new start time is resolved, make animation's hold time unresolved.
     if (!timelineTime && newStartTime)
@@ -524,7 +524,7 @@ std::optional<WebAnimationTime> WebAnimation::currentTime(RespectHoldTime respec
     //     2. the associated timeline is inactive, or
     //     3. the animation's start time is unresolved.
     // The current time is an unresolved time value.
-    if (!m_timeline || !m_timeline->currentTime(useCachedCurrentTime) || !m_startTime)
+    if (!m_timeline || !m_timeline->isActive(useCachedCurrentTime) || !m_startTime)
         return std::nullopt;
 
     // Otherwise, current time = (timeline time - start time) * playback rate
@@ -575,13 +575,13 @@ ExceptionOr<void> WebAnimation::silentlySetCurrentTime(std::optional<WebAnimatio
     // Set animation's hold time to seek time.
     // Otherwise, set animation's start time to the result of evaluating timeline time - (seek time / playback rate)
     // where timeline time is the current time value of timeline associated with animation.
-    if (m_holdTime || !m_startTime || !m_timeline || !protect(m_timeline)->currentTime() || !m_playbackRate)
+    if (m_holdTime || !m_startTime || !m_timeline || !protect(m_timeline)->isActive() || !m_playbackRate)
         m_holdTime = seekTime;
     else
         m_startTime = protect(m_timeline)->currentTime().value() - (seekTime.value() / m_playbackRate);
 
     // 6. If animation has no associated timeline or the associated timeline is inactive, make animation's start time unresolved.
-    if (!m_timeline || !protect(m_timeline)->currentTime())
+    if (!m_timeline || !protect(m_timeline)->isActive())
         m_startTime = std::nullopt;
 
     // 7. Make animation's previous current time unresolved.
@@ -709,7 +709,7 @@ void WebAnimation::updatePlaybackRate(double newPlaybackRate)
         // If pending playback rate is zero, let animation's start time be timeline time.
         
         // If timeline is inactive abort these steps.
-        if (!protect(m_timeline)->currentTime())
+        if (!protect(m_timeline)->isActive())
             return;
         
         auto newStartTime = protect(m_timeline)->currentTime().value();
@@ -1448,7 +1448,7 @@ ExceptionOr<void> WebAnimation::reverse()
 
     // 1. If there is no timeline associated with animation, or the associated timeline is inactive
     //    throw an InvalidStateError and abort these steps.
-    if (!m_timeline || !protect(m_timeline)->currentTime())
+    if (!m_timeline || !protect(m_timeline)->isActive())
         return Exception { ExceptionCode::InvalidStateError };
 
     // 2. Let original pending playback rate be animation's pending playback rate.
@@ -1533,7 +1533,7 @@ void WebAnimation::autoAlignStartTime()
         return;
 
     // 2. If the timeline is inactive, abort this procedure.
-    if (!m_timeline || !protect(m_timeline)->currentTime())
+    if (!m_timeline || !protect(m_timeline)->isActive())
         return;
 
     auto playState = this->playState();
