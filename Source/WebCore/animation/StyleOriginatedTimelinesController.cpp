@@ -347,6 +347,7 @@ void StyleOriginatedTimelinesController::unregisterNamedTimeline(const AtomStrin
     // Make sure to remove the named timeline from our name-to-timelines map first,
     // such that re-syncing any CSS Animation previously registered with it resolves
     // their `animation-timeline` properly.
+    WTFLogAlways("[GRAOUTS] Removed timeline in unregisterNamedTimeline");
     timelines.removeAt(i);
 
     // Ensure we iterate on a copy of this timeline's registered animations as calling
@@ -374,12 +375,16 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
     Ref protectedAnimation { animation };
 
     auto target = protectedAnimation->owningElement();
-    if (!target)
+    if (!target) {
+        WTFLogAlways("[GRAOUTS] Couldn't attach animation to a timeline since it has no target");
         return;
+    }
 
     auto timelineName = protectedAnimation->backingStyleAnimation().timeline().tryScopedName();
-    if (!timelineName)
+    if (!timelineName) {
+        WTFLogAlways("[GRAOUTS] Couldn't attach animation to a timeline since it has animation-timeline");
         return;
+    }
 
     LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::attachAnimation: " << timelineName->name << " target: " << *target);
 
@@ -409,12 +414,14 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
     // just register a pending timeline attachment operation so we can try again
     // when style has resolved.
     if (!hasNamedTimeline && allowsDeferral == AllowsDeferral::Yes) {
+        WTFLogAlways("[GRAOUTS] Deferring timeline attachment");
         m_cssAnimationsPendingAttachment.append(animation);
         return;
     }
 
     if (!hasNamedTimeline) {
         ASSERT(allowsDeferral == AllowsDeferral::No);
+        WTFLogAlways("[GRAOUTS] Setting inactive style-originated timeline because there is no such named timeline");
         protectedAnimation->setTimeline(&inactiveNamedTimeline(timelineName->name));
     } else {
         auto& timelines = it->value;
@@ -426,6 +433,7 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
         // and possibly also mark that animation's target as dirty to update the animated style.
         if (allowsDeferral == AllowsDeferral::Yes && timeline && timeline->isInactiveStyleOriginatedTimeline())
             m_cssAnimationsPendingAttachment.append(animation);
+        WTFLogAlways("[GRAOUTS] Attaching style-originated timeline");
         protectedAnimation->setTimeline(WTF::move(timeline));
     }
 
@@ -462,23 +470,41 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     // subtree—​for example, by siblings, cousins, or ancestors.
     switch (scope.type) {
     case Style::NameScope::Type::None: {
+        WTFLogAlways("[GRAOUTS] set timeline-scope to 'none'");
+        HashSet<Ref<ScrollTimeline>> namedTimelinesToUpdate;
         for (auto& entry : m_nameToTimelineMap) {
             for (auto& timeline : entry.value) {
-                if (timeline->timelineScopeDeclaredElement() == &styleable.element)
+                if (timeline->timelineScopeDeclaredElement() == &styleable.element) {
                     timeline->clearTimelineScopeDeclaredElement();
+                }
+                // Make sure to track this time to be updated in a separate
+                // step as it would modify the map we're currently iterating over.
+                // FIXME: do we need to do this in a separate step?
+                WTFLogAlways("[GRAOUTS] marking timeline %p as needing update", timeline.ptr());
+                namedTimelinesToUpdate.add(timeline.get());
             }
         }
         m_timelineScopeEntries.removeAllMatching([&](const std::pair<Style::NameScope, WeakStyleable> entry) {
             return entry.second == styleable;
         });
+        for (auto& timeline : namedTimelinesToUpdate) {
+            for (Ref animation : copyToVector(timeline->relevantAnimations())) {
+                if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
+                    if (cssAnimation->owningElement())
+                        cssAnimation->syncStyleOriginatedTimeline();
+                }
+            }
+        }
         break;
     }
     case Style::NameScope::Type::All:
+        WTFLogAlways("[GRAOUTS] set timeline-scope to 'all'");
         for (auto& entry : m_nameToTimelineMap)
             updateTimelinesForTimelineScope(entry.value, styleable);
         m_timelineScopeEntries.append(std::make_pair(scope, styleable));
         break;
     case Style::NameScope::Type::Ident:
+        WTFLogAlways("[GRAOUTS] set timeline-scope to 'ident'");
         for (auto& name : scope.names) {
             auto it = m_nameToTimelineMap.find(name.value);
             if (it != m_nameToTimelineMap.end())
@@ -509,6 +535,7 @@ void StyleOriginatedTimelinesController::unregisterNamedTimelinesAssociatedWithE
             auto& timeline = timelines[i];
             if (originatingElement(timeline) == styleable) {
                 m_removedTimelines.add(timeline.get());
+                WTFLogAlways("[GRAOUTS] Removed timeline in unregisterNamedTimelinesAssociatedWithElement");
                 timelines.removeAt(i--);
             }
         }

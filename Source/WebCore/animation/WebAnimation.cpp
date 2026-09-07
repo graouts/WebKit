@@ -291,6 +291,15 @@ void WebAnimation::setTimeline(RefPtr<AnimationTimeline>&& timeline)
     if (timeline == oldTimeline)
         return;
 
+    if (RefPtr scrollTimeline = dynamicDowncast<ScrollTimeline>(timeline))
+        WTFLogAlways("[GRAOUTS] Set timeline to scroll timeline %p, is it inactive? %s", timeline.get(), scrollTimeline->isInactiveStyleOriginatedTimeline() ? "true" : "false");
+    else if (RefPtr documentTimeline = dynamicDowncast<DocumentTimeline>(timeline))
+        WTFLogAlways("[GRAOUTS] Set timeline to document timeline");
+    else if (timeline)
+        WTFLogAlways("[GRAOUTS] Set timeline to an unknown timeline type");
+    else
+        WTFLogAlways("[GRAOUTS] Set timeline to a null timeline");
+
     // 3. Let previous play state be animation’s play state.
     auto previousPlayState = playState();
 
