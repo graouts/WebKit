@@ -415,15 +415,7 @@ void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation
 
     if (!hasNamedTimeline) {
         ASSERT(allowsDeferral == AllowsDeferral::No);
-        // We don't have an active named timeline and yet we must set a timeline since
-        // we've already dealt with the deferral case before. There are two cases:
-        //     1. the name is within scope and we should create a placeholder inactive
-        //        scroll timeline, or,
-        //     2. the name is not within scope and the timeline is null.
-        if (relevantTimelineScopeElement)
-            protectedAnimation->setTimeline(&inactiveNamedTimeline(timelineName->name));
-        else
-            protectedAnimation->setTimeline(nullptr);
+        protectedAnimation->setTimeline(&inactiveNamedTimeline(timelineName->name));
     } else {
         auto& timelines = it->value;
         RefPtr timeline = determineTimelineForElement(timelines, *target, timelineName->scopeOrdinal, relevantTimelineScopeElement.get());
