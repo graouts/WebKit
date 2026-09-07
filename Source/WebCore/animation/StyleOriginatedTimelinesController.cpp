@@ -468,8 +468,7 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
                 if (timeline->timelineScopeDeclaredElement() == &styleable.element)
                     timeline->clearTimelineScopeDeclaredElement();
                 // Make sure to track this timeline to be updated in a separate
-                // step since we're updating m_timelineScopeEntries below.
-                // FIXME: do we need to do this in a separate step?
+                // step since updating timeline relationships could affect m_nameToTimelineMap.
                 namedTimelinesToUpdate.add(timeline.get());
             }
         }
