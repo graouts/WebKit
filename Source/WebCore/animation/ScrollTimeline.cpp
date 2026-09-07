@@ -80,30 +80,23 @@ Ref<ScrollTimeline> ScrollTimeline::create(Document& document, ScrollTimelineOpt
         timeline->cacheCurrentTime();
     }
 
-    WTFLogAlways("[GRAOUTS] Created script-originated timeline %p", timeline.ptr());
-
     return timeline;
 }
 
 Ref<ScrollTimeline> ScrollTimeline::create(const Style::ScopedName& name, ScrollAxis axis)
 {
-    Ref timeline = adoptRef(*new ScrollTimeline(name, axis));
-    WTFLogAlways("[GRAOUTS] Created style-originated timeline %p", timeline.ptr());
-    return timeline;
+    return adoptRef(*new ScrollTimeline(name, axis));
 }
 
 Ref<ScrollTimeline> ScrollTimeline::create(Scroller scroller, ScrollAxis axis)
 {
-    Ref timeline = adoptRef(*new ScrollTimeline(scroller, axis));
-    WTFLogAlways("[GRAOUTS] Created style-originated timeline %p", timeline.ptr());
-    return timeline;
+    return adoptRef(*new ScrollTimeline(scroller, axis));
 }
 
 Ref<ScrollTimeline> ScrollTimeline::createInactiveStyleOriginatedTimeline(const AtomString& name)
 {
     Ref timeline = adoptRef(*new ScrollTimeline({ name }, ScrollAxis::Block));
     timeline->m_isInactiveStyleOriginatedTimeline = true;
-    WTFLogAlways("[GRAOUTS] Created inactive style-originated timeline %p", timeline.ptr());
     return timeline;
 }
 
