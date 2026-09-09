@@ -31,6 +31,7 @@
 #include "StyleNameScope.h"
 #include "Styleable.h"
 #include <wtf/CheckedRef.h>
+#include <wtf/WeakHashMap.h>
 #include <wtf/WeakHashSet.h>
 #include <wtf/text/AtomStringHash.h>
 
@@ -79,7 +80,6 @@ public:
 
 private:
     Vector<Ref<ScrollTimeline>>& timelinesForName(const AtomString&) LIFETIME_BOUND;
-    Vector<WeakStyleable> relatedTimelineScopeElements(const Style::CustomIdent&);
     void updateCSSAnimationsAssociatedWithNamedTimeline(const AtomString&);
     void updateTimelinesForTimelineScope(Vector<Ref<ScrollTimeline>>, const Styleable&);
 
@@ -89,10 +89,19 @@ private:
     ScrollTimeline* determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Element*);
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
 
+    // A `timeline-scope` declaration only ever affects the declaring element's composed tree
+    // descendants, so we key these by element and look one up by walking the target's ancestors
+    // rather than by considering every declaration in the document.
+    struct TimelineScopeEntry {
+        Style::NameScope scope;
+        std::optional<Style::PseudoElementIdentifier> pseudoElementIdentifier;
+    };
+    RefPtr<Element> nearestTimelineScopeElement(const Element&, const Style::CustomIdent&);
     void setTimelineScopeEntry(const Style::NameScope&, const Styleable&);
+    void removeTimelineScopeEntry(const Styleable&);
 
     Vector<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
-    Vector<std::pair<Style::NameScope, WeakStyleable>> m_timelineScopeEntries;
+    WeakHashMap<Element, Vector<TimelineScopeEntry>, WeakPtrImplWithEventTargetData> m_timelineScopeEntries;
     HashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
     HashSet<AtomString> m_timelineNamesPendingAnimationUpdate;
