@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.scroller { overflow-x: scroll; width: 60px; height: 12px; }
+.content { width: 400px; height: 1px; }
+.dot { display: inline-block; width: 4px; height: 4px; background: green; animation: fade 1s linear; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+<script src="../resources/runner.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script>
+// Measures resolving style for a document whose elements declare, scope and use a named scroll
+// timeline. Every tile here names the same timeline, so this covers matching an `animation-timeline`
+// against a name that many elements declare.
+//
+// Animation/scroll-timeline-unique-names.html builds the same document with a distinct name per
+// tile and is the control: declaring one name many times should cost no more than declaring many
+// names once. It used to cost time cubic in the number of tiles.
+// https://bugs.webkit.org/show_bug.cgi?id=322283
+
+const tileCount = 300;
+const container = document.getElementById("container");
+
+let markup = "";
+for (let i = 0; i < tileCount; ++i) {
+    markup += '<div style="timeline-scope:--timeline">'
+           +      '<div class="scroller" style="scroll-timeline:--timeline inline"><div class="content"></div></div>'
+           +      '<span class="dot" style="animation-timeline:--timeline"></span>'
+           +  '</div>';
+}
+
+PerfTestRunner.measureTime({
+    description: "Resolving style for " + tileCount + " tiles that all name the same scroll timeline.",
+    setup: function () {
+        container.innerHTML = "";
+        container.offsetHeight;
+    },
+    run: function () {
+        container.innerHTML = markup;
+        container.offsetHeight;
+    }
+});
+</script>
+</body>
+</html>

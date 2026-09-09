@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.scroller { overflow-x: scroll; width: 60px; height: 12px; }
+.content { width: 400px; height: 1px; }
+.dot { display: inline-block; width: 4px; height: 4px; background: green; animation: fade 1s linear; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+<script src="../resources/runner.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script>
+// The control for Animation/scroll-timeline-shared-name.html: the same document, but each tile names
+// its own scroll timeline rather than all of them naming one. Whatever this test costs is the cost of
+// the scroll timeline machinery itself, so the two tests should stay comparable. A regression that
+// shows up here as well is not specific to sharing a timeline name.
+// https://bugs.webkit.org/show_bug.cgi?id=322283
+
+const tileCount = 300;
+const container = document.getElementById("container");
+
+let markup = "";
+for (let i = 0; i < tileCount; ++i) {
+    const name = "--timeline-" + i;
+    markup += '<div style="timeline-scope:' + name + '">'
+           +      '<div class="scroller" style="scroll-timeline:' + name + ' inline"><div class="content"></div></div>'
+           +      '<span class="dot" style="animation-timeline:' + name + '"></span>'
+           +  '</div>';
+}
+
+PerfTestRunner.measureTime({
+    description: "Resolving style for " + tileCount + " tiles that each name their own scroll timeline.",
+    setup: function () {
+        container.innerHTML = "";
+        container.offsetHeight;
+    },
+    run: function () {
+        container.innerHTML = markup;
+        container.offsetHeight;
+    }
+});
+</script>
+</body>
+</html>
