@@ -89,10 +89,13 @@ private:
     ScrollTimeline* determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Element*);
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
 
+    void setTimelineScopeEntry(const Style::NameScope&, const Styleable&);
+
     Vector<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
     Vector<std::pair<Style::NameScope, WeakStyleable>> m_timelineScopeEntries;
     HashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
+    HashSet<AtomString> m_timelineNamesPendingAnimationUpdate;
 };
 
 } // namespace WebCore

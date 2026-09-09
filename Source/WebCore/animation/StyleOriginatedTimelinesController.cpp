@@ -154,8 +154,7 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTreeOrder(const Vec
 
 static bool timelineIsInScopeForTarget(const Ref<ScrollTimeline>& timeline, Element& targetElement, Style::ScopeOrdinal animationTimelineNameScopeOrdinal)
 {
-    if (!targetElement.isConnected())
-        return false;
+    ASSERT(targetElement.isConnected());
     RefPtr timelineOriginatingElement { originatingElement(timeline).element() };
     ASSERT(timelineOriginatingElement);
     CheckedPtr scrollTimelineNameStyleScope = Style::Scope::forOrdinal(*timelineOriginatingElement, timeline->name().scopeOrdinal);
@@ -174,19 +173,44 @@ ScrollTimeline* StyleOriginatedTimelinesController::determineTimelineForElement(
     // If multiple elements have declared the same timeline name, the matching timeline is the one declared on the nearest element in tree order.
     // In case of a name conflict on the same element, names declared later in the naming property (scroll-timeline-name, view-timeline-name) take
     // precedence, and scroll progress timelines take precedence over view progress timelines.
-    Vector<Ref<ScrollTimeline>> matchedTimelines;
+    Ref targetElement { styleable.element };
+    if (!targetElement->isConnected())
+        return nullptr;
+
+    // While timeline names match globally, matching a timeline declared within the target's own
+    // hierarchy remains the common case. Partitioning the timelines up-front means the tree-order
+    // walk below only ever considers the handful of timelines that can actually win it, and that
+    // we only pay for the tree scope checks of the remaining timelines in the rare case where the
+    // target's hierarchy yields no match at all. Otherwise, a document where many elements declare
+    // the same timeline name makes attaching a single animation linear in the number of those
+    // elements.
+    Vector<Ref<ScrollTimeline>> timelinesInTargetHierarchy;
+    Vector<Ref<ScrollTimeline>> timelinesOutsideTargetHierarchy;
     for (auto& timeline : timelines) {
         auto styleableForTimeline = originatingStyleableIncludingTimelineScope(timeline).styleable();
         if (!styleableForTimeline)
             continue;
-        Ref targetElement { styleable.element };
-        if (!timelineIsInScopeForTarget(timeline, targetElement.get(), targetTimelineScopeOrdinal))
-            continue;
-        matchedTimelines.append(timeline);
+        Ref elementForTimeline { styleableForTimeline->element };
+        if (elementForTimeline.ptr() == targetElement.ptr() || targetElement->isComposedTreeDescendantOf(elementForTimeline.get()))
+            timelinesInTargetHierarchy.append(timeline);
+        else
+            timelinesOutsideTargetHierarchy.append(timeline);
     }
-    if (matchedTimelines.isEmpty())
+
+    auto removeTimelinesOutOfScope = [&](Vector<Ref<ScrollTimeline>>& candidates) {
+        candidates.removeAllMatching([&](auto& timeline) {
+            return !timelineIsInScopeForTarget(timeline, targetElement.get(), targetTimelineScopeOrdinal);
+        });
+    };
+
+    removeTimelinesOutOfScope(timelinesInTargetHierarchy);
+    if (!timelinesInTargetHierarchy.isEmpty())
+        return determineTreeOrder(timelinesInTargetHierarchy, styleable, timelineScopeElement);
+
+    removeTimelinesOutOfScope(timelinesOutsideTargetHierarchy);
+    if (timelinesOutsideTargetHierarchy.isEmpty())
         return nullptr;
-    return determineTreeOrder(matchedTimelines, styleable, timelineScopeElement);
+    return determineTreeOrder(timelinesOutsideTargetHierarchy, styleable, timelineScopeElement);
 }
 
 Vector<Ref<ScrollTimeline>>& StyleOriginatedTimelinesController::timelinesForName(const AtomString& name)
@@ -242,17 +266,21 @@ void StyleOriginatedTimelinesController::registerNamedScrollTimeline(const Style
         newScrollTimeline->setSource(source);
         updateTimelineForTimelineScope(newScrollTimeline, scopedName.name);
         timelines.append(WTF::move(newScrollTimeline));
-        updateCSSAnimationsAssociatedWithNamedTimeline(scopedName.name);
+        m_timelineNamesPendingAnimationUpdate.add(scopedName.name);
     }
 }
 
 void StyleOriginatedTimelinesController::updateCSSAnimationsAssociatedWithNamedTimeline(const AtomString& name)
 {
+    auto it = m_nameToTimelineMap.find(name);
+    if (it == m_nameToTimelineMap.end())
+        return;
+
     // First, we need to gather all CSS Animations attached to existing timelines
     // with the specified name. We do this prior to updating animation-to-timeline
     // relationship because this could mutate the timeline's animations list.
     HashSet<Ref<CSSAnimation>> cssAnimationsWithMatchingTimelineName;
-    for (auto& timeline : timelinesForName(name)) {
+    for (auto& timeline : it->value) {
         for (auto& animation : timeline->relevantAnimations()) {
             if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation.get())) {
                 if (!cssAnimation->owningElement())
@@ -278,11 +306,27 @@ void StyleOriginatedTimelinesController::removePendingOperationsForCSSAnimation(
 
 void StyleOriginatedTimelinesController::documentDidResolveStyle()
 {
+    // Registering a timeline may change which timeline the CSS Animations using its name resolve
+    // to, but only the complete set of timelines registered during this style resolution can tell
+    // us what those animations should end up attached to. Re-syncing them as each timeline comes in
+    // would be quadratic in the number of timelines sharing a name, so we coalesce the updates by
+    // name and perform them a single time, here.
+    auto timelineNamesPendingAnimationUpdate = std::exchange(m_timelineNamesPendingAnimationUpdate, { });
+    for (auto& name : timelineNamesPendingAnimationUpdate)
+        updateCSSAnimationsAssociatedWithNamedTimeline(name);
+
     auto cssAnimationsPendingAttachment = std::exchange(m_cssAnimationsPendingAttachment, { });
     for (auto& cssAnimationPendingAttachment : cssAnimationsPendingAttachment) {
         if (cssAnimationPendingAttachment->owningElement())
             attachAnimation(cssAnimationPendingAttachment.get(), AllowsDeferral::No);
     }
+
+    // Purge any timeline scope entry whose element is gone. Elements removed from the document have
+    // their entry removed as they are removed, but an element may also be destroyed outright without
+    // us hearing about it.
+    m_timelineScopeEntries.removeAllMatching([](auto& entry) {
+        return !entry.second;
+    });
 
     // Purge any inactive named timeline no longer attached to an animation.
     m_nameToTimelineMap.removeIf([](auto& keyValuePair) {
@@ -322,7 +366,7 @@ void StyleOriginatedTimelinesController::registerNamedViewTimeline(const Style::
     }
 
     if (!hasExistingTimeline)
-        updateCSSAnimationsAssociatedWithNamedTimeline(scopedName.name);
+        m_timelineNamesPendingAnimationUpdate.add(scopedName.name);
 }
 
 void StyleOriginatedTimelinesController::unregisterNamedTimeline(const AtomString& name, const Styleable& styleable)
@@ -361,7 +405,7 @@ void StyleOriginatedTimelinesController::unregisterNamedTimeline(const AtomStrin
     if (timelines.isEmpty())
         m_nameToTimelineMap.remove(it);
     else
-        updateCSSAnimationsAssociatedWithNamedTimeline(name);
+        m_timelineNamesPendingAnimationUpdate.add(name);
 }
 
 void StyleOriginatedTimelinesController::attachAnimation(CSSAnimation& animation)
@@ -452,6 +496,22 @@ void StyleOriginatedTimelinesController::updateTimelinesForTimelineScope(Vector<
     }
 }
 
+void StyleOriginatedTimelinesController::setTimelineScopeEntry(const Style::NameScope& scope, const Styleable& styleable)
+{
+    // An element's style may be resolved any number of times while it declares the same
+    // `timeline-scope` value, and recording a redundant entry each time would make
+    // `m_timelineScopeEntries` grow without bound. Since that vector is walked every time an
+    // animation is attached to a named timeline, that alone makes attachment progressively
+    // more expensive.
+    // FIXME: when an element's `timeline-scope` names change, the entry for the previous names
+    // is left behind, and timelines matching those names remain scoped to this element.
+    auto hasMatchingEntry = m_timelineScopeEntries.containsIf([&](auto& entry) {
+        return entry.second == styleable && entry.first == scope;
+    });
+    if (!hasMatchingEntry)
+        m_timelineScopeEntries.append(std::make_pair(scope, styleable));
+}
+
 void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(const Style::NameScope& scope, const Styleable& styleable)
 {
     LOG_WITH_STREAM(Animations, stream << "StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope: " << scope << " styleable: " << styleable);
@@ -488,7 +548,7 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
     case Style::NameScope::Type::All:
         for (auto& entry : m_nameToTimelineMap)
             updateTimelinesForTimelineScope(entry.value, styleable);
-        m_timelineScopeEntries.append(std::make_pair(scope, styleable));
+        setTimelineScopeEntry(scope, styleable);
         break;
     case Style::NameScope::Type::Ident:
         for (auto& name : scope.names) {
@@ -496,7 +556,7 @@ void StyleOriginatedTimelinesController::updateNamedTimelineMapForTimelineScope(
             if (it != m_nameToTimelineMap.end())
                 updateTimelinesForTimelineScope(it->value, styleable);
         }
-        m_timelineScopeEntries.append(std::make_pair(scope, styleable));
+        setTimelineScopeEntry(scope, styleable);
         break;
     }
 }
@@ -530,6 +590,14 @@ void StyleOriginatedTimelinesController::unregisterNamedTimelinesAssociatedWithE
 
 void StyleOriginatedTimelinesController::styleableWasRemoved(const Styleable& styleable)
 {
+    // A removed element no longer scopes any timeline name. Dropping its entry here matters for
+    // more than correctness: `m_timelineScopeEntries` is walked every time an animation is attached
+    // to a named timeline, so a page that repeatedly replaces its content would otherwise see
+    // attachment get slower with every pass.
+    m_timelineScopeEntries.removeAllMatching([&](auto& entry) {
+        return entry.second == styleable;
+    });
+
     for (Ref timeline : m_removedTimelines) {
         if (originatingElement(timeline) != styleable)
             continue;
