@@ -85,9 +85,14 @@ private:
 
     enum class AllowsDeferral : bool { No, Yes };
     void attachAnimation(CSSAnimation&, AllowsDeferral);
-    ScrollTimeline* determineTimelineForElement(const Vector<Ref<ScrollTimeline>>&, const Styleable&, Style::ScopeOrdinal targetTimelineScopeOrdinal, const Element*);
+    ScrollTimeline* determineTimelineForElement(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Style::ScopedName& targetTimelineName, const Element*);
     ScrollTimeline* determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Element*);
     ScrollTimeline& inactiveNamedTimeline(const AtomString&);
+
+    void addTimelineToElementIndex(const Ref<ScrollTimeline>&);
+    void removeTimelineFromElementIndex(const Ref<ScrollTimeline>&);
+    void setTimelineScopeElementForTimeline(const Ref<ScrollTimeline>&, const Element*);
+    void assertElementIndexIsConsistent() const;
 
     // A `timeline-scope` declaration only ever affects the declaring element's composed tree
     // descendants, so we key these by element and look one up by walking the target's ancestors
@@ -103,6 +108,7 @@ private:
     Vector<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
     WeakHashMap<Element, Vector<TimelineScopeEntry>, WeakPtrImplWithEventTargetData> m_timelineScopeEntries;
     HashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
+    WeakHashMap<Element, Vector<Ref<ScrollTimeline>>, WeakPtrImplWithEventTargetData> m_timelinesByMatchingElement;
     HashSet<Ref<ScrollTimeline>> m_removedTimelines;
     HashSet<AtomString> m_timelineNamesPendingAnimationUpdate;
 };
