@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<style>
+
+#scroller {
+    overflow: scroll;
+    width: 200px;
+    height: 200px;
+    timeline-scope: --subject;
+}
+
+.subject {
+    width: 100px;
+    height: 100px;
+    view-timeline-name: --subject;
+}
+
+.spacer {
+    width: 100px;
+    height: 400px;
+}
+
+@keyframes anim {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
+
+#target {
+    animation: anim;
+    animation-timeline: --subject;
+}
+
+</style>
+
+<div id="scroller">
+    <div id="css-subject" class="subject"></div>
+    <div class="spacer"></div>
+    <div id="target"></div>
+</div>
+
+<pre id="log"></pre>
+
+<script>
+
+(async function() {
+    window.testRunner?.dumpAsText();
+    window.testRunner?.waitUntilDone();
+
+    const results = [];
+    const check = (name, condition) => results.push(`${condition ? "PASS" : "FAIL"} ${name}`);
+    const nextFrame = () => new Promise(requestAnimationFrame);
+    const finish = message => {
+        document.getElementById("log").textContent = message;
+        window.testRunner?.notifyDone();
+    };
+
+    if (!window.GCController) {
+        finish("window.GCController is missing");
+        return;
+    }
+
+    // A ViewTimeline created from script and detached from the document. Nothing but the
+    // timeline itself references the subject once this function returns.
+    const scriptTimeline = (() => {
+        const subject = document.createElement("div");
+        document.getElementById("scroller").appendChild(subject);
+        const timeline = new ViewTimeline({ subject });
+        subject.remove();
+        return timeline;
+    })();
+
+    // A ViewTimeline created from `view-timeline-name` which script holds on to after its
+    // subject was removed from the document.
+    await nextFrame();
+    const styleTimeline = document.getAnimations()[0]?.timeline;
+    if (!(styleTimeline instanceof ViewTimeline)) {
+        finish("#target was not attached to a ViewTimeline");
+        return;
+    }
+    document.getElementById("css-subject").remove();
+
+    await window.GCController.collect();
+
+    // A ViewTimeline must keep its subject alive, `subject` is not nullable.
+    check("script-created ViewTimeline still has its subject", scriptTimeline.subject instanceof Element);
+    check("style-originated ViewTimeline still has its subject", styleTimeline.subject instanceof Element);
+
+    // Rendering updates iterate over every registered timeline and read its subject.
+    await nextFrame();
+    await nextFrame();
+    check("rendering updates did not crash", true);
+
+    finish(results.join("\n"));
+})();
+
+</script>

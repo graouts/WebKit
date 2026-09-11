@@ -1,0 +1,3 @@
+PASS script-created ViewTimeline still has its subject
+PASS style-originated ViewTimeline still has its subject
+PASS rendering updates did not crash
