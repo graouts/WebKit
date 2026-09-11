@@ -127,33 +127,33 @@ const std::optional<const Styleable> Styleable::fromRenderer(const RenderElement
 RenderElement* Styleable::renderer() const
 {
     if (!pseudoElementIdentifier)
-        return element.renderer();
+        return element->renderer();
 
     switch (pseudoElementIdentifier->type) {
     case PseudoElementType::After:
-        if (auto* afterPseudoElement = element.afterPseudoElement())
+        if (auto* afterPseudoElement = element->afterPseudoElement())
             return afterPseudoElement->renderer();
         break;
     case PseudoElementType::Backdrop:
     case PseudoElementType::Checkmark:
     case PseudoElementType::PickerIcon:
-        if (auto* hostRenderer = element.renderer())
+        if (auto* hostRenderer = element->renderer())
             return hostRenderer->pseudoElementRenderer(pseudoElementIdentifier->type).get();
         break;
     case PseudoElementType::Before:
-        if (auto* beforePseudoElement = element.beforePseudoElement())
+        if (auto* beforePseudoElement = element->beforePseudoElement())
             return beforePseudoElement->renderer();
         break;
     case PseudoElementType::Marker:
-        if (auto* renderListItem = dynamicDowncast<RenderListItem>(element.renderer())) {
+        if (auto* renderListItem = dynamicDowncast<RenderListItem>(element->renderer())) {
             auto* markerRenderer = renderListItem->markerRenderer();
             if (markerRenderer && !markerRenderer->style().hasUsedContentNone())
                 return markerRenderer;
         }
         break;
     case PseudoElementType::ViewTransition:
-        if (element.renderer() && element.renderer()->isDocumentElementRenderer()) {
-            if (WeakPtr containingBlock = element.renderer()->view().viewTransitionContainingBlock())
+        if (element->renderer() && element->renderer()->isDocumentElementRenderer()) {
+            if (WeakPtr containingBlock = element->renderer()->view().viewTransitionContainingBlock())
                 return containingBlock->firstChildBox();
         }
         break;
@@ -161,11 +161,11 @@ RenderElement* Styleable::renderer() const
     case PseudoElementType::ViewTransitionImagePair:
     case PseudoElementType::ViewTransitionNew:
     case PseudoElementType::ViewTransitionOld: {
-        if (!element.renderer() || !element.renderer()->isDocumentElementRenderer())
+        if (!element->renderer() || !element->renderer()->isDocumentElementRenderer())
             return nullptr;
 
         // Find the right ::view-transition-group().
-        WeakPtr correctGroup = element.renderer()->view().viewTransitionGroupForName(pseudoElementIdentifier->nameOrPart);
+        WeakPtr correctGroup = element->renderer()->view().viewTransitionGroupForName(pseudoElementIdentifier->nameOrPart);
         if (!correctGroup)
             return nullptr;
 
@@ -312,7 +312,7 @@ void Styleable::animationWasRemoved(WebAnimation& animation) const
 void Styleable::elementWasRemoved() const
 {
     cancelStyleOriginatedAnimations();
-    if (CheckedPtr styleOriginatedTimelinesController = element.document().styleOriginatedTimelinesController())
+    if (CheckedPtr styleOriginatedTimelinesController = element->document().styleOriginatedTimelinesController())
         styleOriginatedTimelinesController->styleableWasRemoved(*this);
 }
 
@@ -334,11 +334,11 @@ void Styleable::cancelStyleOriginatedAnimations() const
     // It is important we don't cancel style-originated animations when entering the page cache
     // since any JS wrapper that is kept alive in the page cache could be associated with an animation
     // that itself has not been kept alive (or rather canceled) when entering the page cache.
-    if (element.document().backForwardCacheState() != Document::NotInBackForwardCache)
+    if (element->document().backForwardCacheState() != Document::NotInBackForwardCache)
         return;
 
     cancelStyleOriginatedAnimations({ });
-    if (CheckedPtr styleOriginatedTimelinesController = element.document().styleOriginatedTimelinesController())
+    if (CheckedPtr styleOriginatedTimelinesController = element->document().styleOriginatedTimelinesController())
         styleOriginatedTimelinesController->unregisterNamedTimelinesAssociatedWithElement(*this);
 }
 
@@ -403,7 +403,7 @@ void Styleable::updateCSSAnimations(const Style::ComputedStyle* currentStyle, co
 
     auto& currentAnimationList = newStyle.animations();
     auto& previousAnimationList = keyframeEffectStack.cssAnimationList();
-    if (!element.hasPendingKeyframesUpdate(pseudoElementIdentifier) && previousAnimationList && !previousAnimationList->isInitial() && !newStyle.animations().isInitial() && *previousAnimationList == newStyle.animations() && !animationListContainsNewlyValidAnimation(newStyle.animations()))
+    if (!element->hasPendingKeyframesUpdate(pseudoElementIdentifier) && previousAnimationList && !previousAnimationList->isInitial() && !newStyle.animations().isInitial() && *previousAnimationList == newStyle.animations() && !animationListContainsNewlyValidAnimation(newStyle.animations()))
         return;
 
     CSSAnimationCollection newAnimations;
@@ -581,7 +581,7 @@ static void updateCSSTransitionsForStyleableAndProperty(const Styleable& styleab
     if (animation && !isDeclarative)
         return;
 
-    Ref document = styleable.element.document();
+    Ref document = styleable.element->document();
 
     auto hasMatchingTransitionProperty = false;
     auto matchingTransitionDuration = 0.0;
@@ -807,7 +807,7 @@ void Styleable::updateCSSTransitions(const Style::ComputedStyle& currentStyle, c
 
         auto collectionQuirks = [&] {
             EnumSet<Style::AnimatablePropertiesCollectionQuirks> quirks;
-            if (protect(element.document())->quirks().shouldComparareUsedValuesForBorderWidthForTriggeringTransitions())
+            if (protect(element->document())->quirks().shouldComparareUsedValuesForBorderWidthForTriggeringTransitions())
                 quirks.add(Style::AnimatablePropertiesCollectionQuirks::ComparareUsedValuesForBorderWidth);
             return quirks;
         }();
@@ -824,11 +824,11 @@ void Styleable::updateCSSTransitions(const Style::ComputedStyle& currentStyle, c
             }
         }
 
-        if (auto* properties = element.runningTransitionsByProperty(pseudoElementIdentifier)) {
+        if (auto* properties = element->runningTransitionsByProperty(pseudoElementIdentifier)) {
             for (const auto& [property, transition] : *properties)
                 addProperty(property);
         }
-        if (auto* properties = element.completedTransitionsByProperty(pseudoElementIdentifier)) {
+        if (auto* properties = element->completedTransitionsByProperty(pseudoElementIdentifier)) {
             for (const auto& [property, transition] : *properties)
                 addProperty(property);
         }
@@ -865,7 +865,7 @@ void Styleable::updateCSSScrollTimelines(const Style::ComputedStyle* currentStyl
     if (currentStyle && currentStyle->scrollTimelines() == afterChangeStyle.scrollTimelines())
         return;
 
-    CheckedRef styleOriginatedTimelinesController = protect(element.document())->ensureStyleOriginatedTimelinesController();
+    CheckedRef styleOriginatedTimelinesController = protect(element->document())->ensureStyleOriginatedTimelinesController();
 
     HashSet<AtomString> registeredScrollTimelineNames;
 
@@ -902,7 +902,7 @@ void Styleable::updateCSSViewTimelines(const Style::ComputedStyle* currentStyle,
     if (currentStyle && currentStyle->viewTimelines() == afterChangeStyle.viewTimelines())
         return;
 
-    CheckedRef styleOriginatedTimelinesController = protect(element.document())->ensureStyleOriginatedTimelinesController();
+    CheckedRef styleOriginatedTimelinesController = protect(element->document())->ensureStyleOriginatedTimelinesController();
 
     HashSet<AtomString> registeredViewTimelineNames;
 
@@ -971,7 +971,7 @@ bool Styleable::viewportSizeDidChange() const
 
 bool Styleable::capturedInViewTransition() const
 {
-    return !element.viewTransitionCapturedName(pseudoElementIdentifier).isNull();
+    return !element->viewTransitionCapturedName(pseudoElementIdentifier).isNull();
 }
 
 void Styleable::setCapturedInViewTransition(AtomString captureName)
