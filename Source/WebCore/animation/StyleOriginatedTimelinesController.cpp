@@ -291,6 +291,17 @@ void StyleOriginatedTimelinesController::removePendingOperationsForCSSAnimation(
     });
 }
 
+void StyleOriginatedTimelinesController::detachFromDocument()
+{
+    // A ViewTimeline keeps its subject element alive, so holding on to style-originated timelines
+    // past document teardown would keep the document itself alive through one of its own elements.
+    m_cssAnimationsPendingAttachment.clear();
+    m_timelineScopeEntries.clear();
+    m_nameToTimelineMap.clear();
+    m_removedTimelines.clear();
+    m_timelineNamesPendingAnimationUpdate.clear();
+}
+
 void StyleOriginatedTimelinesController::documentDidResolveStyle()
 {
     auto timelineNamesPendingAnimationUpdate = std::exchange(m_timelineNamesPendingAnimationUpdate, { });

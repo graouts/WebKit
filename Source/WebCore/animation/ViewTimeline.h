@@ -75,8 +75,8 @@ public:
     static ExceptionOr<Ref<ViewTimeline>> create(Document&, ViewTimelineOptions&&);
     static Ref<ViewTimeline> create(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&, const Styleable&);
 
-    const Element& NODELETE bindingsSubject() const;
-    const Styleable subject() const { return m_subject; }
+    const Element& NODELETE bindingsSubject() const { return m_subjectElement.get(); }
+    const Styleable subject() const { return { m_subjectElement, m_subjectPseudoElementIdentifier }; }
 
     const ResolvableViewTimelineInsets& insets() const LIFETIME_BOUND { return m_insets; }
     void setInsets(ResolvableViewTimelineInsets&& insets) { m_insets = WTF::move(insets); }
@@ -122,7 +122,12 @@ private:
 
     void cacheCurrentTime();
 
-    Styleable m_subject;
+    // A ViewTimeline is guaranteed to have a subject for its whole lifetime, so we keep a strong
+    // reference to it. Style-originated timelines are cleared when the document is torn down
+    // (see StyleOriginatedTimelinesController::detachFromDocument) so that this reference cannot
+    // keep the document alive through one of its own elements.
+    const Ref<Element> m_subjectElement;
+    const std::optional<Style::PseudoElementIdentifier> m_subjectPseudoElementIdentifier;
     ResolvableViewTimelineInsets m_insets;
 
     CurrentTimeData m_cachedCurrentTimeData { };

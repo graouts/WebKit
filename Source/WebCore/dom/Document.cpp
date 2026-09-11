@@ -1051,6 +1051,11 @@ void Document::commonTeardown()
     if (m_timelinesController)
         m_timelinesController->detachFromDocument();
 
+    // This must come after detaching the timelines controller so that animations no longer
+    // reference their timeline by the time we drop the last reference to style-originated ones.
+    if (CheckedPtr styleOriginatedTimelinesController = this->styleOriginatedTimelinesController())
+        styleOriginatedTimelinesController->detachFromDocument();
+
     m_timeline = nullptr;
     m_associatedFormControls.clear();
     m_didAssociateFormControlsTimer.stop();
