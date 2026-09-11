@@ -58,64 +58,36 @@ ExceptionOr<Ref<ViewTimeline>> ViewTimeline::create(Document& document, ViewTime
     if (!insets)
         return Exception { ExceptionCode::TypeError };
 
-    auto viewTimeline = ViewTimeline::create({ nullAtom() }, options.axis, WTF::move(*insets), Style::ZoomFactor::none());
-
-    viewTimeline->setSubject(options.subject.ptr());
-    protect(options.subject->document())->updateLayoutIgnorePendingStylesheets();
+    auto subject = Styleable::fromElement(options.subject);
+    auto viewTimeline = ViewTimeline::create({ nullAtom() }, options.axis, WTF::move(*insets), Style::ZoomFactor::none(), subject);
+    protect(subject.element->document())->updateLayoutIgnorePendingStylesheets();
     viewTimeline->cacheCurrentTime();
 
     return viewTimeline;
 }
 
-Ref<ViewTimeline> ViewTimeline::create(const Style::ScopedName& scopedName, ScrollAxis axis, const Style::ViewTimelineInsetItem& insets, const Style::ZoomFactor& usedZoomForLength)
+Ref<ViewTimeline> ViewTimeline::create(const Style::ScopedName& scopedName, ScrollAxis axis, const Style::ViewTimelineInsetItem& insets, const Style::ZoomFactor& usedZoomForLength, const Styleable& subject)
 {
-    return adoptRef(*new ViewTimeline(scopedName, axis, insets, usedZoomForLength));
+    auto viewTimeline = adoptRef(*new ViewTimeline(scopedName, axis, insets, usedZoomForLength, subject));
+    protect(subject.element->document())->ensureTimelinesController().addTimeline(viewTimeline);
+    return viewTimeline;
 }
 
-ViewTimeline::ViewTimeline(const Style::ScopedName& scopedName, ScrollAxis axis, const Style::ViewTimelineInsetItem& insets, const Style::ZoomFactor& usedZoomForLength)
+ViewTimeline::ViewTimeline(const Style::ScopedName& scopedName, ScrollAxis axis, const Style::ViewTimelineInsetItem& insets, const Style::ZoomFactor& usedZoomForLength, const Styleable& subject)
     : ScrollTimeline(scopedName, axis)
+    , m_subject(subject)
     , m_insets({ .insets = insets, .zoom = usedZoomForLength })
 {
 }
 
-const Element* ViewTimeline::subject() const
+const Element& ViewTimeline::bindingsSubject() const
 {
-    if (auto subject = m_subject.styleable())
-        return subject->element.ptr();
-    return nullptr;
-}
-
-void ViewTimeline::setSubject(Element* subject)
-{
-    if (subject)
-        setSubject(Styleable::fromElement(*subject));
-    else {
-        removeTimelineFromDocument(protect(m_subject.element().get()));
-        m_subject = WeakStyleable();
-    }
-}
-
-void ViewTimeline::setSubject(const Styleable& styleable)
-{
-    if (m_subject == styleable)
-        return;
-
-    auto previousSubject = m_subject.element();
-    m_subject = styleable;
-
-    if (previousSubject && &previousSubject->document() == &styleable.element->document())
-        return;
-
-    removeTimelineFromDocument(protect(previousSubject.get()));
-
-    protect(styleable.element->document())->ensureTimelinesController().addTimeline(*this);
+    return m_subject.element.get();
 }
 
 AnimationTimelinesController* ViewTimeline::controller() const
 {
-    if (auto subject = m_subject.styleable())
-        return &protect(subject->element->document())->ensureTimelinesController();
-    return nullptr;
+    return &protect(m_subject.element->document())->ensureTimelinesController();
 }
 
 StickinessAdjustmentData StickinessAdjustmentData::computeStickinessAdjustmentData(const StickyPositionViewportConstraints& constraints, ScrollTimeline::ResolvedScrollDirection scrollDirection, float scrollContainerSize, float subjectSize, float subjectOffset)
@@ -216,16 +188,12 @@ void ViewTimeline::cacheCurrentTime()
     };
 
     m_cachedCurrentTimeData = [&] -> CurrentTimeData {
-        auto subject = m_subject.styleable();
-        if (!subject)
-            return { };
-
-        CheckedPtr subjectRenderer = subject->renderer();
+        CheckedPtr subjectRenderer = m_subject.renderer();
         if (!subjectRenderer)
             return { };
 
         CheckedPtr sourceRenderer = sourceScrollerRenderer();
-        CheckedPtr sourceScrollableArea = scrollableAreaForSourceRenderer(sourceRenderer.get(), protect(subject->element->document()));
+        CheckedPtr sourceScrollableArea = scrollableAreaForSourceRenderer(sourceRenderer.get(), protect(m_subject.element->document()));
         if (!sourceScrollableArea)
             return { };
 
@@ -331,7 +299,7 @@ WebAnimationTime ViewTimeline::epsilon() const
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents ViewTimeline::documentWillUpdateAnimationsAndSendEvents()
 {
     cacheCurrentTime();
-    if (m_subject.element() && m_subject.element()->isConnected())
+    if (m_subject.element->isConnected())
         return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;
     return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::No;
 }
@@ -343,8 +311,7 @@ Style::SingleAnimationRange ViewTimeline::defaultRange() const
 
 RefPtr<Element> ViewTimeline::bindingsSource() const
 {
-    if (auto subject = m_subject.styleable())
-        protect(subject->element->document())->updateStyleIfNeeded();
+    protect(m_subject.element->document())->updateStyleIfNeeded();
     return ScrollTimeline::bindingsSource();
 }
 
@@ -357,11 +324,7 @@ RefPtr<Element> ViewTimeline::source() const
 
 const RenderBox* ViewTimeline::sourceScrollerRenderer() const
 {
-    auto subject = m_subject.styleable();
-    if (!subject)
-        return nullptr;
-
-    CheckedPtr subjectRenderer = subject->renderer();
+    CheckedPtr subjectRenderer = m_subject.renderer();
     if (!subjectRenderer)
         return { };
 
@@ -372,11 +335,7 @@ const RenderBox* ViewTimeline::sourceScrollerRenderer() const
 
 CheckedPtr<const RenderElement> ViewTimeline::stickyContainer() const
 {
-    auto subject = m_subject.styleable();
-    if (!subject)
-        return nullptr;
-
-    CheckedPtr renderer = subject->renderer();
+    CheckedPtr renderer = m_subject.renderer();
 
     CheckedPtr scrollerRenderer = sourceScrollerRenderer();
     while (renderer && renderer.get() != scrollerRenderer) {
@@ -556,7 +515,7 @@ bool ViewTimeline::matchesAnonymousViewFunctionForSubject(const Style::ViewFunct
         && m_insets.insets == viewFunction->insets
         && m_insets.zoom == usedZoomForLength
         && axis() == viewFunction->axis
-        && m_subject.styleable() == subject;
+        && m_subject == subject;
 }
 
 WTF::TextStream& operator<<(WTF::TextStream& ts, const StickinessAdjustmentData& stickiness)
