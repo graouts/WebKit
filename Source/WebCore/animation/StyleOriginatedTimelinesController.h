@@ -74,6 +74,7 @@ public:
     void unregisterNamedTimelinesAssociatedWithElement(const Styleable&);
     void removePendingOperationsForCSSAnimation(const CSSAnimation&);
     bool isPendingTimelineAttachment(const WebAnimation&) const;
+    void detachFromDocument();
     void documentDidResolveStyle();
     void styleableWasRemoved(const Styleable&);
 
