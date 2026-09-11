@@ -235,8 +235,7 @@ void CSSAnimation::syncStyleOriginatedTimeline()
                 if (existingViewTimeline->matchesAnonymousViewFunctionForSubject(viewFunction, m_backingStyleZoomForLength, *owningElement()))
                     return;
             }
-            auto viewTimeline = ViewTimeline::create({ nullAtom() }, viewFunction->axis, viewFunction->insets, m_backingStyleZoomForLength);
-            viewTimeline->setSubject(*owningElement());
+            auto viewTimeline = ViewTimeline::create({ nullAtom() }, viewFunction->axis, viewFunction->insets, m_backingStyleZoomForLength, *owningElement());
             setTimeline(WTF::move(viewTimeline));
         }
     );

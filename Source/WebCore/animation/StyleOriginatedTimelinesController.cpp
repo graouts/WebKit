@@ -59,7 +59,7 @@ DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(StyleOriginatedTimelinesController);
 static const WeakStyleable originatingElement(const Ref<ScrollTimeline>& timeline)
 {
     if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline))
-        return viewTimeline->subjectStyleable();
+        return viewTimeline->subject();
     return timeline->sourceStyleable();
 }
 
@@ -323,7 +323,7 @@ void StyleOriginatedTimelinesController::registerNamedViewTimeline(const Style::
 
     auto existingTimelineIndex = timelines.findIf([&](auto& timeline) {
         if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline))
-            return viewTimeline->subjectStyleable() == subject;
+            return viewTimeline->subject() == subject;
         return false;
     });
 
@@ -334,8 +334,7 @@ void StyleOriginatedTimelinesController::registerNamedViewTimeline(const Style::
         existingViewTimeline->setAxis(axis);
         existingViewTimeline->setInsets(ResolvableViewTimelineInsets { insets, usedZoomForLength });
     } else {
-        auto newViewTimeline = ViewTimeline::create(scopedName, axis, insets, usedZoomForLength);
-        newViewTimeline->setSubject(subject);
+        auto newViewTimeline = ViewTimeline::create(scopedName, axis, insets, usedZoomForLength, subject);
         updateTimelineForTimelineScope(newViewTimeline, scopedName.name);
         timelines.append(WTF::move(newViewTimeline));
     }

@@ -28,8 +28,7 @@
     Exposed=Window
 ] interface ViewTimeline : ScrollTimeline {
     [CallWith=CurrentDocument] constructor(ViewTimelineOptions options);
-    // FIXME: `subject` should not be nullable.
-    readonly attribute Element? subject;
+    [ImplementedAs=bindingsSubject] readonly attribute Element subject;
     readonly attribute CSSNumericValue startOffset;
     readonly attribute CSSNumericValue endOffset;
 };
