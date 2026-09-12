@@ -1,4 +1,5 @@
 
 PASS shapeOutside responsive to style changes
 PASS shapeOutside responsive to inherited shapeOutside changes
+FAIL Neutral path() keyframes invalidate when the underlying <shape-box> changes assert_equals: expected "path(\"M 30 30 L 40 40 Z\") border-box" but got "none"
 
