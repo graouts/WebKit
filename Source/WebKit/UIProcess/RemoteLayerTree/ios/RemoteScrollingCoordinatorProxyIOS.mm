@@ -815,7 +815,7 @@ void RemoteScrollingCoordinatorProxyIOS::unregisterTimelines(WebCore::ProcessIde
 {
     scrollingTree().unregisterTimelines(processIdentifier);
     if (m_monotonicTimelineRegistry) {
-        m_monotonicTimelineRegistry->unregister(processIdentifier);
+        m_monotonicTimelineRegistry->remove(processIdentifier);
         if (m_monotonicTimelineRegistry->isEmpty())
             m_monotonicTimelineRegistry = nullptr;
     }

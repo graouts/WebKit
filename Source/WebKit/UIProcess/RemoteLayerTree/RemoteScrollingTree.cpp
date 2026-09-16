@@ -346,7 +346,7 @@ void RemoteScrollingTree::unregisterTimelines(WebCore::ProcessIdentifier process
     Locker locker { m_progressBasedTimelineRegistryLock };
     if (!m_progressBasedTimelineRegistry)
         return;
-    m_progressBasedTimelineRegistry->unregister(processIdentifier);
+    m_progressBasedTimelineRegistry->remove(processIdentifier);
     if (m_progressBasedTimelineRegistry->isEmpty())
         m_progressBasedTimelineRegistry = nullptr;
 }
