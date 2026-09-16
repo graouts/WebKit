@@ -286,6 +286,11 @@ void RemoteScrollingCoordinatorProxyMac::updateTimelinesRegistration(WebCore::Pr
     m_eventDispatcher->updateTimelinesRegistration(processIdentifier, timelinesUpdate, now);
 }
 
+void RemoteScrollingCoordinatorProxyMac::unregisterTimelines(WebCore::ProcessIdentifier processIdentifier)
+{
+    m_eventDispatcher->unregisterTimelines(processIdentifier);
+}
+
 RefPtr<const RemoteAnimationTimeline> RemoteScrollingCoordinatorProxyMac::timeline(const TimelineID& timelineID) const
 {
     return m_eventDispatcher->timeline(timelineID);

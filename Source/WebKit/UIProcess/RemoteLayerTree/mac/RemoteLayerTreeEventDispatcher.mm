@@ -736,6 +736,20 @@ void RemoteLayerTreeEventDispatcher::updateTimelinesRegistration(WebCore::Proces
         m_monotonicTimelineRegistry = nullptr;
 }
 
+void RemoteLayerTreeEventDispatcher::unregisterTimelines(WebCore::ProcessIdentifier processIdentifier)
+{
+    assertIsHeld(m_animationLock);
+
+    if (auto scrollingTree = this->scrollingTree())
+        scrollingTree->unregisterTimelines(processIdentifier);
+
+    if (m_monotonicTimelineRegistry) {
+        m_monotonicTimelineRegistry->unregister(processIdentifier);
+        if (m_monotonicTimelineRegistry->isEmpty())
+            m_monotonicTimelineRegistry = nullptr;
+    }
+}
+
 RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeEventDispatcher::timeline(const TimelineID& timelineID)
 {
     assertIsHeld(m_animationLock);

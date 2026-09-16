@@ -811,6 +811,16 @@ void RemoteScrollingCoordinatorProxyIOS::updateTimelinesRegistration(WebCore::Pr
         m_monotonicTimelineRegistry = nullptr;
 }
 
+void RemoteScrollingCoordinatorProxyIOS::unregisterTimelines(WebCore::ProcessIdentifier processIdentifier)
+{
+    scrollingTree().unregisterTimelines(processIdentifier);
+    if (m_monotonicTimelineRegistry) {
+        m_monotonicTimelineRegistry->unregister(processIdentifier);
+        if (m_monotonicTimelineRegistry->isEmpty())
+            m_monotonicTimelineRegistry = nullptr;
+    }
+}
+
 RefPtr<const RemoteAnimationTimeline> RemoteScrollingCoordinatorProxyIOS::timeline(const TimelineID& timelineID) const
 {
     if (m_monotonicTimelineRegistry) {
