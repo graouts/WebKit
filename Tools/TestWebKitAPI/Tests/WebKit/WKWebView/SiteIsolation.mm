@@ -6708,7 +6708,6 @@ TEST(SiteIsolation, RemoteProcessTerminationAfterDisablingSiteIsolation)
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
-
 static NSUInteger arrayCountInJSONString(NSString *json, NSString *key)
 {
     if (!json.length)
@@ -6735,12 +6734,7 @@ static NSUInteger monotonicTimelineCount(TestWKWebView *webView, uint64_t proces
     return arrayCountInJSONString([webView _monotonicTimelinesForProcessID:processID], @"timelines");
 }
 
-// Threaded animations leave state in the UI process keyed by the Web process that uploaded them:
-// timelines in RemoteProgressBasedTimelineRegistry and RemoteMonotonicTimelineRegistry, and animation
-// stacks reachable from the RemoteLayerTreeNodes. A crash of the main frame's process takes the whole
-// drawing area down with it, but when a site-isolated iframe's process crashes the page keeps its
-// drawing area and scrolling coordinator proxy, so that process's state must be dropped explicitly.
-TEST(SiteIsolation, ThreadedAnimationsClearedWhenIframeProcessCrashes)
+TEST(SiteIsolation, RemoteTimelinesAndAnimationsClearedWhenIframeProcessCrashes)
 {
     HTTPServer server({
         { "/mainframe"_s, { "<iframe width='400' height='400' src='https://domain2.com/subframe'></iframe>"_s } },
@@ -6760,8 +6754,6 @@ TEST(SiteIsolation, ThreadedAnimationsClearedWhenIframeProcessCrashes)
             "</script>"_s } }
     }, HTTPServer::Protocol::HttpsProxy);
 
-    // window.internals is needed inside the cross-origin subframe to map its scroller and animation
-    // targets onto the identifiers the UI process keys its threaded animation state by.
     RetainPtr configuration = [WKWebViewConfiguration _test_configurationWithTestPlugInClassName:@"WebProcessPlugInWithInternals" configureJSCForTesting:YES];
     RetainPtr storeConfiguration = adoptNS([[_WKWebsiteDataStoreConfiguration alloc] initNonPersistentConfiguration]);
     [storeConfiguration setHTTPSProxy:[NSURL URLWithString:[NSString stringWithFormat:@"https://127.0.0.1:%d/", server.port()]]];
@@ -6842,7 +6834,6 @@ TEST(SiteIsolation, ThreadedAnimationsClearedWhenIframeProcessCrashes)
     EXPECT_EQ(0u, animationCountForLayer(webView.get(), progressLayerID, processID));
     EXPECT_EQ(0u, animationCountForLayer(webView.get(), monotonicLayerID, processID));
 }
-
 #endif // ENABLE(THREADED_ANIMATIONS)
 
 #if defined(NDEBUG) && PLATFORM(MAC)
