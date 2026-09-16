@@ -1416,7 +1416,7 @@ static void dumpCALayer(TextStream& ts, CALayer *layer, bool traverse)
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
-- (NSString *)_animationStackForLayerWithID:(unsigned long long)layerID
+- (NSString *)_animationStackForLayerWithIDInMainFrame:(unsigned long long)layerID
 {
     return [self _animationStackForLayerWithID:layerID processID:_page->legacyMainFrameProcess().coreProcessIdentifier().toUInt64()];
 }
