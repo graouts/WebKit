@@ -825,6 +825,13 @@ HashSet<Ref<RemoteProgressBasedTimeline>> RemoteScrollingCoordinatorProxyIOS::ti
     return scrollingTree().timelinesForScrollingNodeIDForTesting(scrollingNodeID);
 }
 
+HashSet<Ref<RemoteMonotonicTimeline>> RemoteScrollingCoordinatorProxyIOS::monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier processIdentifier) const
+{
+    if (!m_monotonicTimelineRegistry)
+        return { };
+    return m_monotonicTimelineRegistry->timelinesForProcessForTesting(processIdentifier);
+}
+
 void RemoteScrollingCoordinatorProxyIOS::updateTimeDependentAnimationStacks()
 {
     if (!m_monotonicTimelineRegistry)

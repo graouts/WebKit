@@ -78,6 +78,7 @@ private:
     RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const override;
     RefPtr<const RemoteAnimationStack> animationStackForNodeWithIDForTesting(WebCore::PlatformLayerIdentifier) const override;
     HashSet<Ref<RemoteProgressBasedTimeline>> timelinesForScrollingNodeIDForTesting(WebCore::ScrollingNodeID) const override;
+    HashSet<Ref<RemoteMonotonicTimeline>> monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier) const override;
 #else
     void willCommitLayerAndScrollingTrees() override;
     void didCommitLayerAndScrollingTrees() override;

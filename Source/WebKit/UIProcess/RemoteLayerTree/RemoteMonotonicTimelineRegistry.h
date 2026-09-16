@@ -42,6 +42,7 @@ public:
     void update(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime);
     RemoteMonotonicTimeline* NODELETE get(const TimelineID&) const;
     void advanceCurrentTime(MonotonicTime);
+    HashSet<Ref<RemoteMonotonicTimeline>> timelinesForProcessForTesting(WebCore::ProcessIdentifier) const;
 
 private:
     HashMap<WebCore::ProcessIdentifier, HashSet<Ref<RemoteMonotonicTimeline>>> m_timelines;

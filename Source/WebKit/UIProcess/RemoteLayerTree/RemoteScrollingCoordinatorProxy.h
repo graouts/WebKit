@@ -40,6 +40,10 @@
 #include <wtf/TZoneMalloc.h>
 #include <wtf/WeakPtr.h>
 
+#if ENABLE(THREADED_ANIMATIONS)
+#include "RemoteMonotonicTimeline.h"
+#endif
+
 OBJC_CLASS UIScrollView;
 
 namespace WebCore {
@@ -163,6 +167,7 @@ public:
     virtual void progressBasedTimelinesWereUpdatedForNode(const WebCore::ScrollingTreeScrollingNode&) { }
     virtual RefPtr<const RemoteAnimationStack> animationStackForNodeWithIDForTesting(WebCore::PlatformLayerIdentifier) const { return nullptr; }
     virtual HashSet<Ref<RemoteProgressBasedTimeline>> timelinesForScrollingNodeIDForTesting(WebCore::ScrollingNodeID) const { return { }; }
+    virtual HashSet<Ref<RemoteMonotonicTimeline>> monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier) const { return { }; }
     virtual bool hasHighImpactMonotonicAnimations() const { return false; }
 #endif
 

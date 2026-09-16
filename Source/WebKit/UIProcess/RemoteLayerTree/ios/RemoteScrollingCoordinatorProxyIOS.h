@@ -78,6 +78,7 @@ public:
     void updateTimelinesRegistration(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime) override;
     RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const override;
     HashSet<Ref<RemoteProgressBasedTimeline>> timelinesForScrollingNodeIDForTesting(WebCore::ScrollingNodeID) const override;
+    HashSet<Ref<RemoteMonotonicTimeline>> monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier) const override;
     void progressBasedTimelinesWereUpdatedForNode(const WebCore::ScrollingTreeScrollingNode&) override;
     bool hasHighImpactMonotonicAnimations() const override;
 #endif

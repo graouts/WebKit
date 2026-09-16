@@ -109,6 +109,14 @@ void RemoteMonotonicTimelineRegistry::advanceCurrentTime(MonotonicTime now)
     }
 }
 
+HashSet<Ref<RemoteMonotonicTimeline>> RemoteMonotonicTimelineRegistry::timelinesForProcessForTesting(WebCore::ProcessIdentifier processIdentifier) const
+{
+    auto iterator = m_timelines.find(processIdentifier);
+    if (iterator == m_timelines.end())
+        return { };
+    return iterator->value;
+}
+
 } // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATIONS)

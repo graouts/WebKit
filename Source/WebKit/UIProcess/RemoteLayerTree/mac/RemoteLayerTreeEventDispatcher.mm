@@ -789,6 +789,14 @@ HashSet<Ref<RemoteProgressBasedTimeline>> RemoteLayerTreeEventDispatcher::timeli
         return scrollingTree->timelinesForScrollingNodeIDForTesting(scrollingNodeID);
     return { };
 }
+
+HashSet<Ref<RemoteMonotonicTimeline>> RemoteLayerTreeEventDispatcher::monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier processIdentifier) const
+{
+    assertIsHeld(m_animationLock);
+    if (!m_monotonicTimelineRegistry)
+        return { };
+    return m_monotonicTimelineRegistry->timelinesForProcessForTesting(processIdentifier);
+}
 #endif
 
 void RemoteLayerTreeEventDispatcher::windowScreenWillChange()

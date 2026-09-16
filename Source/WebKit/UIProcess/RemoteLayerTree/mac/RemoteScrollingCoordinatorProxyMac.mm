@@ -303,6 +303,14 @@ HashSet<Ref<RemoteProgressBasedTimeline>> RemoteScrollingCoordinatorProxyMac::ti
 {
     return m_eventDispatcher->timelinesForScrollingNodeIDForTesting(scrollingNodeID);
 }
+
+HashSet<Ref<RemoteMonotonicTimeline>> RemoteScrollingCoordinatorProxyMac::monotonicTimelinesForProcessForTesting(WebCore::ProcessIdentifier processIdentifier) const
+{
+    m_eventDispatcher->lockForAnimationChanges();
+    auto timelines = m_eventDispatcher->monotonicTimelinesForProcessForTesting(processIdentifier);
+    m_eventDispatcher->unlockForAnimationChanges();
+    return timelines;
+}
 #endif
 
 } // namespace WebKit
