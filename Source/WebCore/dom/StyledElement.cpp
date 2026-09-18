@@ -358,6 +358,9 @@ void StyledElement::rebuildPresentationalHintStyle()
                 return false;
             if (hasNonZeroProperty(CSSPropertyCy))
                 return false;
+            // Path data is likewise unique per element, and hashing it means hashing the whole byte stream.
+            if (style->hasProperty(CSSPropertyD))
+                return false;
         }
         return true;
     }();
