@@ -43,11 +43,13 @@
 #include "ElementRareData.h"
 #include "HTMLElement.h"
 #include "HTMLParserIdioms.h"
+#include "ImmutableStyleProperties.h"
 #include "InlineStylePropertyMap.h"
 #include "InspectorInstrumentation.h"
 #include "MutableStyleProperties.h"
 #include "SVGElement.h"
 #include "ScriptableDocumentParser.h"
+#include "StylePropertiesInlines.h"
 #include "StylePropertyMap.h"
 #include "StylePropertyShorthand.h"
 #include "StyleResolver.h"
@@ -328,6 +330,14 @@ const ImmutableStyleProperties* StyledElement::presentationalHintStyle() const
 
 void StyledElement::rebuildPresentationalHintStyle()
 {
+    // Give the element a chance to refresh only the properties that changed. Re-collecting every
+    // attribute means re-parsing the value of each one, which is wasteful when a single frequently
+    // updated property (such as the SVG `d` property) is all that went stale.
+    if (updatePresentationalHintStyleForChangedProperties()) {
+        elementData()->setPresentationalHintStyleIsDirty(false);
+        return;
+    }
+
     bool isSVG = isSVGElement();
     auto style = MutableStyleProperties::create(isSVG ? SVGAttributeMode : HTMLQuirksMode);
     for (auto& attribute : attributes())
@@ -366,6 +376,37 @@ void StyledElement::rebuildPresentationalHintStyle()
     }();
 
     elementData->m_presentationalHintStyle = shouldDeduplicate ? style->immutableDeduplicatedCopy() : style->immutableCopy();
+}
+
+bool StyledElement::replacePresentationalHintStyleProperty(CSSPropertyID propertyID, Ref<CSSValue>&& value)
+{
+    if (!elementData())
+        return false;
+
+    RefPtr existingStyle = elementData()->presentationalHintStyle();
+    if (!existingStyle)
+        return false;
+
+    auto index = existingStyle->findPropertyIndex(propertyID);
+    if (index == -1)
+        return false;
+
+    // Every other property is derived from attributes that did not change, so their values can be
+    // shared with the style being replaced rather than collected and parsed again.
+    auto propertyCount = existingStyle->propertyCount();
+    Vector<CSSProperty> properties;
+    properties.reserveInitialCapacity(propertyCount);
+    for (unsigned i = 0; i < propertyCount; ++i) {
+        if (i == static_cast<unsigned>(index))
+            properties.append(CSSProperty(propertyID, WTF::move(value)));
+        else
+            properties.append(existingStyle->propertyAt(i).toCSSProperty());
+    }
+
+    // Not deduplicated: a property that changes often enough to be worth updating in place is not
+    // going to be shared with another element.
+    ensureUniqueElementData().m_presentationalHintStyle = ImmutableStyleProperties::create(properties.span(), existingStyle->cssParserMode());
+    return true;
 }
 
 void StyledElement::addPropertyToPresentationalHintStyle(MutableStyleProperties& style, CSSPropertyID propertyID, CSSValueID identifier)
