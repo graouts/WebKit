@@ -130,7 +130,7 @@ void SVGPathElement::attributeChanged(const QualifiedName& name, const AtomStrin
     } else if (oldValue != newValue && hasPresentationalHintsForAttribute(name)) {
         // Some other presentation attribute changed, so the whole presentational hint style has to
         // be collected again rather than just the `d` property.
-        m_onlyDPresentationalHintIsDirty = false;
+        m_otherPresentationalHintsAreDirty = true;
     }
 
     SVGGeometryElement::attributeChanged(name, oldValue, newValue, attributeModificationReason);
@@ -156,11 +156,10 @@ void SVGPathElement::svgAttributeChanged(const QualifiedName& attrName)
 
         updateSVGRendererForElementChange();
         if (document().settings().cssDPropertyEnabled()) {
-            // The `d` value has to be read lazily, when the presentational hint style is rebuilt
-            // during style resolution: a SMIL animation of `d` has not necessarily committed its
-            // animated value by the time it gets here.
-            if (!presentationalHintStyleIsDirty())
-                m_onlyDPresentationalHintIsDirty = true;
+            // Only record that `d` went stale. Its value has to be read later, when the
+            // presentational hint style is rebuilt during style resolution: a SMIL animation of `d`
+            // has not necessarily committed its animated value by the time it gets here.
+            m_dPresentationalHintIsDirty = true;
             setPresentationalHintStyleIsDirty();
         }
         invalidateResourceImageBuffersIfNeeded();
@@ -312,9 +311,14 @@ Ref<CSSValue> SVGPathElement::dPresentationalHintValue()
 
 bool SVGPathElement::updatePresentationalHintStyleForChangedProperties()
 {
+    // Both flags have to be consumed here, whether or not the fast path is taken, since the full
+    // rebuild that follows covers every attribute.
+    bool dIsDirty = std::exchange(m_dPresentationalHintIsDirty, false);
+    bool othersAreDirty = std::exchange(m_otherPresentationalHintsAreDirty, false);
+
     // Zooming or panning an SVG chart rewrites `d` on every frame while the other presentation
     // attributes stay put, so swap the new path in rather than re-collecting (and re-parsing) them.
-    return std::exchange(m_onlyDPresentationalHintIsDirty, false)
+    return dIsDirty && !othersAreDirty
         && replacePresentationalHintStyleProperty(CSSPropertyD, dPresentationalHintValue());
 }
 

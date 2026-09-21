@@ -77,9 +77,10 @@ private:
     bool updatePresentationalHintStyleForChangedProperties() final;
     Ref<CSSValue> dPresentationalHintValue();
 
-    // Whether `d` is the only presentation attribute that changed since the presentational hint
-    // style was last built, in which case the rebuild can be reduced to swapping that one value.
-    bool m_onlyDPresentationalHintIsDirty { false };
+    // Which presentation attributes have changed since the presentational hint style was last
+    // built. When `d` is the only one, the rebuild reduces to swapping that single value.
+    bool m_dPresentationalHintIsDirty { false };
+    bool m_otherPresentationalHintsAreDirty { false };
 
     const Ref<SVGAnimatedPath> m_path { SVGAnimatedPath::create(this) };
 };

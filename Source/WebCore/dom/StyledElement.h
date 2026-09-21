@@ -84,8 +84,6 @@ protected:
 
     virtual bool hasPresentationalHintsForAttribute(const QualifiedName&) const { return false; }
 
-    bool presentationalHintStyleIsDirty() const { return elementData() && elementData()->presentationalHintStyleIsDirty(); }
-
     // Called at the start of a presentational hint style rebuild, i.e. lazily during style
     // resolution. An element that tracks which of its properties went stale can refresh just those,
     // typically with replacePresentationalHintStyleProperty(), and return true to skip the rebuild.
