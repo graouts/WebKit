@@ -30,7 +30,6 @@
 
 namespace WebCore {
 
-class CSSValue;
 class SVGPoint;
 
 class SVGPathElement final : public SVGGeometryElement {
@@ -70,17 +69,6 @@ private:
     void removingSteps(RemovalType, ContainerNode&) final;
 
     void invalidateMPathDependencies();
-
-    void collectPresentationalHintsForAttribute(const QualifiedName&, const AtomString&, MutableStyleProperties&) final;
-    void collectExtraStyleForPresentationalHints(MutableStyleProperties&) override;
-    void collectDPresentationalHint(MutableStyleProperties&);
-    bool updatePresentationalHintStyleForChangedProperties() final;
-    Ref<CSSValue> dPresentationalHintValue();
-
-    // Which presentation attributes have changed since the presentational hint style was last
-    // built. When `d` is the only one, the rebuild reduces to swapping that single value.
-    bool m_dPresentationalHintIsDirty { false };
-    bool m_otherPresentationalHintsAreDirty { false };
 
     const Ref<SVGAnimatedPath> m_path { SVGAnimatedPath::create(this) };
 };

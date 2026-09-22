@@ -22,11 +22,9 @@
 #include "config.h"
 #include "SVGPathElement.h"
 
-#include "CSSPathValue.h"
 #include "ContainerNodeInlines.h"
 #include "LegacyRenderSVGPath.h"
 #include "LegacyRenderSVGResource.h"
-#include "MutableStyleProperties.h"
 #include "RenderSVGPath.h"
 #include "SVGDocumentExtensions.h"
 #include "SVGElementTypeHelpers.h"
@@ -36,7 +34,6 @@
 #include "SVGPoint.h"
 #include "Settings.h"
 #include "StyleComputedStyle+GettersInlines.h"
-#include "StylePropertiesInlines.h"
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/text/MakeString.h>
 
@@ -127,10 +124,6 @@ void SVGPathElement::attributeChanged(const QualifiedName& name, const AtomStrin
             cache.add(newValue, pathBaseVal->existingPathByteStream().data());
         else
             protect(protect(document())->svgExtensions())->reportError(makeString("Problem parsing d=\""_s, newValue, "\""_s));
-    } else if (oldValue != newValue && hasPresentationalHintsForAttribute(name)) {
-        // Some other presentation attribute changed, so the whole presentational hint style has to
-        // be collected again rather than just the `d` property.
-        m_otherPresentationalHintsAreDirty = true;
     }
 
     SVGGeometryElement::attributeChanged(name, oldValue, newValue, attributeModificationReason);
@@ -155,13 +148,6 @@ void SVGPathElement::svgAttributeChanged(const QualifiedName& attrName)
             path->setNeedsShapeUpdate();
 
         updateSVGRendererForElementChange();
-        if (document().settings().cssDPropertyEnabled()) {
-            // Only record that `d` went stale. Its value has to be read later, when the
-            // presentational hint style is rebuilt during style resolution: a SMIL animation of `d`
-            // has not necessarily committed its animated value by the time it gets here.
-            m_dPresentationalHintIsDirty = true;
-            setPresentationalHintStyleIsDirty();
-        }
         invalidateResourceImageBuffersIfNeeded();
         return;
     }
@@ -248,17 +234,15 @@ RenderPtr<RenderElement> SVGPathElement::createElementRenderer(Style::ComputedSt
 
 const SVGPathByteStream& SVGPathElement::pathByteStream() const
 {
+    // A `d` in the computed style can only have come from a stylesheet or an inline style, since the
+    // attribute is not a presentation attribute, and such a value wins over the attribute.
     if (document().settings().cssDPropertyEnabled()) {
         if (CheckedPtr renderer = this->renderer()) {
             if (auto& pathFunction = renderer->style().d().tryPath())
                 return pathFunction->parameters.data.byteStream;
-            return SVGPathByteStream::empty();
-        }
-
-        if (CheckedPtr style = const_cast<SVGPathElement&>(*this).computedStyle()) {
+        } else if (CheckedPtr style = const_cast<SVGPathElement&>(*this).computedStyle()) {
             if (auto& pathFunction = style->d().tryPath())
                 return pathFunction->parameters.data.byteStream;
-            return SVGPathByteStream::empty();
         }
     }
 
@@ -272,54 +256,10 @@ Path SVGPathElement::path() const
             CheckedRef style = renderer->style();
             if (auto& pathFunction = style->d().tryPath())
                 return Style::path(pathFunction->parameters, FloatRect { }, style->usedZoomForLength());
-            return { };
         }
     }
 
     return Ref { m_path }->currentPath();
-}
-
-void SVGPathElement::collectPresentationalHintsForAttribute(const QualifiedName& name, const AtomString& value, MutableStyleProperties& style)
-{
-    if (name == SVGNames::dAttr && document().settings().cssDPropertyEnabled())
-        collectDPresentationalHint(style);
-    else
-        SVGGeometryElement::collectPresentationalHintsForAttribute(name, value, style);
-}
-
-void SVGPathElement::collectExtraStyleForPresentationalHints(MutableStyleProperties& style)
-{
-    if (!document().settings().cssDPropertyEnabled())
-        return;
-    if (!style.hasProperty(CSSPropertyD))
-        collectDPresentationalHint(style);
-}
-
-void SVGPathElement::collectDPresentationalHint(MutableStyleProperties& style)
-{
-    ASSERT(document().settings().cssDPropertyEnabled());
-    addPropertyToPresentationalHintStyle(style, cssPropertyIdForSVGAttributeName(SVGNames::dAttr), dPresentationalHintValue());
-}
-
-Ref<CSSValue> SVGPathElement::dPresentationalHintValue()
-{
-    // In the case of the `d` property, we want to avoid providing a string value since it will require
-    // the path data to be parsed again and path data can be unwieldy.
-    // The fill rule value passed here is not relevant for the `d` property.
-    return CSSPathValue::create(CSS::PathFunction { CSS::Keyword::Nonzero { }, CSS::Path::Data { Ref { m_path }->currentPathByteStream() } });
-}
-
-bool SVGPathElement::updatePresentationalHintStyleForChangedProperties()
-{
-    // Both flags have to be consumed here, whether or not the fast path is taken, since the full
-    // rebuild that follows covers every attribute.
-    bool dIsDirty = std::exchange(m_dPresentationalHintIsDirty, false);
-    bool othersAreDirty = std::exchange(m_otherPresentationalHintsAreDirty, false);
-
-    // Zooming or panning an SVG chart rewrites `d` on every frame while the other presentation
-    // attributes stay put, so swap the new path in rather than re-collecting (and re-parsing) them.
-    return dIsDirty && !othersAreDirty
-        && replacePresentationalHintStyleProperty(CSSPropertyD, dPresentationalHintValue());
 }
 
 void SVGPathElement::pathDidChange()

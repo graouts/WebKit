@@ -936,7 +936,13 @@ CSSPropertyID SVGElement::cssPropertyIdForSVGAttributeName(const QualifiedName& 
     case AttributeNames::cyAttr:
         return is<SVGCircleElement>(*this) || is<SVGEllipseElement>(*this) ? CSSPropertyCy : CSSPropertyInvalid;
     case AttributeNames::dAttr:
-        return is<SVGPathElement>(*this) && document().settings().cssDPropertyEnabled() ? CSSPropertyD : CSSPropertyInvalid;
+        // Deliberately not mapped to CSSPropertyD. Treating `d` as a presentation attribute makes
+        // every attribute mutation invalidate style, which costs a full style resolution per <path>
+        // per frame on content that rewrites `d` while panning or zooming a chart. SVGPathElement
+        // reads the attribute's path data directly and only defers to the CSS property when a
+        // stylesheet or inline style specifies one, the same way the `transform` attribute is
+        // kept out of the cascade.
+        return CSSPropertyInvalid;
     case AttributeNames::directionAttr:
         return CSSPropertyDirection;
     case AttributeNames::displayAttr:
