@@ -63,6 +63,11 @@ public:
     SVGCoordinateComponent y;
     SVGPathData d;
 
+    // Whether a CSS declaration supplied `d`, as opposed to it being left at its initial `none`.
+    // SVGPathElement uses this to tell `d: none` apart from no `d` at all, since the `d` attribute
+    // is not a presentation attribute and so does not go through the cascade.
+    PREFERRED_TYPE(bool) unsigned hasExplicitlySetD : 1;
+
 private:
     SVGLayoutData();
     SVGLayoutData(const SVGLayoutData&);

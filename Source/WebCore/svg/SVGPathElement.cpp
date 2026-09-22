@@ -235,14 +235,20 @@ RenderPtr<RenderElement> SVGPathElement::createElementRenderer(Style::ComputedSt
 const SVGPathByteStream& SVGPathElement::pathByteStream() const
 {
     // A `d` in the computed style can only have come from a stylesheet or an inline style, since the
-    // attribute is not a presentation attribute, and such a value wins over the attribute.
+    // attribute is not a presentation attribute, and such a declaration wins over the attribute. That
+    // includes `d: none`, which has to render nothing rather than fall back to the attribute.
     if (document().settings().cssDPropertyEnabled()) {
         if (CheckedPtr renderer = this->renderer()) {
-            if (auto& pathFunction = renderer->style().d().tryPath())
+            CheckedRef style = renderer->style();
+            if (auto& pathFunction = style->d().tryPath())
                 return pathFunction->parameters.data.byteStream;
+            if (style->hasExplicitlySetD())
+                return SVGPathByteStream::empty();
         } else if (CheckedPtr style = const_cast<SVGPathElement&>(*this).computedStyle()) {
             if (auto& pathFunction = style->d().tryPath())
                 return pathFunction->parameters.data.byteStream;
+            if (style->hasExplicitlySetD())
+                return SVGPathByteStream::empty();
         }
     }
 
@@ -256,6 +262,8 @@ Path SVGPathElement::path() const
             CheckedRef style = renderer->style();
             if (auto& pathFunction = style->d().tryPath())
                 return Style::path(pathFunction->parameters, FloatRect { }, style->usedZoomForLength());
+            if (style->hasExplicitlySetD())
+                return { };
         }
     }
 

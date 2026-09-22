@@ -59,7 +59,9 @@
 #include "RenderGrid.h"
 #include "RenderSVGModelObject.h"
 #include "SVGElement.h"
+#include "SVGElementTypeHelpers.h"
 #include "SVGLengthContext.h"
+#include "SVGPathElement.h"
 #include "StyleCalcSizeValue+Serialization.h"
 #include "StyleComputedStyle+GettersInlines.h"
 #include "StyleComputedStyle+InitialInlines.h"
@@ -88,6 +90,7 @@ namespace Style {
 // Custom handling of computed value extraction.
 class ExtractorCustom {
 public:
+    static Ref<CSSValue> extractD(ExtractorState&);
     static Ref<CSSValue> extractDirection(ExtractorState&);
     static Ref<CSSValue> extractWritingMode(ExtractorState&);
     static Ref<CSSValue> extractFloat(ExtractorState&);
@@ -190,6 +193,7 @@ public:
 
     // MARK: Custom Serialization
 
+    static void extractDSerialization(ExtractorState&, StringBuilder&, const CSS::SerializationContext&);
     static void extractDirectionSerialization(ExtractorState&, StringBuilder&, const CSS::SerializationContext&);
     static void extractWritingModeSerialization(ExtractorState&, StringBuilder&, const CSS::SerializationContext&);
     static void extractFloatSerialization(ExtractorState&, StringBuilder&, const CSS::SerializationContext&);
@@ -642,6 +646,23 @@ template<CSSPropertyID> struct WebkitColumnBreakSharedAdaptor {
 // Adaptors are used to implement the logic for extracting a value from a ComputedStyle and performing some operation of the CSS value equivalent. This allows the same code to be used for CSS creation and serialization.
 
 template<CSSPropertyID> struct PropertyExtractorAdaptor;
+
+template<> struct PropertyExtractorAdaptor<CSSPropertyD> {
+    template<typename F> decltype(auto) computedValue(ExtractorState& state, F&& functor) const
+    {
+        // The `d` attribute is not a presentation attribute, so the path it specifies never enters the
+        // cascade, which is what keeps a `d` mutation from invalidating style. Report that path here
+        // unless a CSS declaration supplied `d`, which includes `d: none` overriding the attribute.
+        if (state.style.d().isNone() && !state.style.hasExplicitlySetD()) {
+            if (RefPtr pathElement = dynamicDowncast<SVGPathElement>(state.element.get())) {
+                // An absent or empty `d` attribute leaves the property at its initial `none`.
+                if (auto& byteStream = pathElement->pathByteStream(); !byteStream.isEmpty())
+                    return functor(SVGPathData { PathFunction { Path { .fillRule = { }, .data = { byteStream }, .zoom = 1 } } });
+            }
+        }
+        return functor(state.style.d());
+    }
+};
 
 template<> struct PropertyExtractorAdaptor<CSSPropertyDirection> {
     template<typename F> decltype(auto) computedValue(ExtractorState& state, F&& functor) const
@@ -2006,6 +2027,16 @@ template<CSSPropertyID property> inline void extractFillLayerPropertyShorthandSe
 }
 
 // MARK: - Custom Extractors
+
+inline Ref<CSSValue> ExtractorCustom::extractD(ExtractorState& state)
+{
+    return extractCSSValue<CSSPropertyD>(state);
+}
+
+inline void ExtractorCustom::extractDSerialization(ExtractorState& state, StringBuilder& builder, const CSS::SerializationContext& context)
+{
+    extractSerialization<CSSPropertyD>(state, builder, context);
+}
 
 inline Ref<CSSValue> ExtractorCustom::extractDirection(ExtractorState& state)
 {

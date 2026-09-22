@@ -49,6 +49,7 @@ SVGLayoutData::SVGLayoutData()
     , x(ComputedStyle::initialX())
     , y(ComputedStyle::initialY())
     , d(ComputedStyle::initialD())
+    , hasExplicitlySetD(false)
 {
 }
 
@@ -62,6 +63,7 @@ inline SVGLayoutData::SVGLayoutData(const SVGLayoutData& other)
     , x(other.x)
     , y(other.y)
     , d(other.d)
+    , hasExplicitlySetD(other.hasExplicitlySetD)
 {
 }
 
@@ -79,7 +81,8 @@ bool SVGLayoutData::operator==(const SVGLayoutData& other) const
         && ry == other.ry
         && x == other.x
         && y == other.y
-        && d == other.d;
+        && d == other.d
+        && hasExplicitlySetD == other.hasExplicitlySetD;
 }
 
 #if !LOG_DISABLED
@@ -93,6 +96,7 @@ void SVGLayoutData::dumpDifferences(TextStream& ts, const SVGLayoutData& other) 
     LOG_IF_DIFFERENT(x);
     LOG_IF_DIFFERENT(y);
     LOG_IF_DIFFERENT(d);
+    LOG_IF_DIFFERENT_WITH_CAST(bool, hasExplicitlySetD);
 }
 #endif
 
