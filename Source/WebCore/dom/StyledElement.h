@@ -84,6 +84,20 @@ protected:
 
     virtual bool hasPresentationalHintsForAttribute(const QualifiedName&) const { return false; }
 
+    // Whether a change to this presentation attribute needs to invalidate style. An element may return
+    // false when it keeps its computed style up to date for that change itself; its presentational hint
+    // style is still marked dirty, so the next style resolution picks up the new value.
+    virtual bool presentationalHintChangeInvalidatesStyle(const QualifiedName&) const { return true; }
+
+    // Called at the start of a presentational hint style rebuild, i.e. lazily during style
+    // resolution. An element that tracks which of its properties went stale can refresh just those,
+    // typically with replacePresentationalHintStyleProperty(), and return true to skip the rebuild.
+    virtual bool updatePresentationalHintStyleForChangedProperties() { return false; }
+
+    // Swaps a single value into the existing presentational hint style. Returns false if there is
+    // no existing style holding that property, in which case the caller must fall back to a rebuild.
+    bool replacePresentationalHintStyleProperty(CSSPropertyID, Ref<CSSValue>&&);
+
     void addPropertyToPresentationalHintStyle(MutableStyleProperties&, CSSPropertyID, CSSValueID identifier);
     void addPropertyToPresentationalHintStyle(MutableStyleProperties&, CSSPropertyID, double value, CSSUnitType);
     void addPropertyToPresentationalHintStyle(MutableStyleProperties&, CSSPropertyID, const String& value);

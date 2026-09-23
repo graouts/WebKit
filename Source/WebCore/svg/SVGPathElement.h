@@ -30,6 +30,7 @@
 
 namespace WebCore {
 
+class CSSValue;
 class SVGPoint;
 
 class SVGPathElement final : public SVGGeometryElement {
@@ -73,6 +74,30 @@ private:
     void collectPresentationalHintsForAttribute(const QualifiedName&, const AtomString&, MutableStyleProperties&) final;
     void collectExtraStyleForPresentationalHints(MutableStyleProperties&) override;
     void collectDPresentationalHint(MutableStyleProperties&);
+    bool updatePresentationalHintStyleForChangedProperties() final;
+    Ref<CSSValue> dPresentationalHintValue();
+
+    std::optional<Style::UnadjustedStyle> resolveCustomStyle(const Style::ResolutionContext&, const Style::ComputedStyle* shadowHostStyle) final;
+    bool presentationalHintChangeInvalidatesStyle(const QualifiedName&) const final;
+    bool canUpdateComputedDInPlace() const;
+    void updateComputedDInPlace();
+
+    // Whether the `d` property in the computed style last resolved for this element came from its own
+    // `d` attribute, meaning no other declaration for `d` applies to it.
+    bool m_computedDIsFromAttribute { false };
+
+    // How the `d` attribute change being handled affects style, decided in attributeChanged().
+    enum class DAttributeStyleUpdate : uint8_t {
+        Invalidate, // Also the case of a SMIL animation of `d`, which does not go through attributeChanged().
+        InPlace,
+        None,
+    };
+    DAttributeStyleUpdate m_dAttributeStyleUpdate { DAttributeStyleUpdate::Invalidate };
+
+    // Which presentation attributes have changed since the presentational hint style was last
+    // built. When `d` is the only one, the rebuild reduces to swapping that single value.
+    bool m_dPresentationalHintIsDirty { false };
+    bool m_otherPresentationalHintsAreDirty { false };
 
     const Ref<SVGAnimatedPath> m_path { SVGAnimatedPath::create(this) };
 };
