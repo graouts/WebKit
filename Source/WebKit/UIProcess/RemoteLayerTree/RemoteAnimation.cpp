@@ -46,9 +46,9 @@ RemoteAnimation::RemoteAnimation(const WebCore::AcceleratedEffect& effect, const
 {
 }
 
-void RemoteAnimation::apply(WebCore::AcceleratedEffectValues& values)
+WebCore::AnimationEffectPhase RemoteAnimation::apply(WebCore::AcceleratedEffectValues& values)
 {
-    m_effect->apply(values, m_timeline->currentTime(), m_timeline->duration());
+    return m_effect->apply(values, m_timeline->currentTime(), m_timeline->duration());
 }
 
 Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const

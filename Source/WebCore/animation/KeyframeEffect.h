@@ -199,6 +199,8 @@ public:
     void timelineAccelerationAbilityDidChange();
 #endif
 
+    bool lastApplicationPhaseIsActive() const { return m_phaseAtLastApplication == AnimationEffectPhase::Active; }
+
 private:
     KeyframeEffect(Element*, const std::optional<Style::PseudoElementIdentifier>&);
     ~KeyframeEffect();

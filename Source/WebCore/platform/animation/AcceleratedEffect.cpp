@@ -442,11 +442,28 @@ ResolvedEffectTiming AcceleratedEffect::resolvedTiming(WebAnimationTime timeline
     });
 }
 
-void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
+AnimationEffectPhase AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
 {
     auto resolvedTiming = this->resolvedTiming(timelineTime, timelineDuration);
+
+    auto phaseAsString = [](AnimationEffectPhase phase) {
+        // enum class AnimationEffectPhase : uint8_t { Before, Active, After, Idle };
+        switch (phase) {
+        case AnimationEffectPhase::Before:
+            return "before"_s;
+        case AnimationEffectPhase::Active:
+            return "active"_s;
+        case AnimationEffectPhase::After:
+            return "after"_s;
+        case AnimationEffectPhase::Idle:
+            return "idle"_s;
+        }
+    };
+
+    WTFLogAlways("[GRAOUTS] applying effect %p in %s phase", this, phaseAsString(resolvedTiming.phase).characters());
+
     if (!resolvedTiming.transformedProgress)
-        return;
+        return resolvedTiming.phase;
 
     ASSERT(resolvedTiming.currentIteration);
     auto progress = *resolvedTiming.transformedProgress;
@@ -458,7 +475,7 @@ void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime 
         ASSERT(m_animatedProperties.hasExactlyOneBitSet());
         BlendingContext context { progress, false, m_compositeOperation };
         blend(*m_animatedProperties.begin(), values, m_keyframes.first().values(), m_keyframes.last().values(), context);
-        return;
+        return resolvedTiming.phase;
     }
 
     Keyframe propertySpecificKeyframeWithZeroOffset { 0, values.clone() };
@@ -499,6 +516,8 @@ void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime 
 
         interpolateKeyframes(animatedProperty, interval, progress, *resolvedTiming.currentIteration, m_timing.iterationDuration, resolvedTiming.before, composeProperty, accumulateProperty, interpolateProperty, requiresInterpolationForAccumulativeIterationCallback);
     }
+
+    return resolvedTiming.phase;
 }
 
 void AcceleratedEffect::validateFilters(const AcceleratedEffectValues& baseValues, OptionSet<AcceleratedEffectProperty>& disallowedProperties)

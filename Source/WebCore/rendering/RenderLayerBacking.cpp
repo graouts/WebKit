@@ -5070,6 +5070,8 @@ const AcceleratedEffectStack* RenderLayerBacking::acceleratedEffectStack() const
 
 void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<AcceleratedTimeline>>& timelines)
 {
+    WTFLogAlways("[GRAOUTS] RenderLayerBacking::updateAcceleratedEffectsAndBaseValues()");
+
     auto& renderer = this->renderer();
     OptionSet<AcceleratedEffectProperty> disallowedAcceleratedProperties;
 
@@ -5146,7 +5148,7 @@ void RenderLayerBacking::updateAcceleratedEffectsAndBaseValues(HashSet<Ref<Accel
                 replacedAcceleratedProperties.add(acceleratedEffect->replacedProperties());
                 // Keep track of this effect's properties in the list of all known properties.
                 allAcceleratedProperties.add(acceleratedProperties);
-                if (effect->isRunningAccelerated())
+                if (effect->lastApplicationPhaseIsActive() && effect->isRunningAccelerated())
                     interpolatingProperties.add(acceleratedProperties);
                 // We can only handle one effect in the stack targeting the filter and backdrop-filter properties
                 // because of the complexities involved with possibly blending across multiple filter types. Since

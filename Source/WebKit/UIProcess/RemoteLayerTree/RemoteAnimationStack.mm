@@ -121,7 +121,10 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
     ASSERT(!m_transformPresentationModifier);
     ASSERT(!m_presentationModifierGroup);
 
-    auto computedValues = computeValues();
+    auto computeValuesResult = computeValues();
+    auto hasActiveAnimation = computeValuesResult.first;
+    RELEASE_ASSERT(hasActiveAnimation);
+    auto& computedValues = computeValuesResult.second;
 
     // While m_affectedLayerProperties may contain LayerProperty::Filter, in practice
     // we could be in a situation where all `filter` values for this animation stack
@@ -175,7 +178,11 @@ void RemoteAnimationStack::applyEffects() const
     if (!m_presentationModifierGroup)
         return;
 
-    auto computedValues = computeValues();
+    auto computeValuesResult = computeValues();
+    auto hasActiveAnimation = computeValuesResult.first;
+    if (!hasActiveAnimation)
+        return;
+    auto& computedValues = computeValuesResult.second;
 
     if (!m_filterPresentationModifiers.isEmpty())
         WebCore::PlatformCAFilters::updatePresentationModifiers(computedValues.filter, m_filterPresentationModifiers);
@@ -200,7 +207,11 @@ void RemoteAnimationStack::applyEffects() const
 
 void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool backdropRootIsOpaque) const
 {
-    auto computedValues = computeValues();
+    auto computeValuesResult = computeValues();
+    auto hasActiveAnimation = computeValuesResult.first;
+    if (!hasActiveAnimation)
+        return;
+    auto& computedValues = computeValuesResult.second;
 
     if (m_affectedLayerProperties.contains(LayerProperty::Filter))
         WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
@@ -214,12 +225,16 @@ void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool
     }
 }
 
-WebCore::AcceleratedEffectValues RemoteAnimationStack::computeValues() const
+std::pair<bool, WebCore::AcceleratedEffectValues> RemoteAnimationStack::computeValues() const
 {
+    auto hasActiveAnimation = false;
     auto values = m_baseValues;
-    for (auto& animation : m_animations)
-        animation->apply(values);
-    return values;
+    for (auto& animation : m_animations) {
+        auto phase = animation->apply(values);
+        if (!hasActiveAnimation && phase == WebCore::AnimationEffectPhase::Active)
+            hasActiveAnimation = true;
+    }
+    return { hasActiveAnimation, values };
 }
 
 void RemoteAnimationStack::clear(PlatformLayer *layer)
