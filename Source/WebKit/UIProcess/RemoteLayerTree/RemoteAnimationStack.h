@@ -75,7 +75,7 @@ public:
 private:
     explicit RemoteAnimationStack(RemoteAnimations&&, WebCore::AcceleratedEffectValues&&, WebCore::FloatRect);
 
-    WebCore::AcceleratedEffectValues computeValues() const;
+    std::pair<bool, WebCore::AcceleratedEffectValues> computeValues() const;
 
 #if PLATFORM(MAC)
     const WebCore::FilterOperations* longestFilterList() const;
