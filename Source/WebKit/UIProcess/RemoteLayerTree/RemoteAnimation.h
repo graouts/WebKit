@@ -46,7 +46,7 @@ public:
     const OptionSet<WebCore::AcceleratedEffectProperty>& animatedProperties() const LIFETIME_BOUND { return m_effect->animatedProperties(); }
     const Vector<WebCore::AcceleratedEffect::Keyframe>& keyframes() const LIFETIME_BOUND { return m_effect->keyframes(); }
 
-    void apply(WebCore::AcceleratedEffectValues&);
+    WebCore::AnimationEffectPhase apply(WebCore::AcceleratedEffectValues&);
 
     Ref<JSON::Object> toJSONForTesting() const;
 
