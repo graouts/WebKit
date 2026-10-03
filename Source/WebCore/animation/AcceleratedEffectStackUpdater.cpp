@@ -38,9 +38,12 @@
 #include "RenderLayer.h"
 #include "RenderLayerBacking.h"
 #include "RenderLayerModelObject.h"
+#include "LegacyRenderSVGRoot.h"
 #include "RenderStyleConstants.h"
 #include "ScrollTimeline.h"
 #include "Styleable.h"
+#include "StyleComputedStyle+GettersInlines.h"
+#include "StyleDisplay.h"
 
 namespace WebCore {
 
@@ -73,8 +76,24 @@ void AcceleratedEffectStackUpdater::update()
         if (!renderer || !renderer->isComposited())
             continue;
 
+//        WTFLogAlways("[GRAOUTS] Dumping render tree for %p", renderer.get());
+//        showRenderTree(renderer.get());
+
         CheckedPtr renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
+
+        CheckedPtr renderSVGRoot = dynamicDowncast<LegacyRenderSVGRoot>(renderer);
+        if (renderSVGRoot) {
+//            auto parentDisplay = renderer->parent()->style().display();
+//            if (parentDisplay == Style::DisplayType::None)
+//                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has 'display: none'");
+//            else if (parentDisplay == Style::DisplayType::Contents)
+//                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has 'display: contents'");
+//            else
+//                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has other 'display' type");
+            WTFLogAlways("[GRAOUTS] svg root container size %dx%d, replace content rect = %dx%d", renderSVGRoot->containerSize().width(), renderSVGRoot->containerSize().height(), renderSVGRoot->replacedContentRect().width().toInt(), renderSVGRoot->replacedContentRect().height().toInt());
+        }
+
         auto* backing = renderLayer->backing();
         previousEffectStacks.append(protect(backing->acceleratedEffectStack()));
         backing->updateAcceleratedEffectsAndBaseValues(timelinesInUpdate);
