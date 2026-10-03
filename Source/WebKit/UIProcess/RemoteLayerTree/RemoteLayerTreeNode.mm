@@ -434,9 +434,12 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     m_hasHighImpactMonotonicAnimations = false;
 
     if (effects.isEmpty()) {
+        WTFLogAlways("[GRAOUTS] cleared effects on node %p", this);
         m_animationStack = nullptr;
         return;
     }
+
+    WTFLogAlways("[GRAOUTS] setting %zu effects on node %p", effects.size(), this);
 
     Ref animationStack = RemoteAnimationStack::create(effects.map([&](const Ref<WebCore::AcceleratedEffect>& effect) {
         TimelineID timelineID { effect->timelineIdentifier(), m_layerID.processIdentifier() };
