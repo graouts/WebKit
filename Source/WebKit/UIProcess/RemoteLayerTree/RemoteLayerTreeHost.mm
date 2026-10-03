@@ -340,6 +340,7 @@ void RemoteLayerTreeHost::layerWillBeRemoved(WebCore::ProcessIdentifier processI
 
     if (auto node = m_nodes.take(layerID)) {
 #if ENABLE(THREADED_ANIMATIONS)
+        WTFLogAlways("[GRAOUTS] layer was removed for node %p", node.get());
         animationsWereRemovedFromNode(*node);
 #endif
         // A hosting context identifier outlives the layers on both of its sides, so its entry may
