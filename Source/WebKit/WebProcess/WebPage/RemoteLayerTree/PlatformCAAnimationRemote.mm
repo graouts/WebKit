@@ -630,11 +630,15 @@ void PlatformCAAnimationRemote::updateLayerAnimations(CALayer *layer, RemoteLaye
 {
     BEGIN_BLOCK_OBJC_EXCEPTIONS
 
-    for (const auto& value : animationsToRemove)
+    for (const auto& value : animationsToRemove) {
+        WTFLogAlways("[GRAOUTS] removing animation %s from layer %p", value.ascii().data(), layer);
         [layer removeAnimationForKey:value.createNSString().get()];
+    }
 
-    for (const auto& keyAnimationPair : animationsToAdd)
+    for (const auto& keyAnimationPair : animationsToAdd) {
+        WTFLogAlways("[GRAOUTS] adding animation %s to layer %p with bounds %f x %f", keyAnimationPair.first.ascii().data(), layer, layer.bounds.size.width, layer.bounds.size.height);
         addAnimationToLayer(layer, layerTreeHost, keyAnimationPair.first, keyAnimationPair.second);
+    }
 
     END_BLOCK_OBJC_EXCEPTIONS
 }

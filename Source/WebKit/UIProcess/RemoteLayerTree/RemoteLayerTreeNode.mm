@@ -439,8 +439,6 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
         return;
     }
 
-    WTFLogAlways("[GRAOUTS] setting %zu effects on node %p", effects.size(), this);
-
     Ref animationStack = RemoteAnimationStack::create(effects.map([&](const Ref<WebCore::AcceleratedEffect>& effect) {
         TimelineID timelineID { effect->timelineIdentifier(), m_layerID.processIdentifier() };
         RefPtr timeline = host.timeline(timelineID);
@@ -450,6 +448,8 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
         return RemoteAnimation::create(Ref { effect }.get(), *timeline);
     }), baseValues.clone(), layer.get().bounds);
     m_animationStack = animationStack.copyRef();
+
+    WTFLogAlways("[GRAOUTS] setting %zu effects on effect stack %p for node %p", effects.size(), animationStack.ptr(), this);
 
 #if PLATFORM(IOS_FAMILY)
     animationStack->applyEffectsFromMainThread(layer.get(), backdropRootIsOpaque());

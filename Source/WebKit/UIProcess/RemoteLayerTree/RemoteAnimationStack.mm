@@ -179,7 +179,7 @@ void RemoteAnimationStack::applyEffects() const
 
     if (!m_filterPresentationModifiers.isEmpty()) {
         WebCore::PlatformCAFilters::updatePresentationModifiers(computedValues.filter, m_filterPresentationModifiers);
-        WTFLogAlways("[GRAOUTS] Applying filter for animation stack %p", this);
+        // WTFLogAlways("[GRAOUTS] Applying filter for animation stack %p", this);
     }
 
     if (m_opacityPresentationModifier) {
@@ -189,14 +189,14 @@ void RemoteAnimationStack::applyEffects() const
             computedValues.opacity.value = std::numeric_limits<float>::min();
         RetainPtr opacity = @(computedValues.opacity.value);
         [m_opacityPresentationModifier setValue:opacity.get()];
-        WTFLogAlways("[GRAOUTS] Applying opacity for animation stack %p", this);
+        // WTFLogAlways("[GRAOUTS] Applying opacity for animation stack %p", this);
     }
 
     if (m_transformPresentationModifier) {
         auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
         RetainPtr transform = [NSValue valueWithCATransform3D:computedTransform];
         [m_transformPresentationModifier setValue:transform.get()];
-        WTFLogAlways("[GRAOUTS] Applying transform for animation stack %p", this);
+        // WTFLogAlways("[GRAOUTS] Applying transform for animation stack %p", this);
     }
 
     if (isMainRunLoop())
@@ -211,17 +211,17 @@ void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool
     auto computedValues = computeValues();
 
     if (m_affectedLayerProperties.contains(LayerProperty::Filter)) {
-        WTFLogAlways("[GRAOUTS] Applying filter for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
+        // WTFLogAlways("[GRAOUTS] Applying filter for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
         WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
     }
 
     if (m_affectedLayerProperties.contains(LayerProperty::Opacity)) {
-        WTFLogAlways("[GRAOUTS] Applying opacity for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
+        // WTFLogAlways("[GRAOUTS] Applying opacity for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
         [layer setOpacity:computedValues.opacity.value];
     }
 
     if (m_affectedLayerProperties.contains(LayerProperty::Transform)) {
-        WTFLogAlways("[GRAOUTS] Applying transform for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
+        // WTFLogAlways("[GRAOUTS] Applying transform for animation stack %p with size %d x %d", this, (int)m_bounds.width(), (int)m_bounds.height());
         auto computedTransform = computedValues.computedTransformationMatrix(m_bounds);
         [layer setTransform:computedTransform];
     }
