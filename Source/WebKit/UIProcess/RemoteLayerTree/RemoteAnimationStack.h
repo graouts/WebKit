@@ -53,6 +53,7 @@ public:
     static Ref<RemoteAnimationStack> create(RemoteAnimations&&, WebCore::AcceleratedEffectValues&&, WebCore::FloatRect);
 
     bool isEmpty() const { return m_animations.isEmpty(); }
+    size_t size() const { return m_animations.size(); }
 
     auto begin() const LIFETIME_BOUND { return m_animations.begin(); }
     auto end() const LIFETIME_BOUND { return m_animations.end(); }
@@ -71,6 +72,7 @@ public:
     void clear(PlatformLayer*);
 
     Ref<JSON::Object> toJSONForTesting() const;
+    String animationPropertiesForTesting() const;
 
 private:
     explicit RemoteAnimationStack(RemoteAnimations&&, WebCore::AcceleratedEffectValues&&, WebCore::FloatRect);

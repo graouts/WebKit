@@ -82,8 +82,8 @@ void AcceleratedEffectStackUpdater::update()
         CheckedPtr renderLayer = renderer->layer();
         ASSERT(renderLayer && renderLayer->backing());
 
-        CheckedPtr renderSVGRoot = dynamicDowncast<LegacyRenderSVGRoot>(renderer);
-        if (renderSVGRoot) {
+//        CheckedPtr renderSVGRoot = dynamicDowncast<LegacyRenderSVGRoot>(renderer);
+//        if (renderSVGRoot) {
 //            auto parentDisplay = renderer->parent()->style().display();
 //            if (parentDisplay == Style::DisplayType::None)
 //                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has 'display: none'");
@@ -91,8 +91,8 @@ void AcceleratedEffectStackUpdater::update()
 //                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has 'display: contents'");
 //            else
 //                WTFLogAlways("[GRAOUTS] AcceleratedEffectStackUpdater::update(), parent has other 'display' type");
-            WTFLogAlways("[GRAOUTS] svg root container size %dx%d, replace content rect = %dx%d", renderSVGRoot->containerSize().width(), renderSVGRoot->containerSize().height(), renderSVGRoot->replacedContentRect().width().toInt(), renderSVGRoot->replacedContentRect().height().toInt());
-        }
+//            WTFLogAlways("[GRAOUTS] svg root container size %dx%d, replace content rect = %dx%d", renderSVGRoot->containerSize().width(), renderSVGRoot->containerSize().height(), renderSVGRoot->replacedContentRect().width().toInt(), renderSVGRoot->replacedContentRect().height().toInt());
+//        }
 
         auto* backing = renderLayer->backing();
         previousEffectStacks.append(protect(backing->acceleratedEffectStack()));

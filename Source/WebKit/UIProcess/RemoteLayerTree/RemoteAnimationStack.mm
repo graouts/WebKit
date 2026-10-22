@@ -282,6 +282,23 @@ Ref<JSON::Object> RemoteAnimationStack::toJSONForTesting() const
     return object;
 }
 
+String RemoteAnimationStack::animationPropertiesForTesting() const
+{
+    OptionSet<WebCore::AcceleratedEffectProperty> animatedProperties;
+    for (auto& animation : borrow(m_animations))
+        animatedProperties.add(animation->animatedProperties());
+
+    TextStream ts;
+    int count = 0;
+    for (auto property : animatedProperties) {
+        if (count)
+            ts << ", ";
+        ts << toStringForTesting(property);
+        ++count;
+    }
+    return ts.release();
+}
+
 } // namespace WebKit
 
 #endif // ENABLE(THREADED_ANIMATIONS)

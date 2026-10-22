@@ -433,8 +433,14 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
 
     m_hasHighImpactMonotonicAnimations = false;
 
+    auto previousAnimationCount = [this] -> size_t {
+        if (m_animationStack)
+            return m_animationStack->size();
+        return 0;
+    }();
+
     if (effects.isEmpty()) {
-        WTFLogAlways("[GRAOUTS] cleared effects on node %p", this);
+        WTFLogAlways("[GRAOUTS] set effects on node %p with bounds %f x %f, animation count: %zu -> 0", this, layer.get().bounds.size.width, layer.get().bounds.size.height, previousAnimationCount);
         m_animationStack = nullptr;
         return;
     }
@@ -449,7 +455,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     }), baseValues.clone(), layer.get().bounds);
     m_animationStack = animationStack.copyRef();
 
-    WTFLogAlways("[GRAOUTS] setting %zu effects on effect stack %p for node %p", effects.size(), animationStack.ptr(), this);
+    WTFLogAlways("[GRAOUTS] set effects on effect stack %p for node %p with bounds %f x %f, animation count: %zu -> %zu, animated properties: %s", animationStack.ptr(), this, layer.get().bounds.size.width, layer.get().bounds.size.height, previousAnimationCount, effects.size(), m_animationStack->animationPropertiesForTesting().ascii().data());
 
 #if PLATFORM(IOS_FAMILY)
     animationStack->applyEffectsFromMainThread(layer.get(), backdropRootIsOpaque());

@@ -5176,6 +5176,8 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const GraphicsLayerAn
     GraphicsLayerKeyframeValueList filterVector(AnimatedProperty::Filter);
     GraphicsLayerKeyframeValueList backdropFilterVector(AnimatedProperty::WebkitBackdropFilter);
 
+//    WTFLogAlways("[GRAOUTS] startAnimation() for '%s', shouldApplyAnimationsToTargetRenderer = %s, hasTransform = %s", keyframes.keyframesName().string().ascii().data(), shouldApplyAnimationsToTargetRenderer ? "true" : "false", hasTransform ? "true" : "false");
+
     for (auto& currentKeyframe : keyframes) {
         const Style::ComputedStyle* keyframeStyle = currentKeyframe.style();
         if (!keyframeStyle)
@@ -5219,11 +5221,18 @@ bool RenderLayerBacking::startAnimation(double timeOffset, const GraphicsLayerAn
     if (hasTranslate && m_graphicsLayer->addAnimation(translateVector, &animation, keyframes.acceleratedAnimationName(), timeOffset))
         didAnimate = true;
 
-    if (hasTransform && m_graphicsLayer->addAnimation(transformVector, &animation, keyframes.acceleratedAnimationName(), timeOffset))
+    if (hasTransform && m_graphicsLayer->addAnimation(transformVector, &animation, keyframes.acceleratedAnimationName(), timeOffset)) {
         didAnimate = true;
+//        WTFLogAlways("[GRAOUTS] transform OK for '%s'", keyframes.keyframesName().string().ascii().data());
+    } //else
+        //WTFLogAlways("[GRAOUTS] transform FAIL for '%s'", keyframes.keyframesName().string().ascii().data());
 
-    if (hasOpacity && m_graphicsLayer->addAnimation(opacityVector, &animation, keyframes.acceleratedAnimationName(), timeOffset))
+
+    if (hasOpacity && m_graphicsLayer->addAnimation(opacityVector, &animation, keyframes.acceleratedAnimationName(), timeOffset)) {
         didAnimate = true;
+        //WTFLogAlways("[GRAOUTS] opacity OK for '%s'", keyframes.keyframesName().string().ascii().data());
+    } //else
+        //WTFLogAlways("[GRAOUTS] opacity FAIL for '%s'", keyframes.keyframesName().string().ascii().data());
 
     if (hasFilter && m_graphicsLayer->addAnimation(filterVector, &animation, keyframes.acceleratedAnimationName(), timeOffset))
         didAnimate = true;

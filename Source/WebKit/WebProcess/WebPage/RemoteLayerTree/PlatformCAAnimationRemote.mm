@@ -634,14 +634,28 @@ void PlatformCAAnimationRemote::updateLayerAnimations(CALayer *layer, RemoteLaye
 {
     BEGIN_BLOCK_OBJC_EXCEPTIONS
 
+    auto animationCount = [layer] {
+        return (int)[[layer animationKeys] count];
+    };
+
     for (const auto& value : animationsToRemove) {
-        WTFLogAlways("[GRAOUTS] removing animation %s from layer %p", value.ascii().data(), layer);
+        auto initialAnimationCount = animationCount();
         [layer removeAnimationForKey:value.createNSString().get()];
+        WTFLogAlways("[GRAOUTS] removed animation %s from layer %p, animation count: %d -> %d", value.ascii().data(), layer, initialAnimationCount, animationCount());
     }
 
     for (const auto& keyAnimationPair : borrow(animationsToAdd)) {
-        WTFLogAlways("[GRAOUTS] adding animation %s to layer %p with bounds %f x %f", keyAnimationPair.first.ascii().data(), layer, layer.bounds.size.width, layer.bounds.size.height);
-        addAnimationToLayer(layer, layerTreeHost, keyAnimationPair.first, keyAnimationPair.second);
+        auto initialAnimationCount = animationCount();
+        auto key = keyAnimationPair.first;
+        auto properties = keyAnimationPair.second;
+        addAnimationToLayer(layer, layerTreeHost, key, keyAnimationPair.second);
+        if (properties.animationType == PlatformCAAnimation::AnimationType::Group) {
+            for (auto& childAnimation : properties.animations) {
+                WTFLogAlways("[GRAOUTS] adding grouped animation with key path %s to layer %p with bounds %f x %f, animation count: %d -> %d", childAnimation.keyPath.ascii().data(), layer, layer.bounds.size.width, layer.bounds.size.height, initialAnimationCount, animationCount());
+            }
+        } else {
+            WTFLogAlways("[GRAOUTS] adding animation %s with key path %s to layer %p with bounds %f x %f, animation count: %d -> %d", key.ascii().data(), properties.keyPath.ascii().data(), layer, layer.bounds.size.width, layer.bounds.size.height, initialAnimationCount, animationCount());
+        }
     }
 
     END_BLOCK_OBJC_EXCEPTIONS
