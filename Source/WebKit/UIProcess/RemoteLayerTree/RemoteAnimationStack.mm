@@ -148,6 +148,11 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
     }();
 
     m_presentationModifierGroup = [CAPresentationModifierGroup groupWithCapacity:numberOfPresentationModifiers];
+    // By default the render server continuously monitors the group for changes, so the context always
+    // appears to need an update. When the layer doesn't contribute to the rendered output, for instance
+    // when it's covered by an opaque layer in a fullscreen window, this makes WindowServer spin through
+    // update passes that produce nothing. Instead, applyEffects() flushes changes with a transaction.
+    [m_presentationModifierGroup setUpdatesAsynchronously:NO];
 
     if (canonicalFilters) {
         WebCore::PlatformCAFilters::presentationModifiers(computedValues.filter, canonicalFilters, m_filterPresentationModifiers, m_presentationModifierGroup);
@@ -196,10 +201,7 @@ void RemoteAnimationStack::applyEffects() const
         [m_transformPresentationModifier setValue:transform.get()];
     }
 
-    if (isMainRunLoop())
-        [m_presentationModifierGroup flushWithTransaction];
-    else
-        [m_presentationModifierGroup flush];
+    [m_presentationModifierGroup flushWithTransaction];
 }
 #endif
 
