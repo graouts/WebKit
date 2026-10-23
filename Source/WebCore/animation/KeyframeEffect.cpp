@@ -1998,6 +1998,12 @@ bool KeyframeEffect::canBeAccelerated(AccountForTimelineAccelerationAbility acco
             return false;
     }
 
+    if (m_compositeOperation != CompositeOperation::Replace)
+        return false;
+
+    if (m_hasKeyframeComposingAcceleratedProperty)
+        return false;
+
 #if ENABLE(THREADED_ANIMATIONS)
     if (canHaveAcceleratedRepresentation())
         return !animation->pending() && (accountForTimelineAccelerationAbility == AccountForTimelineAccelerationAbility::No || protect(animation->timeline())->canBeAccelerated());
@@ -2015,12 +2021,6 @@ bool KeyframeEffect::canBeAccelerated(AccountForTimelineAccelerationAbility acco
     if (m_someKeyframesUseLinearTimingFunctionWithPoints || isLinearTimingFunctionWithPoints(timingFunction()))
         return false;
 #endif
-
-    if (m_compositeOperation != CompositeOperation::Replace)
-        return false;
-
-    if (m_hasKeyframeComposingAcceleratedProperty)
-        return false;
 
     return true;
 }
