@@ -118,8 +118,6 @@ const WebCore::FilterOperations* RemoteAnimationStack::longestFilterList() const
 
 void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
 {
-    WTFLogAlways("[GRAOUTS] RemoteAnimationStack::initEffectsFromMainThread()");
-
     ASSERT(m_filterPresentationModifiers.isEmpty());
     ASSERT(!m_opacityPresentationModifier);
     ASSERT(!m_transformPresentationModifier);
@@ -159,7 +157,6 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
     [m_presentationModifierGroup setUpdatesAsynchronously:NO];
 
     if (canonicalFilters) {
-        WTFLogAlways("[GRAOUTS] installing filter presentation modifier");
         WebCore::PlatformCAFilters::presentationModifiers(m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter, canonicalFilters, m_filterPresentationModifiers, m_presentationModifierGroup);
         for (auto& filterPresentationModifier : borrow(m_filterPresentationModifiers))
             [layer addPresentationModifier:filterPresentationModifier.second.get()];
@@ -189,7 +186,6 @@ void RemoteAnimationStack::applyEffects() const
     auto computedValues = computeValues();
 
     if (!m_filterPresentationModifiers.isEmpty()) {
-        WTFLogAlways("[GRAOUTS] applying filter presentation modifier");
         WebCore::PlatformCAFilters::updatePresentationModifiers(m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter, m_filterPresentationModifiers);
     }
 
@@ -242,10 +238,8 @@ void RemoteAnimationStack::clear(PlatformLayer *layer)
     if (!m_presentationModifierGroup)
         return;
 
-    for (auto& filterPresentationModifier : borrow(m_filterPresentationModifiers)) {
-        WTFLogAlways("[GRAOUTS] removing filter presentation modifier");
+    for (auto& filterPresentationModifier : borrow(m_filterPresentationModifiers))
         [layer removePresentationModifier:filterPresentationModifier.second.get()];
-    }
     if (m_opacityPresentationModifier)
         [layer removePresentationModifier:m_opacityPresentationModifier.get()];
     if (m_transformPresentationModifier)

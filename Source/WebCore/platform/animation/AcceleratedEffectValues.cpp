@@ -28,8 +28,6 @@
 
 #if ENABLE(THREADED_ANIMATIONS)
 
-#include "FilterOperation.h"
-#include "FilterOperations.h"
 #include "FloatPoint.h"
 #include "IntSize.h"
 #include "MotionPath.h"
@@ -151,11 +149,8 @@ AcceleratedEffectValues::AcceleratedEffectValues(const Style::ComputedStyle& sty
 
     if (!style.filter().hasReferenceFilter())
         filter = Style::toPlatform(style.filter(), style);
-    if (!style.backdropFilter().hasReferenceFilter()) {
+    if (!style.backdropFilter().hasReferenceFilter())
         backdropFilter = Style::toPlatform(style.backdropFilter(), style);
-        if (auto* blurFilter = dynamicDowncast<BlurFilterOperation>(backdropFilter.at(0)))
-            WTFLogAlways("[GRAOUTS] created blur filter set to %f", blurFilter->stdDeviation());
-    }
 }
 
 TransformationMatrix AcceleratedEffectValues::computedTransformationMatrix(const FloatRect& boundingBox) const

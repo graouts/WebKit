@@ -2819,10 +2819,8 @@ void GraphicsLayerCA::updateBackdropFilters(CommitState& commitState)
             backdropLayer->setName(MAKE_STATIC_STRING_IMPL("backdrop"));
 #if ENABLE(THREADED_ANIMATIONS)
         if (RefPtr effectsStack = acceleratedEffectStack()) {
-            if (!effectsStack->backdropLayerEffects().isEmpty()) {
-                WTFLogAlways("[GRAOUTS] set effects on backdrop layer as it's created.");
+            if (!effectsStack->backdropLayerEffects().isEmpty())
                 backdropLayer->setAcceleratedEffectsAndBaseValues(effectsStack->backdropLayerEffects(), effectsStack->baseValues());
-            }
         }
 #endif
     }
@@ -5524,11 +5522,7 @@ void GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(AcceleratedEffects&& ef
         hasEffectsTargetingBackdropLayer = !backdropLayerEffects.isEmpty();
         if (RefPtr backdropLayer = m_backdropLayer)
             backdropLayer->setAcceleratedEffectsAndBaseValues(backdropLayerEffects, effectsStack->baseValues());
-        else
-            WTFLogAlways("[GRAOUTS] failed to set effects on backdrop layer");
     }
-
-    WTFLogAlways("[GRAOUTS] GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(), hasEffectsTargetingPrimaryLayer = %s, hasEffectsTargetingBackdropLayer = %s", hasEffectsTargetingPrimaryLayer ? "true" : "false", hasEffectsTargetingBackdropLayer ? "true" : "false");
 
     if (!hasEffectsTargetingPrimaryLayer)
         layer->clearAcceleratedEffectsAndBaseValues();
