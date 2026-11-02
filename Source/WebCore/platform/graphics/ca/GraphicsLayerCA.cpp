@@ -5509,7 +5509,11 @@ void GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(AcceleratedEffects&& ef
         hasEffectsTargetingBackdropLayer = !backdropLayerEffects.isEmpty();
         if (RefPtr backdropLayer = m_backdropLayer)
             backdropLayer->setAcceleratedEffectsAndBaseValues(backdropLayerEffects, effectsStack->baseValues());
+        else
+            WTFLogAlways("[GRAOUTS] failed to set effects on backdrop layer");
     }
+
+    WTFLogAlways("[GRAOUTS] GraphicsLayerCA::setAcceleratedEffectsAndBaseValues(), hasEffectsTargetingPrimaryLayer = %s, hasEffectsTargetingBackdropLayer = %s", hasEffectsTargetingPrimaryLayer ? "true" : "false", hasEffectsTargetingBackdropLayer ? "true" : "false");
 
     if (!hasEffectsTargetingPrimaryLayer)
         layer->clearAcceleratedEffectsAndBaseValues();
