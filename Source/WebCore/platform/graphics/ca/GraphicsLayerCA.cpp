@@ -513,6 +513,13 @@ std::optional<PlatformLayerIdentifier> GraphicsLayerCA::primaryLayerID() const
     return primaryLayer()->layerID();
 }
 
+std::optional<PlatformLayerIdentifier> GraphicsLayerCA::backdropLayerID() const
+{
+    if (m_backdropLayer)
+        return m_backdropLayer->layerID();
+    return std::nullopt;
+}
+
 std::optional<PlatformLayerIdentifier> GraphicsLayerCA::layerIDIgnoringStructuralLayer() const
 {
     return m_layer->layerID();
