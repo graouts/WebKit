@@ -172,15 +172,21 @@ bool BlurFilterOperation::operator==(const FilterOperation& operation) const
     
 RefPtr<FilterOperation> BlurFilterOperation::blend(const FilterOperation* from, const BlendingContext& context, bool blendToPassthrough)
 {
-    if (from && !from->isSameType(*this))
+    if (from && !from->isSameType(*this)) {
+        WTFLogAlways("[GRAOUTS] filters aren't of the same type");
         return this;
+    }
 
-    if (blendToPassthrough)
+    if (blendToPassthrough) {
+        WTFLogAlways("[GRAOUTS] blur filter blending to passthrough");
         return BlurFilterOperation::create(std::max(0.0f, WebCore::blend(m_stdDeviation, 0.0f, context)));
+    }
 
     const BlurFilterOperation* fromOperation = downcast<BlurFilterOperation>(from);
     auto fromStdDeviation = fromOperation ? fromOperation->m_stdDeviation : 0.0f;
-    return BlurFilterOperation::create(std::max(0.0f, WebCore::blend(fromStdDeviation, m_stdDeviation, context)));
+    auto blendedValue = WebCore::blend(fromStdDeviation, m_stdDeviation, context);
+    WTFLogAlways("[GRAOUTS] blur filter blending from %f to %f yielded %f", fromStdDeviation, m_stdDeviation, blendedValue);
+    return BlurFilterOperation::create(std::max(0.0f, blendedValue));
 }
 
 bool DropShadowFilterOperation::operator==(const FilterOperation& operation) const

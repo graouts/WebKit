@@ -415,9 +415,11 @@ RetainPtr<NSValue> PlatformCAFilters::filterValueForOperation(const FilterOperat
     case FilterOperation::Type::Blur: {
         // CAFilter: inputRadius
         double amount = 0;
-        if (operation)
+        if (operation) {
             amount = downcast<BlurFilterOperation>(*operation).stdDeviation();
-
+            WTFLogAlways("[GRAOUTS] blur = %f", amount);
+        } else
+            WTFLogAlways("[GRAOUTS] failed to read blur");
         value = @(amount);
         break;
     }
