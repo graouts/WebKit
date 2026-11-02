@@ -54,7 +54,8 @@ RemoteAnimationStack::RemoteAnimationStack(RemoteAnimations&& animations, WebCor
 
     for (auto& animation : m_animations) {
         auto& properties = animation->animatedProperties();
-        affectsFilter = affectsFilter || properties.containsAny({ WebCore::AcceleratedEffectProperty::Filter, WebCore::AcceleratedEffectProperty::BackdropFilter });
+        m_filtersAffectBackdrop = m_filtersAffectBackdrop || properties.contains(WebCore::AcceleratedEffectProperty::BackdropFilter);
+        affectsFilter = affectsFilter || m_filtersAffectBackdrop || properties.containsAny({ WebCore::AcceleratedEffectProperty::Filter, WebCore::AcceleratedEffectProperty::BackdropFilter });
         affectsOpacity = affectsOpacity || properties.contains(WebCore::AcceleratedEffectProperty::Opacity);
         affectsTransform = affectsTransform || properties.containsAny(WebCore::transformRelatedAcceleratedProperties);
         m_hasProgressBasedAnimations = m_hasProgressBasedAnimations || animation->timeline().isProgressBased();
@@ -107,7 +108,7 @@ const WebCore::FilterOperations* RemoteAnimationStack::longestFilterList() const
     }
 
     if (longestFilterList) {
-        auto& baseFilter = m_baseValues.filter;
+        auto& baseFilter = m_filtersAffectBackdrop ? m_baseValues.backdropFilter : m_baseValues.filter;
         if (longestFilterList->size() < baseFilter.size())
             longestFilterList = &baseFilter;
     }
@@ -159,7 +160,7 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
 
     if (canonicalFilters) {
         WTFLogAlways("[GRAOUTS] installing filter presentation modifier");
-        WebCore::PlatformCAFilters::presentationModifiers(computedValues.filter, canonicalFilters, m_filterPresentationModifiers, m_presentationModifierGroup);
+        WebCore::PlatformCAFilters::presentationModifiers(m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter, canonicalFilters, m_filterPresentationModifiers, m_presentationModifierGroup);
         for (auto& filterPresentationModifier : borrow(m_filterPresentationModifiers))
             [layer addPresentationModifier:filterPresentationModifier.second.get()];
     }
@@ -189,7 +190,7 @@ void RemoteAnimationStack::applyEffects() const
 
     if (!m_filterPresentationModifiers.isEmpty()) {
         WTFLogAlways("[GRAOUTS] applying filter presentation modifier");
-        WebCore::PlatformCAFilters::updatePresentationModifiers(computedValues.filter, m_filterPresentationModifiers);
+        WebCore::PlatformCAFilters::updatePresentationModifiers(m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter, m_filterPresentationModifiers);
     }
 
     if (m_opacityPresentationModifier) {
@@ -216,7 +217,7 @@ void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool
     auto computedValues = computeValues();
 
     if (m_affectedLayerProperties.contains(LayerProperty::Filter))
-        WebCore::PlatformCAFilters::setFiltersOnLayer(layer, computedValues.filter, backdropRootIsOpaque);
+        WebCore::PlatformCAFilters::setFiltersOnLayer(layer, m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter, backdropRootIsOpaque);
 
     if (m_affectedLayerProperties.contains(LayerProperty::Opacity))
         [layer setOpacity:computedValues.opacity.value];

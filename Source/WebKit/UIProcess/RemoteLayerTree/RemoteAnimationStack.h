@@ -98,6 +98,7 @@ private:
     RetainPtr<CAPresentationModifier> m_opacityPresentationModifier;
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
     Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
+    bool m_filtersAffectBackdrop { false };
 #endif
 
     bool m_hasProgressBasedAnimations { false };
