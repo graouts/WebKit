@@ -2810,6 +2810,14 @@ void GraphicsLayerCA::updateBackdropFilters(CommitState& commitState)
         else
 #endif
             backdropLayer->setName(MAKE_STATIC_STRING_IMPL("backdrop"));
+#if ENABLE(THREADED_ANIMATIONS)
+        if (RefPtr effectsStack = acceleratedEffectStack()) {
+            if (!effectsStack->backdropLayerEffects().isEmpty()) {
+                WTFLogAlways("[GRAOUTS] set effects on backdrop layer as it's created.");
+                backdropLayer->setAcceleratedEffectsAndBaseValues(effectsStack->backdropLayerEffects(), effectsStack->baseValues());
+            }
+        }
+#endif
     }
 
     Ref backdropLayer = *m_backdropLayer;
