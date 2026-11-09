@@ -750,7 +750,7 @@ private:
     FloatRect m_previousCommittedVisibleRect;
     FloatRect m_coverageRect; // Area for which we should maintain backing store, in the coordinate space of this layer.
 #if ENABLE(THREADED_ANIMATIONS)
-    Vector<FloatRect> m_rectsToPrepopulateForTransformAnimations; // In the coordinate space of this layer.
+    Vector<FloatRect> m_rectsForTransformAnimationTileCoverage; // Areas for which we should have tiles converage, in the coordinate space of this layer.
 #endif
     FloatSize m_sizeAtLastCoverageRectUpdate;
     FloatSize m_pixelAlignmentOffset;

@@ -1971,10 +1971,17 @@ bool GraphicsLayerCA::adjustCoverageRect(VisibleAndCoverageRects& rects, const F
 #if ENABLE(THREADED_ANIMATIONS)
 bool GraphicsLayerCA::adjustCoverageRectForTransformAnimations(VisibleAndCoverageRects& rects, const TransformState& state, bool accumulateTransform)
 {
-    // Threaded animations are applied in the UI process as time passes, without waiting for a commit from this process.
-    // So a tiled layer needs tiles for where its threaded transform animations will move it before our next commit is
-    // presented. Cover the positions those animations will reach over the next few frames.
-    m_rectsToPrepopulateForTransformAnimations.clear();
+    // Tile coverage is updates in the Web process while threaded animations for a GraphicsLayerCA will run in the remote layer
+    // tree, hosted in the UI process. Animations in the remote layer tree may update at a higher frequency than tile coverage
+    // is updated in the Web process, and more generally it's possible that while the UI process is updating animations the
+    // Web process is busy or hung and can't keep up. This may result in situations where the animated transform applied in the
+    // remote layer tree ends up showing a tile that has not been made available, and most likely in the case of animations
+    // using the steps() easing function which may yield non-linear discrete value changes unlike most monotonic animations.
+    // So we compute a set of rects to use to pre-populates tiles for steps() happening in the next 100ms, catering for the
+    // immediate needs of the remote layer tree.
+    static constexpr auto samplingDuration = 100_ms;
+
+    m_rectsForTransformAnimationTileCoverage.clear();
 
     if (!m_layer->usesTiledBackingLayer())
         return false;
@@ -1998,34 +2005,46 @@ bool GraphicsLayerCA::adjustCoverageRectForTransformAnimations(VisibleAndCoverag
     if (transformEffectsAndOriginTimes.isEmpty())
         return false;
 
-    // Sample often enough to catch discrete jumps, such as those of a steps() timing function, at high frame rates.
-    static constexpr auto samplingInterval = 1_s / 120;
-    static constexpr unsigned sampleCount = 12;
+    // Evaluate the transform now, since the current transform may have been computed slightly earlier in this rendering
+    // update, and then right after each step the animations will reach over the next few frames.
+    static constexpr auto delayAfterStep = 1_ms;
+    static constexpr unsigned maximumEvaluationCount = 12;
 
     auto coverageRect = rects.coverageRect;
     auto now = MonotonicTime::now();
+    auto anticipationEndTime = now + samplingDuration;
     FloatRect bounds { m_boundsOrigin, size() };
-    for (unsigned i = 1; i <= sampleCount; ++i) {
-        auto sampleTime = (now + samplingInterval * i).secondsSinceEpoch();
+    std::optional<MonotonicTime> evaluationTime = now;
+    for (unsigned i = 0; evaluationTime && i < maximumEvaluationCount; ++i) {
         auto values = effectStack->baseValues().clone();
         for (auto& [effect, originTime] : transformEffectsAndOriginTimes)
-            effect->apply(values, sampleTime - originTime, std::nullopt);
+            effect->apply(values, evaluationTime->secondsSinceEpoch() - originTime, std::nullopt);
         auto anticipatedTransform = values.computedTransformationMatrix(bounds);
         auto anticipatedState = state;
         auto anticipatedCoverageRect = computeVisibleAndCoverageRect(anticipatedState, accumulateTransform, RespectAnimatingTransforms, &anticipatedTransform).coverageRect;
-        if (anticipatedCoverageRect.isEmpty())
-            continue;
 
-        // Extend the coverage rect to areas next to it, but don't cover everything in between when the layer
-        // jumps to a distant area, such as when an iteration starts over. Prepopulate tiles there instead.
-        if (unionRect(coverageRect, anticipatedCoverageRect).area() <= coverageRect.area() + anticipatedCoverageRect.area())
-            coverageRect.unite(anticipatedCoverageRect);
+        if (!anticipatedCoverageRect.isEmpty()) {
+            if (unionRect(coverageRect, anticipatedCoverageRect).area() <= coverageRect.area() + anticipatedCoverageRect.area())
+                coverageRect.unite(anticipatedCoverageRect);
+            else
+                m_rectsForTransformAnimationTileCoverage.append(anticipatedCoverageRect);
+        }
+
+        std::optional<MonotonicTime> nextStepTime;
+        for (auto& [effect, originTime] : transformEffectsAndOriginTimes) {
+            if (auto timeUntilNextStep = effect->timeUntilNextTransformRelatedStep(evaluationTime->secondsSinceEpoch() - originTime, std::nullopt)) {
+                auto effectNextStepTime = *evaluationTime + *timeUntilNextStep;
+                if (!nextStepTime || effectNextStepTime < *nextStepTime)
+                    nextStepTime = effectNextStepTime;
+            }
+        }
+        if (nextStepTime && *nextStepTime <= anticipationEndTime)
+            evaluationTime = *nextStepTime + delayAfterStep;
         else
-            m_rectsToPrepopulateForTransformAnimations.append(anticipatedCoverageRect);
+            evaluationTime = std::nullopt;
     }
 
-    // Tiles are prepopulated in updateCoverage().
-    if (!m_rectsToPrepopulateForTransformAnimations.isEmpty())
+    if (!m_rectsForTransformAnimationTileCoverage.isEmpty())
         addUncommittedChanges(CoverageRectChanged);
 
     if (rects.coverageRect == coverageRect)
@@ -3217,7 +3236,7 @@ void GraphicsLayerCA::updateCoverage(const CommitState& commitState)
         backing->setCoverageRect(m_coverageRect);
 #if ENABLE(THREADED_ANIMATIONS)
         // Tiles are revalidated after the coverage is updated, in the same commit.
-        for (auto rect : std::exchange(m_rectsToPrepopulateForTransformAnimations, { })) {
+        for (auto rect : std::exchange(m_rectsForTransformAnimationTileCoverage, { })) {
             rect.scale(backing->tilingScaleFactor());
             backing->prepopulateRect(rect);
         }
