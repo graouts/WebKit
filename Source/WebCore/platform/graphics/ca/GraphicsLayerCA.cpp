@@ -1838,13 +1838,18 @@ void GraphicsLayerCA::setContentsScaleLimitingFactor(float factor)
     noteLayerPropertyChanged(ContentsScaleChanged);
 }
 
-GraphicsLayerCA::VisibleAndCoverageRects GraphicsLayerCA::computeVisibleAndCoverageRect(TransformState& state, bool preserves3D, ComputeVisibleRectFlags flags) const
+GraphicsLayerCA::VisibleAndCoverageRects GraphicsLayerCA::computeVisibleAndCoverageRect(TransformState& state, bool preserves3D, ComputeVisibleRectFlags flags, const TransformationMatrix* animatingTransform) const
 {
     FloatPoint position = approximatePosition();
     client().customPositionForVisibleRectComputation(this, position);
 
     TransformationMatrix currentTransform;
     auto transform = [&]() {
+        if (animatingTransform) {
+            currentTransform = *animatingTransform;
+            return layerTransform(position, &currentTransform);
+        }
+
         if ((flags & RespectAnimatingTransforms) && client().getCurrentTransform(this, currentTransform))
             return layerTransform(position, &currentTransform);
 
@@ -1963,6 +1968,76 @@ bool GraphicsLayerCA::adjustCoverageRect(VisibleAndCoverageRects& rects, const F
     return true;
 }
 
+#if ENABLE(THREADED_ANIMATIONS)
+bool GraphicsLayerCA::adjustCoverageRectForTransformAnimations(VisibleAndCoverageRects& rects, const TransformState& state, bool accumulateTransform)
+{
+    // Threaded animations are applied in the UI process as time passes, without waiting for a commit from this process.
+    // So a tiled layer needs tiles for where its threaded transform animations will move it before our next commit is
+    // presented. Cover the positions those animations will reach over the next few frames.
+    m_rectsToPrepopulateForTransformAnimations.clear();
+
+    if (!m_layer->usesTiledBackingLayer())
+        return false;
+
+    RefPtr effectStack = acceleratedEffectStack();
+    if (!effectStack)
+        return false;
+
+    Vector<std::pair<Ref<AcceleratedEffect>, Seconds>> transformEffectsAndOriginTimes;
+    for (auto& effect : effectStack->primaryLayerEffects()) {
+        if (!effect->animatesTransformRelatedProperty())
+            continue;
+        // Progress-based timelines don't advance with time, so the effects associated with them can't be anticipated.
+        RefPtr timeline = effect->timeline();
+        auto originTime = timeline ? timeline->originTime() : std::nullopt;
+        if (!originTime)
+            return false;
+        transformEffectsAndOriginTimes.append({ effect, *originTime });
+    }
+
+    if (transformEffectsAndOriginTimes.isEmpty())
+        return false;
+
+    // Sample often enough to catch discrete jumps, such as those of a steps() timing function, at high frame rates.
+    static constexpr auto samplingInterval = 1_s / 120;
+    static constexpr unsigned sampleCount = 12;
+
+    auto coverageRect = rects.coverageRect;
+    auto now = MonotonicTime::now();
+    FloatRect bounds { m_boundsOrigin, size() };
+    for (unsigned i = 1; i <= sampleCount; ++i) {
+        auto sampleTime = (now + samplingInterval * i).secondsSinceEpoch();
+        auto values = effectStack->baseValues().clone();
+        for (auto& [effect, originTime] : transformEffectsAndOriginTimes)
+            effect->apply(values, sampleTime - originTime, std::nullopt);
+        auto anticipatedTransform = values.computedTransformationMatrix(bounds);
+        auto anticipatedState = state;
+        auto anticipatedCoverageRect = computeVisibleAndCoverageRect(anticipatedState, accumulateTransform, RespectAnimatingTransforms, &anticipatedTransform).coverageRect;
+        if (anticipatedCoverageRect.isEmpty())
+            continue;
+
+        // Extend the coverage rect to areas next to it, but don't cover everything in between when the layer
+        // jumps to a distant area, such as when an iteration starts over. Prepopulate tiles there instead.
+        if (unionRect(coverageRect, anticipatedCoverageRect).area() <= coverageRect.area() + anticipatedCoverageRect.area())
+            coverageRect.unite(anticipatedCoverageRect);
+        else
+            m_rectsToPrepopulateForTransformAnimations.append(anticipatedCoverageRect);
+    }
+
+    // Tiles are prepopulated in updateCoverage().
+    if (!m_rectsToPrepopulateForTransformAnimations.isEmpty())
+        addUncommittedChanges(CoverageRectChanged);
+
+    if (rects.coverageRect == coverageRect)
+        return false;
+
+    LOG_WITH_STREAM(Layers, stream << "GraphicsLayerCA " << this << " id " << primaryLayerID() << " adjustCoverageRectForTransformAnimations: coverage rect adjusted from " << rects.coverageRect << " to  " << coverageRect);
+
+    rects.coverageRect = coverageRect;
+    return true;
+}
+#endif
+
 void GraphicsLayerCA::setVisibleAndCoverageRects(const VisibleAndCoverageRects& rects)
 {
     bool visibleRectChanged = rects.visibleRect != m_visibleRect;
@@ -2039,10 +2114,13 @@ void GraphicsLayerCA::recursiveCommitChanges(CommitState& commitState, const Tra
 
     bool accumulateTransform = accumulatesTransform(*this);
     VisibleAndCoverageRects rects = computeVisibleAndCoverageRect(localState, accumulateTransform);
-    if (adjustCoverageRect(rects, m_visibleRect)) {
-        if (state.isMappingSecondaryQuad())
-            localState.setSecondaryQuadInMappedSpace(FloatQuad { rects.coverageRect });
-    }
+    bool coverageRectWasAdjusted = adjustCoverageRect(rects, m_visibleRect);
+#if ENABLE(THREADED_ANIMATIONS)
+    if (adjustCoverageRectForTransformAnimations(rects, state, accumulateTransform))
+        coverageRectWasAdjusted = true;
+#endif
+    if (coverageRectWasAdjusted && state.isMappingSecondaryQuad())
+        localState.setSecondaryQuadInMappedSpace(FloatQuad { rects.coverageRect });
     setVisibleAndCoverageRects(rects);
 
     if (commitState.ancestorStartedOrEndedTransformAnimation)
@@ -3137,6 +3215,13 @@ void GraphicsLayerCA::updateCoverage(const CommitState& commitState)
     if (CheckedPtr backing = tiledBacking()) {
         backing->setVisibleRect(m_visibleRect);
         backing->setCoverageRect(m_coverageRect);
+#if ENABLE(THREADED_ANIMATIONS)
+        // Tiles are revalidated after the coverage is updated, in the same commit.
+        for (auto rect : std::exchange(m_rectsToPrepopulateForTransformAnimations, { })) {
+            rect.scale(backing->tilingScaleFactor());
+            backing->prepopulateRect(rect);
+        }
+#endif
     }
 
     RefPtr layer = m_layer;
