@@ -190,6 +190,9 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     virtual void clearAcceleratedEffectsAndBaseValues();
     virtual void setAcceleratedEffectsAndBaseValues(const AcceleratedEffects&, const AcceleratedEffectValues&);
+    // Whether this layer or any of its descendants intersects the coverage rect, i.e. whether
+    // the accelerated effects set on this layer may affect content that is or will soon be visible.
+    virtual void setAcceleratedEffectsIntersectCoverageRect(bool);
 #endif
 
     virtual void setMaskLayer(RefPtr<PlatformCALayer>&&);

@@ -1244,6 +1244,15 @@ void PlatformCALayerRemote::setAcceleratedEffectsAndBaseValues(const Accelerated
 
     m_properties.notePropertiesChanged(LayerChange::AnimationsChanged);
 }
+
+void PlatformCALayerRemote::setAcceleratedEffectsIntersectCoverageRect(bool intersectsCoverageRect)
+{
+    if (m_properties.acceleratedEffectsIntersectCoverageRect == intersectsCoverageRect)
+        return;
+
+    m_properties.acceleratedEffectsIntersectCoverageRect = intersectsCoverageRect;
+    m_properties.notePropertiesChanged(LayerChange::AcceleratedEffectsIntersectCoverageRectChanged);
+}
 #endif
 
 void PlatformCALayerRemote::purgeFrontBufferForTesting()

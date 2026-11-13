@@ -155,9 +155,10 @@ public:
 
 #if ENABLE(THREADED_ANIMATIONS)
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&, RemoteLayerTreeHost&);
+    void setAcceleratedEffectsIntersectCoverageRect(bool, RemoteLayerTreeHost&);
     const RemoteAnimationStack* animationStack() const { return m_animationStack.get(); }
     RefPtr<RemoteAnimationStack> takeAnimationStack() { return std::exchange(m_animationStack, nullptr); }
-    bool hasHighImpactMonotonicAnimations() const { return m_hasHighImpactMonotonicAnimations; }
+    bool hasHighImpactMonotonicAnimations() const { return m_hasHighImpactMonotonicEffects && m_acceleratedEffectsIntersectCoverageRect; }
 #endif
 
     bool backdropRootIsOpaque() const { return m_backdropRootIsOpaque; }
@@ -223,7 +224,8 @@ private:
 
 #if ENABLE(THREADED_ANIMATIONS)
     RefPtr<RemoteAnimationStack> m_animationStack;
-    bool m_hasHighImpactMonotonicAnimations { false };
+    bool m_hasHighImpactMonotonicEffects { false };
+    bool m_acceleratedEffectsIntersectCoverageRect { true };
 #endif
     bool m_backdropRootIsOpaque { false };
 };

@@ -673,6 +673,11 @@ void RemoteLayerTreeHost::animationsWereRemovedFromNode(RemoteLayerTreeNode& nod
     protect(drawingArea())->animationsWereRemovedFromNode(node);
 }
 
+void RemoteLayerTreeHost::highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode& node)
+{
+    protect(drawingArea())->highImpactMonotonicAnimationsChangedForNode(node);
+}
+
 RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeHost::timeline(const TimelineID& timelineID) const
 {
     return protect(drawingArea())->timeline(timelineID);
