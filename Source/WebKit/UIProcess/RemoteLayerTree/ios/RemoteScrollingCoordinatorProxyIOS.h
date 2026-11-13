@@ -78,7 +78,6 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     void animationsWereAddedToNode(RemoteLayerTreeNode&) override WTF_IGNORES_THREAD_SAFETY_ANALYSIS;
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&) override;
-    void highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode&) override;
     void updateTimelinesRegistration(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime) override;
     void removeTimelines(WebCore::ProcessIdentifier) override;
     RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const override;
@@ -122,6 +121,7 @@ private:
     void updateTimeDependentAnimationStacks();
     void updateAnimationStacksDependentOnScrollingNode(const WebCore::ScrollingTreeScrollingNode&);
     void updateAnimationStacks(NOESCAPE const Function<bool(const RemoteAnimationStack&)>&);
+    bool animatedContentMayBeVisible(const RemoteLayerTreeNode&) const;
 #endif
 
     HashMap<unsigned, OptionSet<WebCore::TouchAction>> m_touchActionsByTouchIdentifier;

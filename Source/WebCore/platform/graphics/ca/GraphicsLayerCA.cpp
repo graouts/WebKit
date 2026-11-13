@@ -407,7 +407,6 @@ GraphicsLayerCA::GraphicsLayerCA(Type layerType, GraphicsLayerClient& client)
     , m_hasEverPainted(false)
     , m_hasDescendantsWithRunningTransformAnimations(false)
     , m_hasDescendantsWithUncommittedChanges(false)
-    , m_intersectsCoverageRectIncludingDescendants(true)
 {
 }
 
@@ -2211,9 +2210,6 @@ void GraphicsLayerCA::recursiveCommitChanges(CommitState& commitState, const Tra
 
     bool hasDescendantsWithRunningTransformAnimations = false;
 
-    // Without a known extent, a transform animation could move this layer anywhere.
-    bool intersectsCoverageRectIncludingDescendants = m_intersectsCoverageRect || (nowRunningTransformAnimation && !animationExtent());
-
     if (childCommitState.treeDepth <= cMaxLayerTreeDepth) {
         for (auto& layer : children()) {
             Ref currentChild = downcast<GraphicsLayerCA>(layer.get());
@@ -2221,25 +2217,18 @@ void GraphicsLayerCA::recursiveCommitChanges(CommitState& commitState, const Tra
 
             if (currentChild->isRunningTransformAnimation() || currentChild->hasDescendantsWithRunningTransformAnimations())
                 hasDescendantsWithRunningTransformAnimations = true;
-
-            if (currentChild->m_intersectsCoverageRectIncludingDescendants)
-                intersectsCoverageRectIncludingDescendants = true;
         }
-    } else
-        intersectsCoverageRectIncludingDescendants = true;
+    }
 
     commitState.totalBackdropFilterArea = childCommitState.totalBackdropFilterArea;
 
-    if (RefPtr replicaLayer = downcast<GraphicsLayerCA>(m_replicaLayer.get())) {
+    if (RefPtr replicaLayer = downcast<GraphicsLayerCA>(m_replicaLayer.get()))
         replicaLayer->recursiveCommitChanges(childCommitState, localState, pageScaleFactor, baseRelativePosition, affectedByPageScale);
-        if (replicaLayer->m_intersectsCoverageRectIncludingDescendants)
-            intersectsCoverageRectIncludingDescendants = true;
-    }
 
-    m_intersectsCoverageRectIncludingDescendants = intersectsCoverageRectIncludingDescendants;
 #if ENABLE(THREADED_ANIMATIONS)
+    // Let the UI process determine whether the content affected by accelerated effects may be visible.
     if (acceleratedEffectStack())
-        protect(primaryLayer())->setAcceleratedEffectsIntersectCoverageRect(intersectsCoverageRectIncludingDescendants);
+        protect(primaryLayer())->setAnimationExtent(animationExtent());
 #endif
 
     if (RefPtr maskLayer = downcast<GraphicsLayerCA>(m_maskLayer.get()))
@@ -5582,15 +5571,13 @@ Vector<GraphicsLayer::AcceleratedAnimationForTesting> GraphicsLayerCA::accelerat
     Vector<GraphicsLayer::AcceleratedAnimationForTesting> animations;
 
 #if ENABLE(THREADED_ANIMATIONS)
-    // Effects on a layer that is well outside of the coverage rect, along with its descendants,
-    // are not considered to have a high impact: they cannot affect what is about to be displayed.
     auto addAcceleratedEffect = [&](const AcceleratedEffect& effect) {
         for (auto property : effect.animatedProperties()) {
             animations.append({
                 .property = acceleratedEffectPropertyIDAsString(property),
                 .speed = effect.playbackRate(),
                 .isThreaded = true,
-                .hasHighImpact = effect.hasHighImpact() && m_intersectsCoverageRectIncludingDescendants
+                .hasHighImpact = effect.hasHighImpact()
             });
         }
     };

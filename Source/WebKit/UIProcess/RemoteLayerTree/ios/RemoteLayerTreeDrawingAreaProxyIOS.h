@@ -63,6 +63,7 @@ private:
     void scheduleDisplayRefreshCallbacks() override;
     void pauseDisplayRefreshCallbacks() override;
     void scheduleDisplayLinkAndSetFrameRate();
+    bool wantsHighFrameRate() const;
     void pauseDisplayLinkIfNeeded();
 
     void didRefreshDisplay() override;
