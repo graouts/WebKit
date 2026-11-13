@@ -180,13 +180,14 @@ set_target_properties(WebKitLegacy PROPERTIES
 )
 
 target_link_options(WebKitLegacy PRIVATE
-    -exported_symbols_list ${WEBKITLEGACY_DIR}/WebKitLegacy-iOS.exp
+    "SHELL:-exported_symbols_list ${WEBKITLEGACY_DIR}/WebKitLegacy-iOS.exp"
 )
 # WebEventRegion.mm is compiled only with ENABLE(IOS_TOUCH_EVENTS), which
-# requires the internal SDK.
+# requires the internal SDK. Use SHELL: so CMake's option de-duplication does
+# not drop the second -exported_symbols_list and pass its file to ld as an input.
 if (ENABLE_IOS_TOUCH_EVENTS)
     target_link_options(WebKitLegacy PRIVATE
-        -exported_symbols_list ${WEBKITLEGACY_DIR}/WebKitLegacy-iOS-touch-events.exp
+        "SHELL:-exported_symbols_list ${WEBKITLEGACY_DIR}/WebKitLegacy-iOS-touch-events.exp"
     )
 endif ()
 
