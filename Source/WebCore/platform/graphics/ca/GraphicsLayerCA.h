@@ -790,6 +790,7 @@ private:
     bool m_hasEverPainted : 1;
     bool m_hasDescendantsWithRunningTransformAnimations : 1;
     bool m_hasDescendantsWithUncommittedChanges : 1;
+    bool m_intersectsCoverageRectIncludingDescendants : 1;
 #if ENABLE(AVKIT)
     uint32_t m_layerHostingContextID { 0 };
 #endif

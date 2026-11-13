@@ -484,6 +484,20 @@ void RemoteLayerTreeDrawingAreaProxyIOS::highImpactMonotonicAnimationsWereRemove
     }
 }
 
+void RemoteLayerTreeDrawingAreaProxyIOS::updateHighImpactMonotonicAnimations()
+{
+    // An animated node gained or lost its high impact without its animations changing,
+    // for instance because it moved in or out of the coverage rect.
+    if (!m_needsDisplayRefreshCallbacksForMonotonicAnimations)
+        return;
+
+    if (RefPtr page = this->page()) {
+        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
+            m_hasHighImpactMonotonicAnimations = scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
+    }
+    scheduleDisplayLinkAndSetFrameRate();
+}
+
 void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacksForMonotonicAnimations()
 {
     m_needsDisplayRefreshCallbacksForMonotonicAnimations = false;

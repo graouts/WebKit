@@ -236,6 +236,10 @@ void PlatformCALayer::clearAcceleratedEffectsAndBaseValues()
 void PlatformCALayer::setAcceleratedEffectsAndBaseValues(const AcceleratedEffects&, const AcceleratedEffectValues&)
 {
 }
+
+void PlatformCALayer::setAcceleratedEffectsIntersectCoverageRect(bool)
+{
+}
 #endif
 
 #if HAVE(SUPPORT_HDR_DISPLAY)

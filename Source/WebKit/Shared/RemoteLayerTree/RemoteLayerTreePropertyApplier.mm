@@ -527,6 +527,13 @@ void RemoteLayerTreePropertyApplier::applyPropertiesToLayer(CALayer *layer, Remo
     if (properties.changedProperties & LayerChange::FiltersChanged)
         PlatformCAFilters::setFiltersOnLayer(layer, properties.filters ? *properties.filters : FilterOperations(), layerTreeNode && layerTreeNode->backdropRootIsOpaque());
 
+#if ENABLE(THREADED_ANIMATIONS)
+    // Apply this before any effects change so that effects added to a layer outside of the
+    // coverage rect are never considered to have a high impact, even briefly.
+    if (properties.changedProperties & LayerChange::AcceleratedEffectsIntersectCoverageRectChanged && layerTreeNode && layerTreeHost && layerTreeHost->threadedAnimationsEnabled())
+        layerTreeNode->setAcceleratedEffectsIntersectCoverageRect(properties.acceleratedEffectsIntersectCoverageRect, *layerTreeHost);
+#endif
+
     if (properties.changedProperties & LayerChange::AnimationsChanged) {
 #if ENABLE(THREADED_ANIMATIONS)
         // FIXME: layerTreeHost will be null if this method is called from within the Web process.

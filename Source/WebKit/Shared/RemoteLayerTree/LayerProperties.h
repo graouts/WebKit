@@ -66,6 +66,9 @@ enum class LayerChangeIndex : size_t {
     ShadowPathChanged,
     DisplayOnlyImageChanged,
     HidesFromScreenCaptureChanged,
+#if ENABLE(THREADED_ANIMATIONS)
+    AcceleratedEffectsIntersectCoverageRectChanged,
+#endif
 };
 
 enum class LayerChange : uint64_t {
@@ -129,6 +132,9 @@ enum class LayerChange : uint64_t {
     ShadowPathChanged                   = 1LLU << static_cast<size_t>(LayerChangeIndex::ShadowPathChanged),
     DisplayOnlyImageChanged             = 1LLU << static_cast<size_t>(LayerChangeIndex::DisplayOnlyImageChanged),
     HidesFromScreenCaptureChanged       = 1LLU << static_cast<size_t>(LayerChangeIndex::HidesFromScreenCaptureChanged),
+#if ENABLE(THREADED_ANIMATIONS)
+    AcceleratedEffectsIntersectCoverageRectChanged = 1LLU << static_cast<size_t>(LayerChangeIndex::AcceleratedEffectsIntersectCoverageRectChanged),
+#endif
 };
 
 struct RemoteLayerBackingStoreOrProperties {
@@ -235,6 +241,9 @@ struct LayerProperties {
     // Resolved by the UI process, which holds the rendering.
     Markable<RemoteSnapshotIdentifier> displayOnlyImage;
     bool hidesFromScreenCapture { false };
+#if ENABLE(THREADED_ANIMATIONS)
+    bool acceleratedEffectsIntersectCoverageRect { true };
+#endif
 };
 
 }
