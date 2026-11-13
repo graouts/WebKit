@@ -190,9 +190,9 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     virtual void clearAcceleratedEffectsAndBaseValues();
     virtual void setAcceleratedEffectsAndBaseValues(const AcceleratedEffects&, const AcceleratedEffectValues&);
-    // Whether this layer or any of its descendants intersects the coverage rect, i.e. whether
-    // the accelerated effects set on this layer may affect content that is or will soon be visible.
-    virtual void setAcceleratedEffectsIntersectCoverageRect(bool);
+    // The area, in this layer's coordinate space without its own transform, that the content affected by
+    // the accelerated effects set on this layer, descendants included, may cover over the course of the effects.
+    virtual void setAnimationExtent(std::optional<FloatRect>);
 #endif
 
     virtual void setMaskLayer(RefPtr<PlatformCALayer>&&);

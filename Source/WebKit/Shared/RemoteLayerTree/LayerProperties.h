@@ -67,7 +67,7 @@ enum class LayerChangeIndex : size_t {
     DisplayOnlyImageChanged,
     HidesFromScreenCaptureChanged,
 #if ENABLE(THREADED_ANIMATIONS)
-    AcceleratedEffectsIntersectCoverageRectChanged,
+    AnimationExtentChanged,
 #endif
 };
 
@@ -133,7 +133,7 @@ enum class LayerChange : uint64_t {
     DisplayOnlyImageChanged             = 1LLU << static_cast<size_t>(LayerChangeIndex::DisplayOnlyImageChanged),
     HidesFromScreenCaptureChanged       = 1LLU << static_cast<size_t>(LayerChangeIndex::HidesFromScreenCaptureChanged),
 #if ENABLE(THREADED_ANIMATIONS)
-    AcceleratedEffectsIntersectCoverageRectChanged = 1LLU << static_cast<size_t>(LayerChangeIndex::AcceleratedEffectsIntersectCoverageRectChanged),
+    AnimationExtentChanged              = 1LLU << static_cast<size_t>(LayerChangeIndex::AnimationExtentChanged),
 #endif
 };
 
@@ -242,7 +242,7 @@ struct LayerProperties {
     Markable<RemoteSnapshotIdentifier> displayOnlyImage;
     bool hidesFromScreenCapture { false };
 #if ENABLE(THREADED_ANIMATIONS)
-    bool acceleratedEffectsIntersectCoverageRect { true };
+    std::optional<WebCore::FloatRect> animationExtent;
 #endif
 };
 

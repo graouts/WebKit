@@ -155,10 +155,12 @@ public:
 
 #if ENABLE(THREADED_ANIMATIONS)
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&, RemoteLayerTreeHost&);
-    void setAcceleratedEffectsIntersectCoverageRect(bool, RemoteLayerTreeHost&);
     const RemoteAnimationStack* animationStack() const { return m_animationStack.get(); }
     RefPtr<RemoteAnimationStack> takeAnimationStack() { return std::exchange(m_animationStack, nullptr); }
-    bool hasHighImpactMonotonicAnimations() const { return m_hasHighImpactMonotonicEffects && m_acceleratedEffectsIntersectCoverageRect; }
+    bool hasHighImpactMonotonicAnimations() const { return m_hasHighImpactMonotonicAnimations; }
+    // In this layer's coordinate space without its transform. Unknown if not set.
+    const std::optional<WebCore::FloatRect>& animationExtent() const { return m_animationExtent; }
+    void setAnimationExtent(const std::optional<WebCore::FloatRect>& animationExtent) { m_animationExtent = animationExtent; }
 #endif
 
     bool backdropRootIsOpaque() const { return m_backdropRootIsOpaque; }
@@ -224,8 +226,8 @@ private:
 
 #if ENABLE(THREADED_ANIMATIONS)
     RefPtr<RemoteAnimationStack> m_animationStack;
-    bool m_hasHighImpactMonotonicEffects { false };
-    bool m_acceleratedEffectsIntersectCoverageRect { true };
+    bool m_hasHighImpactMonotonicAnimations { false };
+    std::optional<WebCore::FloatRect> m_animationExtent;
 #endif
     bool m_backdropRootIsOpaque { false };
 };

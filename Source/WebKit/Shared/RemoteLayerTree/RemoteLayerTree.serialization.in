@@ -83,7 +83,7 @@ header: "RemoteLayerTreeTransaction.h"
     DisplayOnlyImageChanged
     HidesFromScreenCaptureChanged
 #if ENABLE(THREADED_ANIMATIONS)
-    AcceleratedEffectsIntersectCoverageRectChanged
+    AnimationExtentChanged
 #endif
 };
 
@@ -252,7 +252,7 @@ headers: "LayerProperties.h" "PlatformCALayerRemote.h"
     [OptionalTupleBit=WebKit::LayerChange::DisplayOnlyImageChanged] Markable<WebKit::RemoteSnapshotIdentifier> displayOnlyImage;
     [OptionalTupleBit=WebKit::LayerChange::HidesFromScreenCaptureChanged] bool hidesFromScreenCapture;
 #if ENABLE(THREADED_ANIMATIONS)
-    [OptionalTupleBit=WebKit::LayerChange::AcceleratedEffectsIntersectCoverageRectChanged] bool acceleratedEffectsIntersectCoverageRect;
+    [OptionalTupleBit=WebKit::LayerChange::AnimationExtentChanged] std::optional<WebCore::FloatRect> animationExtent;
 #endif
 };
 

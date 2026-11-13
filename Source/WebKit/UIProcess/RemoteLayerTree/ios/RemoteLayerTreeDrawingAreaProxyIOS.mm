@@ -486,8 +486,8 @@ void RemoteLayerTreeDrawingAreaProxyIOS::highImpactMonotonicAnimationsWereRemove
 
 void RemoteLayerTreeDrawingAreaProxyIOS::updateHighImpactMonotonicAnimations()
 {
-    // An animated node gained or lost its high impact without its animations changing,
-    // for instance because it moved in or out of the coverage rect.
+    // Whether high-impact animations may be visible depends on geometry that changes as the
+    // page scrolls or animates in the UI process, and as layer tree transactions are applied.
     if (!m_needsDisplayRefreshCallbacksForMonotonicAnimations)
         return;
 
@@ -495,7 +495,9 @@ void RemoteLayerTreeDrawingAreaProxyIOS::updateHighImpactMonotonicAnimations()
         if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
             m_hasHighImpactMonotonicAnimations = scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
     }
-    scheduleDisplayLinkAndSetFrameRate();
+
+    if (wantsHighFrameRate() != [protect(displayLinkHandler()) wantsHighFrameRate])
+        scheduleDisplayLinkAndSetFrameRate();
 }
 
 void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacksForMonotonicAnimations()
@@ -505,7 +507,7 @@ void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacksForMonotoni
     pauseDisplayLinkIfNeeded();
 }
 
-void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayLinkAndSetFrameRate()
+bool RemoteLayerTreeDrawingAreaProxyIOS::wantsHighFrameRate() const
 {
     auto shouldUpdateMonotonicAnimationsAtHighFrameRate = [&] {
         return page() && protect(page()->preferences())->threadedTimeBasedAnimationsAtHighFrameRateEnabled();
@@ -516,10 +518,14 @@ void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayLinkAndSetFrameRate()
     };
 
     ASSERT_IMPLIES(m_hasHighImpactMonotonicAnimations, m_needsDisplayRefreshCallbacksForMonotonicAnimations);
-    auto wantsHighFrameRate = (m_hasHighImpactMonotonicAnimations && shouldUpdateMonotonicAnimationsAtHighFrameRate())
+    return (m_hasHighImpactMonotonicAnimations && shouldUpdateMonotonicAnimationsAtHighFrameRate())
         || (m_needsDisplayRefreshCallbacksForDrawing && shouldUpdatePageRenderingAtHighFrameRate());
+}
+
+void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayLinkAndSetFrameRate()
+{
     RetainPtr displayLinkHandler = this->displayLinkHandler();
-    [displayLinkHandler setWantsHighFrameRate:wantsHighFrameRate];
+    [displayLinkHandler setWantsHighFrameRate:wantsHighFrameRate()];
     [displayLinkHandler schedule];
 }
 
@@ -553,6 +559,11 @@ UIView *RemoteLayerTreeDrawingAreaProxyIOS::viewWithLayerIDForTesting(WebCore::P
 
 void RemoteLayerTreeDrawingAreaProxyIOS::didCommitLayerTree(IPC::Connection&, const RemoteLayerTreeTransaction& transaction, const RemoteScrollingCoordinatorTransaction&, const std::optional<MainFrameData>& mainFrameData, const TransactionID&)
 {
+#if ENABLE(THREADED_ANIMATIONS)
+    // The transaction may have moved high-impact animations in or out of view.
+    updateHighImpactMonotonicAnimations();
+#endif
+
     if (!mainFrameData)
         return;
 

@@ -237,7 +237,7 @@ void PlatformCALayer::setAcceleratedEffectsAndBaseValues(const AcceleratedEffect
 {
 }
 
-void PlatformCALayer::setAcceleratedEffectsIntersectCoverageRect(bool)
+void PlatformCALayer::setAnimationExtent(std::optional<FloatRect>)
 {
 }
 #endif

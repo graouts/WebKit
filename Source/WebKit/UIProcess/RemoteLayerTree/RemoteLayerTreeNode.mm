@@ -431,7 +431,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
         animationStack->clear(layer.get());
     host.animationsWereRemovedFromNode(*this);
 
-    m_hasHighImpactMonotonicEffects = false;
+    m_hasHighImpactMonotonicAnimations = false;
 
     if (effects.isEmpty()) {
         m_animationStack = nullptr;
@@ -442,8 +442,8 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
         TimelineID timelineID { effect->timelineIdentifier(), m_layerID.processIdentifier() };
         RefPtr timeline = host.timeline(timelineID);
         RELEASE_ASSERT(timeline, "Remote layer tree animations should have a pre-registered timeline.");
-        if (!m_hasHighImpactMonotonicEffects && timeline->isMonotonic())
-            m_hasHighImpactMonotonicEffects = effect->hasHighImpact();
+        if (!m_hasHighImpactMonotonicAnimations && timeline->isMonotonic())
+            m_hasHighImpactMonotonicAnimations = effect->hasHighImpact();
         return RemoteAnimation::create(Ref { effect }.get(), *timeline);
     }), baseValues.clone(), layer.get().bounds);
     m_animationStack = animationStack.copyRef();
@@ -455,19 +455,6 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
 #endif
 
     host.animationsWereAddedToNode(*this);
-}
-
-void RemoteLayerTreeNode::setAcceleratedEffectsIntersectCoverageRect(bool intersectsCoverageRect, RemoteLayerTreeHost& host)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(isUIThread());
-
-    if (m_acceleratedEffectsIntersectCoverageRect == intersectsCoverageRect)
-        return;
-
-    bool hadHighImpactMonotonicAnimations = hasHighImpactMonotonicAnimations();
-    m_acceleratedEffectsIntersectCoverageRect = intersectsCoverageRect;
-    if (m_animationStack && hadHighImpactMonotonicAnimations != hasHighImpactMonotonicAnimations())
-        host.highImpactMonotonicAnimationsChangedForNode(*this);
 }
 #endif
 
