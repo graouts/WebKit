@@ -49,6 +49,10 @@
 #if ENABLE(THREADED_ANIMATIONS)
 #import "RemoteAnimation.h"
 #import "RemoteAnimationStack.h"
+#if PLATFORM(IOS_FAMILY)
+#import "RemoteLayerTreeViews.h"
+#import <pal/spi/cocoa/QuartzCoreSPI.h>
+#endif
 #endif
 
 namespace WebKit {
@@ -422,6 +426,40 @@ void RemoteLayerTreeNode::removeFromHostingNode()
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
+#if PLATFORM(IOS_FAMILY)
+// Time-based animations apply their effects by setting properties on the layer each time the display refreshes.
+// For views backing UIKit, setting a transform marks the layer as needing layout, which yields a costly UIKit layout
+// pass, updating safe area insets among other things, each frame. The views below, used for regular compositing layers,
+// don't rely on layout since they are entirely positioned and sized by the remote layer tree, so we opt them out of that.
+static bool canDisableLayoutOnGeometryChangeForAnimations(UIView *view)
+{
+    Class viewClass = [view class];
+    return viewClass == WKCompositingView.class
+        || viewClass == WKTransformView.class
+        || viewClass == WKBackdropView.class
+        || viewClass == WKShapeView.class
+#if HAVE(CORE_MATERIAL)
+        || viewClass == WKMaterialView.class
+#endif
+        ;
+}
+
+void RemoteLayerTreeNode::setLayoutOnGeometryChangeDisabledForAnimations(bool disabled)
+{
+    RetainPtr layer = this->layer();
+    if (disabled) {
+        if (m_needsLayoutOnGeometryChangeBeforeAnimations || !canDisableLayoutOnGeometryChangeForAnimations(protect(uiView()).get()))
+            return;
+        m_needsLayoutOnGeometryChangeBeforeAnimations = [layer needsLayoutOnGeometryChange];
+        [layer setNeedsLayoutOnGeometryChange:NO];
+        return;
+    }
+
+    if (auto needsLayoutOnGeometryChange = std::exchange(m_needsLayoutOnGeometryChangeBeforeAnimations, std::nullopt))
+        [layer setNeedsLayoutOnGeometryChange:*needsLayoutOnGeometryChange];
+}
+#endif
+
 void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects& effects, const WebCore::AcceleratedEffectValues& baseValues, RemoteLayerTreeHost& host)
 {
     ASSERT_WITH_SECURITY_IMPLICATION(isUIThread());
@@ -435,6 +473,9 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
 
     if (effects.isEmpty()) {
         m_animationStack = nullptr;
+#if PLATFORM(IOS_FAMILY)
+        setLayoutOnGeometryChangeDisabledForAnimations(false);
+#endif
         return;
     }
 
@@ -449,6 +490,7 @@ void RemoteLayerTreeNode::setAcceleratedEffectsAndBaseValues(const WebCore::Acce
     m_animationStack = animationStack.copyRef();
 
 #if PLATFORM(IOS_FAMILY)
+    setLayoutOnGeometryChangeDisabledForAnimations(true);
     animationStack->applyEffectsFromMainThread(layer.get(), backdropRootIsOpaque());
 #else
     animationStack->initEffectsFromMainThread(layer.get());

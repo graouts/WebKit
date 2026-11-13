@@ -173,6 +173,9 @@ private:
 #endif
 
     void initializeLayer();
+#if ENABLE(THREADED_ANIMATIONS) && PLATFORM(IOS_FAMILY)
+    void setLayoutOnGeometryChangeDisabledForAnimations(bool);
+#endif
 
     const WebCore::PlatformLayerIdentifier m_layerID;
     Markable<WebCore::LayerHostingContextIdentifier> m_remoteContextHostingIdentifier;
@@ -228,6 +231,9 @@ private:
     RefPtr<RemoteAnimationStack> m_animationStack;
     bool m_hasHighImpactMonotonicAnimations { false };
     std::optional<WebCore::FloatRect> m_animationExtent;
+#if PLATFORM(IOS_FAMILY)
+    std::optional<bool> m_needsLayoutOnGeometryChangeBeforeAnimations;
+#endif
 #endif
     bool m_backdropRootIsOpaque { false };
 };
