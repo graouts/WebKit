@@ -1039,6 +1039,14 @@ void RemoteLayerTreeDrawingAreaProxy::animationsWereRemovedFromNode(RemoteLayerT
     }
 }
 
+void RemoteLayerTreeDrawingAreaProxy::highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode& node)
+{
+    if (RefPtr page = this->page()) {
+        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
+            scrollingCoordinatorProxy->highImpactMonotonicAnimationsChangedForNode(node);
+    }
+}
+
 void RemoteLayerTreeDrawingAreaProxy::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
 {
     if (RefPtr page = this->page()) {

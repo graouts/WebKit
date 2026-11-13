@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../resources/ui-helper.js"></script>
+<script src="threaded-animations-utils.js"></script>
+<style>
+
+.box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100px;
+    height: 100px;
+    background-color: black;
+}
+
+</style>
+<script>
+
+const duration = 1000 * 1000; // 1000s.
+const farOutsideOfCoverageRect = "20000px";
+
+const createBox = (test, parent = document.body) => {
+    const box = document.createElement("div");
+    box.className = "box";
+    parent.appendChild(box);
+    test.add_cleanup(() => box.remove());
+    return box;
+};
+
+const assertTranslateAnimationImpact = (target, expectedHighImpact, description) => {
+    const acceleratedAnimations = internals.acceleratedAnimationsForElement(target);
+    assert_equals(acceleratedAnimations.length, 1, "There is a single accelerated animation");
+    assert_equals(acceleratedAnimations[0].property, "translate");
+    assert_true(acceleratedAnimations[0].isThreaded, "The accelerated animation is threaded");
+    assert_equals(acceleratedAnimations[0].hasHighImpact, expectedHighImpact, description);
+};
+
+promise_test(async test => {
+    const target = createBox(test);
+    const animation = target.animate({ translate: "100px" }, duration);
+    await animationAcceleration(animation);
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(target, true, "A 'translate' animation on an element within the coverage rect has a high impact");
+}, "A 'translate' animation on an element within the coverage rect has a high impact.");
+
+promise_test(async test => {
+    const target = createBox(test);
+    target.style.top = farOutsideOfCoverageRect;
+    const animation = target.animate({ translate: "100px" }, duration);
+    await animationAcceleration(animation);
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(target, false, "A 'translate' animation on an element far outside of the coverage rect does not have a high impact");
+
+    target.style.top = "0";
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(target, true, "Moving the element within the coverage rect gives the animation a high impact");
+
+    target.style.top = farOutsideOfCoverageRect;
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(target, false, "Moving the element back outside of the coverage rect removes the animation's high impact");
+}, "The impact of a 'translate' animation follows whether its element intersects the coverage rect.");
+
+promise_test(async test => {
+    const container = createBox(test);
+    container.style.top = farOutsideOfCoverageRect;
+
+    // A composited descendant positioned back within the coverage rect is moved by the container's animation.
+    const descendant = createBox(test, container);
+    descendant.style.top = `-${farOutsideOfCoverageRect}`;
+    descendant.style.willChange = "transform";
+
+    const animation = container.animate({ translate: "100px" }, duration);
+    await animationAcceleration(animation);
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(container, true, "A 'translate' animation on an element with a composited descendant within the coverage rect has a high impact");
+
+    descendant.style.top = "0";
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(container, false, "Once the descendant is also outside of the coverage rect, the animation no longer has a high impact");
+}, "The impact of a 'translate' animation accounts for composited descendants of its element.");
+
+const scrollTo = async y => {
+    if (UIHelper.isIOSFamily())
+        await UIHelper.immediateScrollTo(0, y);
+    else
+        window.scrollTo(0, y);
+    await UIHelper.ensurePresentationUpdate();
+    await threadedAnimationsCommit();
+};
+
+promise_test(async test => {
+    test.add_cleanup(() => scrollTo(0));
+
+    const target = createBox(test);
+    target.style.top = farOutsideOfCoverageRect;
+    const animation = target.animate({ translate: "100px" }, duration);
+    await animationAcceleration(animation);
+    await threadedAnimationsCommit();
+    assertTranslateAnimationImpact(target, false, "A 'translate' animation on an element far outside of the coverage rect does not have a high impact");
+
+    await scrollTo(parseInt(farOutsideOfCoverageRect) - 100);
+    assertTranslateAnimationImpact(target, true, "Scrolling the element within the coverage rect gives the animation a high impact");
+
+    await scrollTo(0);
+    assertTranslateAnimationImpact(target, false, "Scrolling the element back outside of the coverage rect removes the animation's high impact");
+}, "The impact of a 'translate' animation follows scrolling.");
+
+</script>
+</body>

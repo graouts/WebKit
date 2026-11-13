@@ -823,6 +823,12 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
         protect(drawingAreaIOS())->highImpactMonotonicAnimationsWereRemoved();
 }
 
+void RemoteScrollingCoordinatorProxyIOS::highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode& node)
+{
+    if (m_animatedNodeLayerIDs.contains(node.layerID()))
+        protect(drawingAreaIOS())->updateHighImpactMonotonicAnimations();
+}
+
 void RemoteScrollingCoordinatorProxyIOS::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
 {
     scrollingTree().updateTimelinesRegistration(processIdentifier, timelinesUpdate);

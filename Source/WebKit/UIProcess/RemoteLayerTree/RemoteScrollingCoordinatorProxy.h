@@ -169,6 +169,7 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     virtual void animationsWereAddedToNode(RemoteLayerTreeNode&) { }
     virtual void animationsWereRemovedFromNode(RemoteLayerTreeNode&) { }
+    virtual void highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode&) { }
     virtual void updateTimelinesRegistration(WebCore::ProcessIdentifier, const WebCore::AcceleratedTimelinesUpdate&, MonotonicTime) { }
     virtual void removeTimelines(WebCore::ProcessIdentifier) { };
     virtual RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const { return nullptr; }

@@ -1,0 +1,3 @@
+
+PASS Display link only opts into high frame rate updates for high-impact animations within the coverage rect
+
