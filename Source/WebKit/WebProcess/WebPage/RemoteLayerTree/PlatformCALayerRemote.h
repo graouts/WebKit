@@ -105,7 +105,7 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     void clearAcceleratedEffectsAndBaseValues() override;
     void setAcceleratedEffectsAndBaseValues(const WebCore::AcceleratedEffects&, const WebCore::AcceleratedEffectValues&) override;
-    void setAcceleratedEffectsIntersectCoverageRect(bool) override;
+    void setAnimationExtent(std::optional<WebCore::FloatRect>) override;
 #endif
 
     void setMaskLayer(RefPtr<WebCore::PlatformCALayer>&&) override;

@@ -100,7 +100,6 @@ public:
 #if ENABLE(THREADED_ANIMATIONS)
     void animationsWereAddedToNode(RemoteLayerTreeNode&);
     void animationsWereRemovedFromNode(RemoteLayerTreeNode&);
-    void highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode&);
     RefPtr<const RemoteAnimationTimeline> timeline(const TimelineID&) const;
     RefPtr<const RemoteAnimationStack> animationStackForNodeWithIDForTesting(WebCore::PlatformLayerIdentifier) const;
 #endif

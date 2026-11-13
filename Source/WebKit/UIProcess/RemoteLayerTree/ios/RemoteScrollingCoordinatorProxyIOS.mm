@@ -793,6 +793,8 @@ void RemoteScrollingCoordinatorProxyIOS::displayDidRefresh(PlatformDisplayID dis
 {
 #if ENABLE(THREADED_ANIMATIONS)
     updateTimeDependentAnimationStacks();
+    // Scrolling and animations in the UI process may have brought high-impact animations in or out of view.
+    protect(drawingAreaIOS())->updateHighImpactMonotonicAnimations();
 #endif
 }
 
@@ -821,12 +823,6 @@ void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLay
         protect(drawingAreaIOS())->pauseDisplayRefreshCallbacksForMonotonicAnimations();
     else if (node.hasHighImpactMonotonicAnimations())
         protect(drawingAreaIOS())->highImpactMonotonicAnimationsWereRemoved();
-}
-
-void RemoteScrollingCoordinatorProxyIOS::highImpactMonotonicAnimationsChangedForNode(RemoteLayerTreeNode& node)
-{
-    if (m_animatedNodeLayerIDs.contains(node.layerID()))
-        protect(drawingAreaIOS())->updateHighImpactMonotonicAnimations();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
@@ -920,10 +916,56 @@ bool RemoteScrollingCoordinatorProxyIOS::hasHighImpactMonotonicAnimations() cons
     auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
     for (auto animatedNodeLayerID : m_animatedNodeLayerIDs) {
         RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
-        if (animatedNode->hasHighImpactMonotonicAnimations())
+        if (animatedNode->hasHighImpactMonotonicAnimations() && animatedContentMayBeVisible(*animatedNode))
             return true;
     }
     return false;
+}
+
+// Content within this fraction of a scroll view's size outside of its visible area may soon be
+// scrolled into view, so it is considered visible.
+static constexpr CGFloat scrollViewVisibilityMarginRatio = 0.5;
+
+bool RemoteScrollingCoordinatorProxyIOS::animatedContentMayBeVisible(const RemoteLayerTreeNode& node) const
+{
+    // Without a known extent, the animated content could be anywhere.
+    auto& animationExtent = node.animationExtent();
+    if (!animationExtent)
+        return true;
+
+    RetainPtr layer = node.layer();
+    RetainPtr<CALayer> ancestor = [layer superlayer];
+    // This layer is not in the hierarchy yet, we'll find out once the commit is applied.
+    if (!ancestor)
+        return true;
+
+    // The extent is in the layer's coordinate space without its transform, which is what time-based animations
+    // change, so map it to the superlayer's coordinate space using only the layer's position.
+    auto bounds = [layer bounds];
+    auto anchorPoint = [layer anchorPoint];
+    auto position = [layer position];
+    CGRect rect = CGRectOffset(*animationExtent, position.x - bounds.origin.x - anchorPoint.x * bounds.size.width, position.y - bounds.origin.y - anchorPoint.y * bounds.size.height);
+
+    while (true) {
+        if ([ancestor isHidden] || ![ancestor opacity])
+            return false;
+
+        if ([ancestor masksToBounds]) {
+            auto clipRect = [ancestor bounds];
+            if ([[ancestor delegate] isKindOfClass:UIScrollView.class])
+                clipRect = CGRectInset(clipRect, -clipRect.size.width * scrollViewVisibilityMarginRatio, -clipRect.size.height * scrollViewVisibilityMarginRatio);
+            rect = CGRectIntersection(rect, clipRect);
+            if (CGRectIsEmpty(rect))
+                return false;
+        }
+
+        RetainPtr<CALayer> superlayer = [ancestor superlayer];
+        if (!superlayer)
+            return true;
+
+        rect = [ancestor convertRect:rect toLayer:superlayer.get()];
+        ancestor = WTF::move(superlayer);
+    }
 }
 #endif
 

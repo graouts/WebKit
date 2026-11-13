@@ -1,6 +1,0 @@
-
-PASS A 'translate' animation on an element within the coverage rect has a high impact.
-PASS The impact of a 'translate' animation follows whether its element intersects the coverage rect.
-PASS The impact of a 'translate' animation accounts for composited descendants of its element.
-PASS The impact of a 'translate' animation follows scrolling.
-
