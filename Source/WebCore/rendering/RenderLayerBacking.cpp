@@ -2199,6 +2199,10 @@ void RenderLayerBacking::updateScrollOffset(ScrollOffset scrollOffset)
 
 void RenderLayerBacking::updateAfterDescendants()
 {
+    // The extent of transform animations includes composited descendants, whose geometry
+    // may have changed even though this layer's geometry did not need to be updated.
+    updateAnimationExtent();
+
     // FIXME: this potentially duplicates work we did in updateConfiguration().
     PaintedContentsInfo contentsInfo(*this);
     Ref graphicsLayer = *m_graphicsLayer;
