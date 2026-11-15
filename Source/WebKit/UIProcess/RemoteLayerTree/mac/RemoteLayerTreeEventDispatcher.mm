@@ -434,7 +434,8 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
 #if ENABLE(THREADED_ANIMATIONS)
         {
             Locker lock { m_animationLock };
-            if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty())
+            // Until the geometry settles after a commit, this reflects the previous determination.
+            if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty() && m_hasTimeBasedAnimationsThatMayBeVisible)
                 return true;
         }
 #endif
@@ -541,11 +542,21 @@ void RemoteLayerTreeEventDispatcher::didRefreshDisplay(PlatformDisplayID display
 
 void RemoteLayerTreeEventDispatcher::updateLayerPositionsAndAnimations()
 {
-    if (auto scrollingTree = this->scrollingTree())
+    auto scrollingTree = this->scrollingTree();
+    if (scrollingTree)
         scrollingTree->tryToApplyLayerPositions();
 
 #if ENABLE(THREADED_ANIMATIONS)
-    updateAnimations();
+    if (scrollingTree) {
+        // Scrolling may bring animated content in or out of view.
+        if (scrollingTree->hasRecentActivity())
+            m_animatedContentVisibilityNeedsUpdate = true;
+        // Determining whether animated content may be visible walks the layer tree, which the
+        // main thread only changes while holding this lock, which it acquires before m_animationLock.
+        ScrollingTree::HitTestLocker locker { *scrollingTree };
+        updateAnimations();
+    } else
+        updateAnimations();
 #endif
 
     // Because we call -[CAPresentationModifier setUpdatesAsynchronously:NO] on the
@@ -726,6 +737,9 @@ void RemoteLayerTreeEventDispatcher::lockForAnimationChanges()
 void RemoteLayerTreeEventDispatcher::unlockForAnimationChanges()
 {
     ASSERT(isMainRunLoop());
+    // The layer tree may have changed, we'll determine whether animated content may be
+    // visible once scrolling tree layer positions have been applied after the commit.
+    m_animatedContentVisibilityNeedsUpdate = true;
     m_animationLock.unlock();
     startOrStopDisplayLink();
 }
@@ -737,6 +751,7 @@ void RemoteLayerTreeEventDispatcher::animationsWereAddedToNode(RemoteLayerTreeNo
     auto animationStack = node.takeAnimationStack();
     ASSERT(animationStack);
     m_animationStacks.set(node.layerID(), animationStack.releaseNonNull());
+    m_animatedLayers.set(node.layerID(), node.layer());
 }
 
 void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
@@ -745,6 +760,93 @@ void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTr
     assertIsHeld(m_animationLock);
     if (auto animationStack = m_animationStacks.take(node.layerID()))
         animationStack->clear(protect(node.layer()).get());
+    m_animatedLayers.remove(node.layerID());
+    m_animationStacksThatMayBeVisible.remove(node.layerID());
+}
+
+void RemoteLayerTreeEventDispatcher::updateAnimatedContentVisibilityAfterCommit()
+{
+    ASSERT(isMainRunLoop());
+    bool hadTimeBasedAnimationsThatMayBeVisible;
+    bool hasTimeBasedAnimationsThatMayBeVisible;
+    {
+        Locker lock { m_animationLock };
+        // The scrolling thread may have determined visibility before scrolling tree layer positions were applied.
+        m_animatedContentVisibilityNeedsUpdate = true;
+        hadTimeBasedAnimationsThatMayBeVisible = m_hasTimeBasedAnimationsThatMayBeVisible;
+        updateAnimatedContentVisibilityIfNeeded(ApplyEffectsToAnimationsThatBecameVisible::Yes);
+        hasTimeBasedAnimationsThatMayBeVisible = m_hasTimeBasedAnimationsThatMayBeVisible;
+    }
+    if (hadTimeBasedAnimationsThatMayBeVisible != hasTimeBasedAnimationsThatMayBeVisible)
+        startOrStopDisplayLinkOnMainThread();
+}
+
+bool RemoteLayerTreeEventDispatcher::hasTimeBasedAnimationsThatMayBeVisible()
+{
+    Locker lock { m_animationLock };
+    return m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty() && m_hasTimeBasedAnimationsThatMayBeVisible;
+}
+
+bool RemoteLayerTreeEventDispatcher::updateAnimatedContentVisibilityIfNeeded(ApplyEffectsToAnimationsThatBecameVisible applyEffectsToAnimationsThatBecameVisible)
+{
+    if (!m_animatedContentVisibilityNeedsUpdate.exchange(false))
+        return false;
+
+    HashMap<WebCore::PlatformLayerIdentifier, bool> visibilityCache;
+    HashSet<WebCore::PlatformLayerIdentifier> animationStacksThatMayBeVisible;
+    Vector<Ref<RemoteAnimationStack>> animationStacksThatBecameVisible;
+    bool hasTimeBasedAnimationsThatMayBeVisible = false;
+    for (auto& [layerID, animationStack] : m_animationStacks) {
+        RetainPtr layer = m_animatedLayers.get(layerID);
+        if (layer && !animatedContentMayBeVisible(layer.get(), visibilityCache))
+            continue;
+        animationStacksThatMayBeVisible.add(layerID);
+        if (!animationStack->hasTimeBasedAnimations())
+            continue;
+        hasTimeBasedAnimationsThatMayBeVisible = true;
+        if (!m_animationStacksThatMayBeVisible.contains(layerID))
+            animationStacksThatBecameVisible.append(animationStack);
+    }
+    m_animationStacksThatMayBeVisible = WTF::move(animationStacksThatMayBeVisible);
+    m_hasTimeBasedAnimationsThatMayBeVisible = hasTimeBasedAnimationsThatMayBeVisible;
+
+    // Time-based animations are not updated while their content cannot be visible, so bring
+    // them up to date right away, before their content gets displayed again.
+    if (applyEffectsToAnimationsThatBecameVisible == ApplyEffectsToAnimationsThatBecameVisible::Yes && !animationStacksThatBecameVisible.isEmpty() && m_monotonicTimelineRegistry) {
+        m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
+        for (auto& animationStack : animationStacksThatBecameVisible)
+            animationStack->applyEffects();
+    }
+
+    return true;
+}
+
+bool RemoteLayerTreeEventDispatcher::animatedContentMayBeVisible(CALayer *layer, HashMap<WebCore::PlatformLayerIdentifier, bool>& visibilityCache)
+{
+    RefPtr node = RemoteLayerTreeNode::forCALayer(layer);
+    if (!node)
+        return true;
+
+    if (auto iterator = visibilityCache.find(node->layerID()); iterator != visibilityCache.end())
+        return iterator->value;
+
+    // Without a known extent, the animated content could be anywhere.
+    bool mayBeVisible = true;
+    if (auto& animationExtent = node->animationExtent()) {
+        mayBeVisible = RemoteLayerTreeNode::animatedContentMayBeVisible(layer, *animationExtent, [&](CALayer *ancestorLayer) -> std::optional<bool> {
+            assertIsHeld(m_animationLock);
+            auto ancestorLayerID = RemoteLayerTreeNode::layerID(ancestorLayer);
+            if (!ancestorLayerID)
+                return std::nullopt;
+            RefPtr animationStack = m_animationStacks.get(*ancestorLayerID);
+            if (!animationStack || !animationStack->hasTimeBasedAnimations() || !animationStack->affectsTransform())
+                return std::nullopt;
+            return animatedContentMayBeVisible(ancestorLayer, visibilityCache);
+        });
+    }
+
+    visibilityCache.set(node->layerID(), mayBeVisible);
+    return mayBeVisible;
 }
 
 void RemoteLayerTreeEventDispatcher::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
@@ -800,11 +902,22 @@ bool RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate an
     if (m_monotonicTimelineRegistry && animationStacksToUpdate == AnimationStacksToUpdate::All)
         m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
 
+    // Time-based animations are updated from the scrolling thread, which holds the hit-testing lock to walk the layer tree.
+    if (animationStacksToUpdate == AnimationStacksToUpdate::All) {
+        bool hadTimeBasedAnimationsThatMayBeVisible = m_hasTimeBasedAnimationsThatMayBeVisible;
+        if (updateAnimatedContentVisibilityIfNeeded(ApplyEffectsToAnimationsThatBecameVisible::No) && hadTimeBasedAnimationsThatMayBeVisible != m_hasTimeBasedAnimationsThatMayBeVisible)
+            startOrStopDisplayLink();
+    }
+
     bool appliedEffects = false;
     auto animationStacks = std::exchange(m_animationStacks, { });
     for (auto [layerID, currentAnimationStack] : animationStacks) {
         Ref animationStack = currentAnimationStack;
-        if (animationStacksToUpdate == AnimationStacksToUpdate::All || animationStack->hasProgressBasedAnimations()) {
+        // Animations whose content cannot be visible are not updated until it may be again.
+        bool shouldApplyEffects = animationStacksToUpdate == AnimationStacksToUpdate::All
+            ? animationStack->hasProgressBasedAnimations() || m_animationStacksThatMayBeVisible.contains(layerID)
+            : animationStack->hasProgressBasedAnimations();
+        if (shouldApplyEffects) {
             animationStack->applyEffects();
             appliedEffects = true;
         }

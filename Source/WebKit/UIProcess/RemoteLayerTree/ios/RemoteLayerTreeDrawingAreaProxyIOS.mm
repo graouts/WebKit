@@ -461,50 +461,33 @@ void RemoteLayerTreeDrawingAreaProxyIOS::startForcedDisplayRefreshWindow(Seconds
     [protect(displayLinkHandler()) startForcedDisplayRefreshWindowWithInterval:interval duration:duration];
 }
 
-void RemoteLayerTreeDrawingAreaProxyIOS::scheduleDisplayRefreshCallbacksForMonotonicAnimations()
+void RemoteLayerTreeDrawingAreaProxyIOS::updateDisplayRefreshCallbacksForMonotonicAnimations()
 {
-    m_needsDisplayRefreshCallbacksForMonotonicAnimations = true;
-    if (!m_hasHighImpactMonotonicAnimations) {
-        if (RefPtr page = this->page()) {
-            if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
-                m_hasHighImpactMonotonicAnimations = scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
+    bool needsDisplayRefreshCallbacks = false;
+    bool hasHighImpactMonotonicAnimations = false;
+    if (RefPtr page = this->page()) {
+        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy()) {
+            scrollingCoordinatorProxy->updateAnimatedContentVisibilityIfNeeded();
+            needsDisplayRefreshCallbacks = scrollingCoordinatorProxy->hasMonotonicAnimationsThatMayBeVisible();
+            hasHighImpactMonotonicAnimations = needsDisplayRefreshCallbacks && scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
         }
     }
-    scheduleDisplayLinkAndSetFrameRate();
-}
 
-void RemoteLayerTreeDrawingAreaProxyIOS::highImpactMonotonicAnimationsWereRemoved()
-{
-    if (!m_hasHighImpactMonotonicAnimations)
+    bool needsDisplayRefreshCallbacksChanged = needsDisplayRefreshCallbacks != m_needsDisplayRefreshCallbacksForMonotonicAnimations;
+    m_needsDisplayRefreshCallbacksForMonotonicAnimations = needsDisplayRefreshCallbacks;
+    m_hasHighImpactMonotonicAnimations = hasHighImpactMonotonicAnimations;
+
+    RetainPtr displayLinkHandler = this->displayLinkHandler();
+    if (needsDisplayRefreshCallbacks) {
+        if (needsDisplayRefreshCallbacksChanged || wantsHighFrameRate() != [displayLinkHandler wantsHighFrameRate])
+            scheduleDisplayLinkAndSetFrameRate();
         return;
-
-    if (RefPtr page = this->page()) {
-        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
-            m_hasHighImpactMonotonicAnimations = scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
-    }
-}
-
-void RemoteLayerTreeDrawingAreaProxyIOS::updateHighImpactMonotonicAnimations()
-{
-    // Whether high-impact animations may be visible depends on geometry that changes as the
-    // page scrolls or animates in the UI process, and as layer tree transactions are applied.
-    if (!m_needsDisplayRefreshCallbacksForMonotonicAnimations)
-        return;
-
-    if (RefPtr page = this->page()) {
-        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
-            m_hasHighImpactMonotonicAnimations = scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
     }
 
-    if (wantsHighFrameRate() != [protect(displayLinkHandler()) wantsHighFrameRate])
-        scheduleDisplayLinkAndSetFrameRate();
-}
-
-void RemoteLayerTreeDrawingAreaProxyIOS::pauseDisplayRefreshCallbacksForMonotonicAnimations()
-{
-    m_needsDisplayRefreshCallbacksForMonotonicAnimations = false;
-    m_hasHighImpactMonotonicAnimations = false;
-    pauseDisplayLinkIfNeeded();
+    if (wantsHighFrameRate() != [displayLinkHandler wantsHighFrameRate])
+        [displayLinkHandler setWantsHighFrameRate:wantsHighFrameRate()];
+    if (needsDisplayRefreshCallbacksChanged)
+        pauseDisplayLinkIfNeeded();
 }
 
 bool RemoteLayerTreeDrawingAreaProxyIOS::wantsHighFrameRate() const
@@ -560,8 +543,12 @@ UIView *RemoteLayerTreeDrawingAreaProxyIOS::viewWithLayerIDForTesting(WebCore::P
 void RemoteLayerTreeDrawingAreaProxyIOS::didCommitLayerTree(IPC::Connection&, const RemoteLayerTreeTransaction& transaction, const RemoteScrollingCoordinatorTransaction&, const std::optional<MainFrameData>& mainFrameData, const TransactionID&)
 {
 #if ENABLE(THREADED_ANIMATIONS)
-    // The transaction may have moved high-impact animations in or out of view.
-    updateHighImpactMonotonicAnimations();
+    // The transaction may have added or removed animations, or moved them in or out of view.
+    if (RefPtr page = this->page()) {
+        if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy())
+            scrollingCoordinatorProxy->setAnimatedContentVisibilityNeedsUpdate();
+    }
+    updateDisplayRefreshCallbacksForMonotonicAnimations();
 #endif
 
     if (!mainFrameData)
