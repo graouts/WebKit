@@ -793,8 +793,14 @@ void RemoteScrollingCoordinatorProxyIOS::displayDidRefresh(PlatformDisplayID dis
 {
 #if ENABLE(THREADED_ANIMATIONS)
     updateTimeDependentAnimationStacks();
-    // Scrolling and animations in the UI process may have brought high-impact animations in or out of view.
-    protect(drawingAreaIOS())->updateHighImpactMonotonicAnimations();
+#endif
+}
+
+void RemoteScrollingCoordinatorProxyIOS::viewportChangedViaDelegatedScrolling(const WebCore::FloatPoint& scrollPosition, const WebCore::FloatRect& layoutViewport, double scale)
+{
+    RemoteScrollingCoordinatorProxy::viewportChangedViaDelegatedScrolling(scrollPosition, layoutViewport, scale);
+#if ENABLE(THREADED_ANIMATIONS)
+    animatedContentGeometryMayHaveChanged();
 #endif
 }
 
@@ -804,25 +810,26 @@ RemoteLayerTreeDrawingAreaProxyIOS& RemoteScrollingCoordinatorProxyIOS::drawingA
 }
 
 #if ENABLE(THREADED_ANIMATIONS)
+// Animations are added and removed as layer tree transactions are applied, and the drawing area
+// updates display refresh callbacks for monotonic animations once the transaction is committed.
 void RemoteScrollingCoordinatorProxyIOS::animationsWereAddedToNode(RemoteLayerTreeNode& node)
 {
     m_animatedNodeLayerIDs.add(node.layerID());
-    if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty())
-        protect(drawingAreaIOS())->scheduleDisplayRefreshCallbacksForMonotonicAnimations();
+    m_animatedContentVisibilityNeedsUpdate = true;
 }
 
 void RemoteScrollingCoordinatorProxyIOS::progressBasedTimelinesWereUpdatedForNode(const WebCore::ScrollingTreeScrollingNode& node)
 {
     updateAnimationStacksDependentOnScrollingNode(node);
+    // This is called as a scrolling node scrolls, which may bring animated content in or out of view.
+    animatedContentGeometryMayHaveChanged();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
 {
     m_animatedNodeLayerIDs.remove(node.layerID());
-    if (m_animatedNodeLayerIDs.isEmpty() || !m_monotonicTimelineRegistry || m_monotonicTimelineRegistry->isEmpty())
-        protect(drawingAreaIOS())->pauseDisplayRefreshCallbacksForMonotonicAnimations();
-    else if (node.hasHighImpactMonotonicAnimations())
-        protect(drawingAreaIOS())->highImpactMonotonicAnimationsWereRemoved();
+    m_animatedNodeLayerIDsThatMayBeVisible.remove(node.layerID());
+    m_animatedContentVisibilityNeedsUpdate = true;
 }
 
 void RemoteScrollingCoordinatorProxyIOS::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
@@ -876,20 +883,21 @@ void RemoteScrollingCoordinatorProxyIOS::updateTimeDependentAnimationStacks()
     // link update or vblank refresh.
     m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
 
-    updateAnimationStacks([](auto& animationStack) {
-        return animationStack.hasTimeBasedAnimations();
+    // Animations whose content cannot be visible are not updated until it may be again.
+    updateAnimationStacks([&](auto layerID, auto& animationStack) {
+        return animationStack.hasTimeBasedAnimations() && m_animatedNodeLayerIDsThatMayBeVisible.contains(layerID);
     });
 }
 
 void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacksDependentOnScrollingNode(const WebCore::ScrollingTreeScrollingNode& node)
 {
     auto scrollingNodeID = node.scrollingNodeID();
-    updateAnimationStacks([scrollingNodeID](auto& animationStack) {
+    updateAnimationStacks([scrollingNodeID](auto, auto& animationStack) {
         return animationStack.isDependentOnScrollingNodeWithID(scrollingNodeID);
     });
 }
 
-void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Function<bool(const RemoteAnimationStack&)>& predicate)
+void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Function<bool(WebCore::PlatformLayerIdentifier, const RemoteAnimationStack&)>& predicate)
 {
     TraceScope scope(RemoteLayerTreeAnimationsUpdateStart, RemoteLayerTreeAnimationsUpdateEnd, m_animatedNodeLayerIDs.size());
 
@@ -900,7 +908,7 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Fu
         RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
         RefPtr animationStack = animatedNode->animationStack();
         ASSERT(animationStack);
-        if (predicate(*animationStack))
+        if (predicate(animatedNodeLayerID, *animationStack))
             animationStack->applyEffectsFromMainThread(protect(animatedNode->layer()), animatedNode->backdropRootIsOpaque());
 
         // We can clear the effect stack if it's empty, but the previous
@@ -914,58 +922,89 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Fu
 bool RemoteScrollingCoordinatorProxyIOS::hasHighImpactMonotonicAnimations() const
 {
     auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
-    for (auto animatedNodeLayerID : m_animatedNodeLayerIDs) {
-        RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
-        if (animatedNode->hasHighImpactMonotonicAnimations() && animatedContentMayBeVisible(*animatedNode))
+    for (auto animatedNodeLayerID : m_animatedNodeLayerIDsThatMayBeVisible) {
+        if (RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID); animatedNode && animatedNode->hasHighImpactMonotonicAnimations())
             return true;
     }
     return false;
 }
 
-// Content within this fraction of a scroll view's size outside of its visible area may soon be
-// scrolled into view, so it is considered visible.
-static constexpr CGFloat scrollViewVisibilityMarginRatio = 0.5;
-
-bool RemoteScrollingCoordinatorProxyIOS::animatedContentMayBeVisible(const RemoteLayerTreeNode& node) const
+bool RemoteScrollingCoordinatorProxyIOS::hasMonotonicAnimationsThatMayBeVisible() const
 {
-    // Without a known extent, the animated content could be anywhere.
-    auto& animationExtent = node.animationExtent();
-    if (!animationExtent)
-        return true;
+    if (!m_monotonicTimelineRegistry || m_monotonicTimelineRegistry->isEmpty())
+        return false;
 
-    RetainPtr layer = node.layer();
-    RetainPtr<CALayer> ancestor = [layer superlayer];
-    // This layer is not in the hierarchy yet, we'll find out once the commit is applied.
-    if (!ancestor)
-        return true;
-
-    // The extent is in the layer's coordinate space without its transform, which is what time-based animations
-    // change, so map it to the superlayer's coordinate space using only the layer's position.
-    auto bounds = [layer bounds];
-    auto anchorPoint = [layer anchorPoint];
-    auto position = [layer position];
-    CGRect rect = CGRectOffset(*animationExtent, position.x - bounds.origin.x - anchorPoint.x * bounds.size.width, position.y - bounds.origin.y - anchorPoint.y * bounds.size.height);
-
-    while (true) {
-        if ([ancestor isHidden] || ![ancestor opacity])
-            return false;
-
-        if ([ancestor masksToBounds]) {
-            auto clipRect = [ancestor bounds];
-            if ([[ancestor delegate] isKindOfClass:UIScrollView.class])
-                clipRect = CGRectInset(clipRect, -clipRect.size.width * scrollViewVisibilityMarginRatio, -clipRect.size.height * scrollViewVisibilityMarginRatio);
-            rect = CGRectIntersection(rect, clipRect);
-            if (CGRectIsEmpty(rect))
-                return false;
+    auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
+    for (auto animatedNodeLayerID : m_animatedNodeLayerIDsThatMayBeVisible) {
+        if (RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID)) {
+            if (RefPtr animationStack = animatedNode->animationStack(); animationStack && animationStack->hasTimeBasedAnimations())
+                return true;
         }
-
-        RetainPtr<CALayer> superlayer = [ancestor superlayer];
-        if (!superlayer)
-            return true;
-
-        rect = [ancestor convertRect:rect toLayer:superlayer.get()];
-        ancestor = WTF::move(superlayer);
     }
+    return false;
+}
+
+void RemoteScrollingCoordinatorProxyIOS::animatedContentGeometryMayHaveChanged()
+{
+    if (m_animatedNodeLayerIDs.isEmpty())
+        return;
+
+    setAnimatedContentVisibilityNeedsUpdate();
+    protect(drawingAreaIOS())->updateDisplayRefreshCallbacksForMonotonicAnimations();
+}
+
+void RemoteScrollingCoordinatorProxyIOS::updateAnimatedContentVisibilityIfNeeded()
+{
+    if (!std::exchange(m_animatedContentVisibilityNeedsUpdate, false))
+        return;
+
+    auto& layerTreeHost = drawingAreaIOS().remoteLayerTreeHost();
+    HashMap<WebCore::PlatformLayerIdentifier, bool> visibilityCache;
+    HashSet<WebCore::PlatformLayerIdentifier> animatedNodeLayerIDsThatMayBeVisible;
+    Vector<Ref<RemoteLayerTreeNode>> animatedNodesThatBecameVisible;
+    for (auto animatedNodeLayerID : m_animatedNodeLayerIDs) {
+        RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
+        if (!animatedNode || !animatedContentMayBeVisible(*animatedNode, visibilityCache))
+            continue;
+        animatedNodeLayerIDsThatMayBeVisible.add(animatedNodeLayerID);
+        if (!m_animatedNodeLayerIDsThatMayBeVisible.contains(animatedNodeLayerID))
+            animatedNodesThatBecameVisible.append(animatedNode.releaseNonNull());
+    }
+    m_animatedNodeLayerIDsThatMayBeVisible = WTF::move(animatedNodeLayerIDsThatMayBeVisible);
+
+    // Time-based animations are not updated while their content cannot be visible, so bring
+    // them up to date right away, before their content gets displayed again.
+    if (animatedNodesThatBecameVisible.isEmpty() || !m_monotonicTimelineRegistry)
+        return;
+
+    m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
+    for (auto& animatedNode : animatedNodesThatBecameVisible) {
+        if (RefPtr animationStack = animatedNode->animationStack(); animationStack && animationStack->hasTimeBasedAnimations())
+            animationStack->applyEffectsFromMainThread(protect(animatedNode->layer()), animatedNode->backdropRootIsOpaque());
+    }
+}
+
+bool RemoteScrollingCoordinatorProxyIOS::animatedContentMayBeVisible(const RemoteLayerTreeNode& node, HashMap<WebCore::PlatformLayerIdentifier, bool>& visibilityCache) const
+{
+    if (auto iterator = visibilityCache.find(node.layerID()); iterator != visibilityCache.end())
+        return iterator->value;
+
+    // Without a known extent, the animated content could be anywhere.
+    bool mayBeVisible = true;
+    if (auto& animationExtent = node.animationExtent()) {
+        mayBeVisible = RemoteLayerTreeNode::animatedContentMayBeVisible(protect(node.layer()).get(), *animationExtent, [&](CALayer *ancestorLayer) -> std::optional<bool> {
+            RefPtr ancestor = RemoteLayerTreeNode::forCALayer(ancestorLayer);
+            if (!ancestor || !m_animatedNodeLayerIDs.contains(ancestor->layerID()))
+                return std::nullopt;
+            RefPtr animationStack = ancestor->animationStack();
+            if (!animationStack || !animationStack->hasTimeBasedAnimations() || !animationStack->affectsTransform())
+                return std::nullopt;
+            return animatedContentMayBeVisible(*ancestor, visibilityCache);
+        });
+    }
+
+    visibilityCache.set(node.layerID(), mayBeVisible);
+    return mayBeVisible;
 }
 #endif
 

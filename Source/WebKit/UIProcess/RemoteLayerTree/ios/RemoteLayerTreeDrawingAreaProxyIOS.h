@@ -43,10 +43,8 @@ public:
 
     bool isRemoteLayerTreeDrawingAreaProxyIOS() const final { return true; }
 
-    void scheduleDisplayRefreshCallbacksForMonotonicAnimations();
-    void pauseDisplayRefreshCallbacksForMonotonicAnimations();
-    void highImpactMonotonicAnimationsWereRemoved();
-    void updateHighImpactMonotonicAnimations();
+    // Display refresh callbacks are only needed for monotonic animations whose content may be visible.
+    void updateDisplayRefreshCallbacksForMonotonicAnimations();
 
     void startForcedDisplayRefreshWindow(Seconds interval, Seconds duration);
 

@@ -33,6 +33,7 @@
 #include <WebCore/PlatformLayerIdentifier.h>
 #include <WebCore/RenderingResourceIdentifier.h>
 #include <WebCore/ScrollTypes.h>
+#include <wtf/Function.h>
 #include <wtf/RetainPtr.h>
 #include <wtf/TZoneMalloc.h>
 #include <wtf/ThreadSafeWeakPtr.h>
@@ -114,6 +115,13 @@ public:
 
     static std::optional<WebCore::PlatformLayerIdentifier> layerID(CALayer *);
     static RemoteLayerTreeNode* forCALayer(CALayer *);
+
+#if ENABLE(THREADED_ANIMATIONS)
+    // Whether the content affected by the time-based animations of `layer` may be visible, given its animation extent, which is
+    // expressed in the layer's coordinate space without its transform. For ancestors that run transform animations of their own,
+    // `animatedAncestorMayBeVisible` returns whether their animated content, which includes this layer's, may be visible.
+    static bool animatedContentMayBeVisible(CALayer *, const WebCore::FloatRect& animationExtent, NOESCAPE const Function<std::optional<bool>(CALayer *)>& animatedAncestorMayBeVisible);
+#endif
 
     static NSString *appendLayerDescription(NSString *description, CALayer *);
 
