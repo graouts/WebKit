@@ -47,6 +47,7 @@ public:
     const Vector<WebCore::AcceleratedEffect::Keyframe>& keyframes() const LIFETIME_BOUND { return m_effect->keyframes(); }
 
     void apply(WebCore::AcceleratedEffectValues&);
+    std::optional<Seconds> timeUntilNextValueChange(const WebCore::AcceleratedEffectValues& underlyingValues) const;
 
     Ref<JSON::Object> toJSONForTesting() const;
 

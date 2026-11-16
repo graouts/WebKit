@@ -47,6 +47,7 @@
 #include "TranslateTransformOperation.h"
 #include "WebAnimation.h"
 #include "WebAnimationTypes.h"
+#include <wtf/PointerComparison.h>
 #include <wtf/TZoneMallocInlines.h>
 
 namespace WebCore {
@@ -507,6 +508,147 @@ std::optional<Seconds> AcceleratedEffect::timeUntilNextTransformRelatedStep(WebA
         return std::nullopt;
 
     return *iterationDuration * *progressUntilNextStep / std::abs(m_playbackRate);
+}
+
+static bool propertyValuesAreEqual(AcceleratedEffectProperty property, const AcceleratedEffectValues& a, const AcceleratedEffectValues& b)
+{
+    switch (property) {
+    case AcceleratedEffectProperty::Opacity:
+        return a.opacity == b.opacity;
+    case AcceleratedEffectProperty::Transform:
+        return a.transform == b.transform;
+    case AcceleratedEffectProperty::Translate:
+        return arePointingToEqualData(a.translate, b.translate);
+    case AcceleratedEffectProperty::Rotate:
+        return arePointingToEqualData(a.rotate, b.rotate);
+    case AcceleratedEffectProperty::Scale:
+        return arePointingToEqualData(a.scale, b.scale);
+    case AcceleratedEffectProperty::Filter:
+        return a.filter == b.filter;
+    case AcceleratedEffectProperty::BackdropFilter:
+        return a.backdropFilter == b.backdropFilter;
+    case AcceleratedEffectProperty::OffsetPath:
+    case AcceleratedEffectProperty::OffsetDistance:
+    case AcceleratedEffectProperty::OffsetPosition:
+    case AcceleratedEffectProperty::OffsetAnchor:
+    case AcceleratedEffectProperty::OffsetRotate:
+        // FIXME: compare motion path values too so that we can tell when they don't change.
+        return false;
+    }
+    ASSERT_NOT_REACHED();
+    return false;
+}
+
+std::optional<Seconds> AcceleratedEffect::timeUntilNextValueChange(const AcceleratedEffectValues& underlyingValues, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const
+{
+    // An effect whose local time doesn't progress always yields the same values.
+    if (m_paused || !m_playbackRate)
+        return Seconds::infinity();
+
+    // FIXME: also handle effects playing backwards.
+    if (m_playbackRate < 0 || !m_startTime)
+        return std::nullopt;
+
+    auto localTime = ((timelineTime - *m_startTime) * m_playbackRate).time();
+    auto startDelay = m_timing.startDelay.time();
+    auto activeDuration = m_timing.activeDuration.time();
+    auto iterationDuration = m_timing.iterationDuration.time();
+    if (!localTime || !startDelay || !activeDuration || !iterationDuration)
+        return std::nullopt;
+
+    auto timelineDurationForLocalDuration = [&](Seconds localDuration) -> std::optional<Seconds> {
+        auto duration = localDuration / m_playbackRate;
+        if (duration <= 0_s)
+            return std::nullopt;
+        return duration;
+    };
+
+    auto resolvedTiming = this->resolvedTiming(timelineTime, timelineDuration);
+    switch (resolvedTiming.phase) {
+    case AnimationEffectPhase::Before:
+        // Whether or not the effect fills backwards, its values won't change until it becomes active.
+        return timelineDurationForLocalDuration(*startDelay - *localTime);
+    case AnimationEffectPhase::After:
+        // Whether or not the effect fills forwards, its values won't change anymore.
+        return Seconds::infinity();
+    case AnimationEffectPhase::Idle:
+        return std::nullopt;
+    case AnimationEffectPhase::Active:
+        break;
+    }
+
+    // With a non-linear effect timing function, the transformed progress may leave the current keyframe
+    // interval sooner than we determine below, so we only handle a linear effect timing function.
+    if (!is<LinearTimingFunction>(m_timing.timingFunction) || *iterationDuration <= 0_s || !resolvedTiming.transformedProgress || !resolvedTiming.currentIteration)
+        return std::nullopt;
+
+    // Values may change once the active phase ends, should the effect not fill forwards.
+    auto timeUntilChange = timelineDurationForLocalDuration(*activeDuration - (*localTime - *startDelay));
+    if (!timeUntilChange)
+        return std::nullopt;
+
+    if (m_animationType == WebAnimationType::CSSTransition) {
+        ASSERT(m_animatedProperties.hasExactlyOneBitSet());
+        if (!propertyValuesAreEqual(*m_animatedProperties.begin(), m_keyframes.first().values(), m_keyframes.last().values()))
+            return std::nullopt;
+        return timeUntilChange;
+    }
+
+    auto progress = *resolvedTiming.transformedProgress;
+
+    // https://drafts.csswg.org/web-animations-1/#calculating-the-directed-progress
+    auto isPlayingForwards = [&] {
+        switch (m_timing.direction) {
+        case PlaybackDirection::Normal:
+            return true;
+        case PlaybackDirection::Reverse:
+            return false;
+        case PlaybackDirection::Alternate:
+        case PlaybackDirection::AlternateReverse: {
+            auto iteration = *resolvedTiming.currentIteration;
+            if (m_timing.direction == PlaybackDirection::AlternateReverse)
+                iteration++;
+            return std::isinf(iteration) || !fmod(iteration, 2);
+        }
+        }
+        ASSERT_NOT_REACHED();
+        return true;
+    }();
+
+    auto effectiveCompositeOperation = [&](const Keyframe& keyframe) {
+        return keyframe.compositeOperation().value_or(m_compositeOperation);
+    };
+
+    Keyframe propertySpecificKeyframeWithZeroOffset { 0, underlyingValues.clone() };
+    Keyframe propertySpecificKeyframeWithOneOffset { 1, underlyingValues.clone() };
+
+    for (auto animatedProperty : m_animatedProperties) {
+        auto interval = interpolationKeyframes(animatedProperty, progress, propertySpecificKeyframeWithZeroOffset, propertySpecificKeyframeWithOneOffset);
+
+        // Without keyframes for this property, the underlying value is used.
+        if (interval.endpoints.isEmpty())
+            continue;
+
+        if (interval.endpoints.size() != 2)
+            return std::nullopt;
+
+        // The values for this property only remain the same within this interval if both its endpoints
+        // yield the same value. Since the underlying values don't change, this is the case when both
+        // endpoints have the same value and composite operation, regardless of the interval's timing function.
+        auto& startKeyframe = downcast<Keyframe>(*interval.endpoints.first());
+        auto& endKeyframe = downcast<Keyframe>(*interval.endpoints.last());
+        if (effectiveCompositeOperation(startKeyframe) != effectiveCompositeOperation(endKeyframe) || !propertyValuesAreEqual(animatedProperty, startKeyframe.values(), endKeyframe.values()))
+            return std::nullopt;
+
+        // Values may change as soon as the progress leaves this interval.
+        auto progressUntilIntervalBoundary = isPlayingForwards ? endKeyframe.offset() - progress : progress - startKeyframe.offset();
+        auto timeUntilIntervalBoundary = timelineDurationForLocalDuration(*iterationDuration * progressUntilIntervalBoundary);
+        if (!timeUntilIntervalBoundary)
+            return std::nullopt;
+        timeUntilChange = std::min(*timeUntilChange, *timeUntilIntervalBoundary);
+    }
+
+    return timeUntilChange;
 }
 
 void AcceleratedEffect::apply(AcceleratedEffectValues& values, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const

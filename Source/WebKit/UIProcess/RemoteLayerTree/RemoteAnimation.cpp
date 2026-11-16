@@ -52,6 +52,11 @@ void RemoteAnimation::apply(WebCore::AcceleratedEffectValues& values)
     m_effect->apply(values, m_timeline->currentTime(), m_timeline->duration());
 }
 
+std::optional<Seconds> RemoteAnimation::timeUntilNextValueChange(const WebCore::AcceleratedEffectValues& underlyingValues) const
+{
+    return m_effect->timeUntilNextValueChange(underlyingValues, m_timeline->currentTime(), m_timeline->duration());
+}
+
 Ref<JSON::Object> RemoteAnimation::toJSONForTesting() const
 {
     auto convertProperties = [](const OptionSet<WebCore::AcceleratedEffectProperty>& properties) {

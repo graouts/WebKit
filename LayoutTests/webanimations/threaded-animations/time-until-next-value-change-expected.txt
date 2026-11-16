@@ -1,0 +1,8 @@
+
+PASS Values remain the same until the end of an interval between keyframes with the same value.
+PASS Values remain the same until the end of an interval between keyframes with the same value for a CSS Animation.
+PASS Values may change at any time within an interval between keyframes with different values.
+PASS Values may change at any time with a non-linear effect timing function.
+PASS Values yielded by an animation in its delay don't change until it becomes active.
+PASS Values may change at any time if any animation in the stack yields changing values.
+

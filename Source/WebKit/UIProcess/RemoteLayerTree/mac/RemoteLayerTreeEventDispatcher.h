@@ -169,6 +169,8 @@ private:
 #if ENABLE(THREADED_ANIMATIONS)
     enum class AnimationStacksToUpdate : bool { All, ProgressBasedOnly };
     bool updateAnimations(AnimationStacksToUpdate = AnimationStacksToUpdate::All);
+    void updateTimeBasedAnimationsIdleState(Seconds frameDuration) WTF_REQUIRES_LOCK(m_animationLock);
+    void updateTimeBasedAnimationsWakeUpTimer(std::optional<MonotonicTime>);
 #endif
 
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
@@ -221,6 +223,11 @@ private:
     Lock m_animationLock;
     HashMap<WebCore::PlatformLayerIdentifier, Ref<RemoteAnimationStack>> m_animationStacks WTF_GUARDED_BY_LOCK(m_animationLock);
     std::unique_ptr<RemoteMonotonicTimelineRegistry> m_monotonicTimelineRegistry WTF_GUARDED_BY_LOCK(m_animationLock);
+    // When the values yielded by all time-based animations will remain the same for a while, for instance
+    // while they hold a value between two keyframes, we don't need the display link to update them until
+    // shortly before that changes. MonotonicTime::infinity() means they won't change anymore.
+    MonotonicTime m_timeBasedAnimationsIdleUntil WTF_GUARDED_BY_LOCK(m_animationLock);
+    std::unique_ptr<RunLoop::Timer> m_timeBasedAnimationsWakeUpTimer;
 #endif
 
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
