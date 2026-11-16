@@ -34,8 +34,8 @@ const presentationUpdate = async () => {
     await UIHelper.ensurePresentationUpdate();
 };
 
-const startTimeBasedAnimation = async target => {
-    const animation = target.animate({ translate: "100px" }, duration);
+const startTimeBasedAnimation = async (target, keyframes = { translate: "100px" }) => {
+    const animation = target.animate(keyframes, duration);
     await animationAcceleration(animation);
     assert_true(internals.acceleratedAnimationsForElement(target)[0].isThreaded, "The animation runs in the remote layer tree");
     await presentationUpdate();
@@ -65,6 +65,63 @@ promise_test(async test => {
     await presentationUpdate();
     await assertUpdated(false, "Moving the animated element back out of view stops updating the animation");
 }, "Time-based animations are only updated while their element may be visible.");
+
+for (const keyframes of [{ opacity: 0.5 }, { filter: "blur(5px)" }]) {
+    const property = Object.keys(keyframes)[0];
+    promise_test(async test => {
+        const target = createBox(test);
+        target.style.top = `${farOutOfView}px`;
+        await startTimeBasedAnimation(target, keyframes);
+        await assertUpdated(false, `An '${property}' animation far out of view is not updated`);
+
+        target.style.top = "0";
+        await presentationUpdate();
+        await assertUpdated(true, `Moving the element with an '${property}' animation into view updates the animation again`);
+    }, `Time-based '${property}' animations are only updated while their element may be visible.`);
+}
+
+promise_test(async test => {
+    const container = createBox(test);
+    container.style.top = `${farOutOfView}px`;
+
+    // A composited descendant positioned back in view is affected by the container's animation.
+    const descendant = createBox(test, container);
+    descendant.style.top = `-${farOutOfView}px`;
+    descendant.style.willChange = "transform";
+
+    await startTimeBasedAnimation(container, { opacity: 0.5 });
+    await assertUpdated(true, "An 'opacity' animation on an element with a composited descendant in view is updated");
+}, "Time-based 'opacity' animations account for the composited descendants of their element.");
+
+promise_test(async test => {
+    // The target is laid out far out of view, but its transform brings it back in view.
+    const target = createBox(test);
+    target.style.top = `${farOutOfView}px`;
+    target.style.transform = `translateY(-${farOutOfView}px)`;
+
+    await startTimeBasedAnimation(target, { opacity: 0.5 });
+    await assertUpdated(true, "An 'opacity' animation on an element transformed into view is updated");
+}, "Time-based 'opacity' animations account for the transform of their element.");
+
+for (const keyframes of [{ translate: "100px" }, { opacity: 0.5 }]) {
+    const property = Object.keys(keyframes)[0];
+    promise_test(async test => {
+        test.add_cleanup(async () => {
+            window.scrollTo(0, 0);
+            await presentationUpdate();
+        });
+
+        // A non-composited child at the top of the page extends the layer of the target far above it.
+        const target = createBox(test);
+        target.style.top = `${farOutOfView}px`;
+        const child = createBox(test, target);
+        child.style.top = `-${farOutOfView}px`;
+
+        window.scrollTo(0, farOutOfView - 100);
+        await startTimeBasedAnimation(target, keyframes);
+        await assertUpdated(true, `An '${property}' animation on an element in view whose layer extends far above it is updated`);
+    }, `Time-based '${property}' animations account for content extending the layer of their element.`);
+}
 
 promise_test(async test => {
     test.add_cleanup(async () => {

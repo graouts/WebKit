@@ -547,6 +547,14 @@ public:
     const std::optional<FloatRect>& animationExtent() const LIFETIME_BOUND { return m_animationExtent; }
     virtual void setAnimationExtent(std::optional<FloatRect> animationExtent) { m_animationExtent = animationExtent; }
 
+#if ENABLE(THREADED_ANIMATIONS)
+    // The area that content affected by accelerated effects may cover, in this layer's coordinate space and
+    // accounting for its transform: the animation extent for transform animations, and otherwise the layer's
+    // bounds, including its composited descendants and filter outsets. Unknown if not set.
+    const std::optional<FloatRect>& acceleratedEffectsExtent() const LIFETIME_BOUND { return m_acceleratedEffectsExtent; }
+    virtual void setAcceleratedEffectsExtent(std::optional<FloatRect> extent) { m_acceleratedEffectsExtent = extent; }
+#endif
+
     const IntOutsets& filterSamplingOutsets() const LIFETIME_BOUND { return m_filterSamplingOutsets; }
     virtual void setFilterSamplingOutsets(const IntOutsets& outsets) { m_filterSamplingOutsets = outsets; }
 
@@ -714,6 +722,9 @@ protected:
     FloatRoundedRect m_backdropFiltersRect;
     Path m_backdropFiltersShapePath;
     std::optional<FloatRect> m_animationExtent;
+#if ENABLE(THREADED_ANIMATIONS)
+    std::optional<FloatRect> m_acceleratedEffectsExtent;
+#endif
     IntOutsets m_filterSamplingOutsets;
 
     EventRegion m_eventRegion;

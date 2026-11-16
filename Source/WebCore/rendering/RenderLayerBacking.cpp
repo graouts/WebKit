@@ -1807,16 +1807,48 @@ static void setContentsClipShapePath(GraphicsLayer& graphicsLayer, const Style::
 
 void RenderLayerBacking::updateAnimationExtent()
 {
+    auto styleable = Styleable::fromRenderer(protect(renderer()));
+    bool hasAcceleratedTransformAnimation = styleable && styleable->isRunningOrAboutToRunAcceleratedTransformRelatedAnimation();
+
     auto computeAnimationExtent = [&] () -> std::optional<FloatRect> {
-        auto styleable = Styleable::fromRenderer(protect(renderer()));
-        if (!styleable || !styleable->isRunningOrAboutToRunAcceleratedTransformRelatedAnimation())
+        if (!hasAcceleratedTransformAnimation)
             return { };
         LayoutRect animatedBounds;
         if (protect(m_owningLayer)->getOverlapBoundsIncludingChildrenAccountingForTransformAnimations(animatedBounds, RenderLayer::IncludeCompositedDescendants))
             return FloatRect(animatedBounds);
         return { };
     };
-    protect(m_graphicsLayer)->setAnimationExtent(computeAnimationExtent());
+
+    Ref graphicsLayer = *m_graphicsLayer;
+    auto animationExtent = computeAnimationExtent();
+    graphicsLayer->setAnimationExtent(animationExtent);
+
+#if ENABLE(THREADED_ANIMATIONS)
+    auto computeAcceleratedEffectsExtent = [&] () -> std::optional<FloatRect> {
+        if (!graphicsLayer->acceleratedEffectStack())
+            return { };
+
+        auto extent = [&] () -> std::optional<FloatRect> {
+            // Transform animations could move content anywhere if their extent is unknown.
+            if (hasAcceleratedTransformAnimation)
+                return animationExtent;
+            // Effects that do not move content affect this layer's bounds, including its composited descendants
+            // and filter outsets, with its transform applied, which composited layers don't paint with.
+            CheckedRef owningLayer = m_owningLayer;
+            auto bounds = owningLayer->calculateLayerBounds(owningLayer.ptr(), { }, (RenderLayer::defaultCalculateLayerBoundsFlags() - RenderLayer::IncludeSelfTransform) | RenderLayer::IncludeCompositedDescendants);
+            bounds.expand(toLayoutBoxExtent(filterAnimationOutsets()));
+            if (auto* transform = owningLayer->transform())
+                bounds = transform->mapRect(bounds);
+            return FloatRect(bounds);
+        }();
+
+        // The extent is relative to the renderer, but expected in the graphics layer's coordinate space.
+        if (extent)
+            extent->move(-graphicsLayer->offsetFromRenderer() - m_subpixelOffsetFromRenderer);
+        return extent;
+    };
+    graphicsLayer->setAcceleratedEffectsExtent(computeAcceleratedEffectsExtent());
+#endif
 }
 
 void RenderLayerBacking::updateGeometry(const RenderLayer* compositedAncestor)
@@ -1921,7 +1953,6 @@ void RenderLayerBacking::updateGeometry(const RenderLayer* compositedAncestor)
         contentsContainmentLayer->setSize(primaryGraphicsLayerRect.size());
     }
 
-    updateAnimationExtent();
     graphicsLayer->setPreserves3D(preserves3D);
     graphicsLayer->setBackfaceVisibility(style->backfaceVisibility() == BackfaceVisibility::Visible);
 
@@ -1940,6 +1971,9 @@ void RenderLayerBacking::updateGeometry(const RenderLayer* compositedAncestor)
 
     if (primaryGraphicsLayerOffsetFromRenderer.m_devicePixelOffset != graphicsLayer->offsetFromRenderer())
         graphicsLayer->setOffsetFromRenderer(primaryGraphicsLayerOffsetFromRenderer.m_devicePixelOffset);
+
+    // The animation extent is mapped to the graphics layer using the offset from the renderer.
+    updateAnimationExtent();
 
     // If we have a layer that clips children, position it.
     LayoutRect clippingBox;

@@ -2228,7 +2228,7 @@ void GraphicsLayerCA::recursiveCommitChanges(CommitState& commitState, const Tra
 #if ENABLE(THREADED_ANIMATIONS)
     // Let the UI process determine whether the content affected by accelerated effects may be visible.
     if (acceleratedEffectStack())
-        protect(primaryLayer())->setAnimationExtent(animationExtent());
+        protect(primaryLayer())->setAnimationExtent(acceleratedEffectsExtent());
 #endif
 
     if (RefPtr maskLayer = downcast<GraphicsLayerCA>(m_maskLayer.get()))
@@ -4737,6 +4737,18 @@ void GraphicsLayerCA::setAnimationExtent(std::optional<FloatRect> animationExten
     // Whether the layer needs backing store depends on the extent, so re-evaluate it at the next flush.
     noteLayerPropertyChanged(CoverageRectChanged);
 }
+
+#if ENABLE(THREADED_ANIMATIONS)
+void GraphicsLayerCA::setAcceleratedEffectsExtent(std::optional<FloatRect> extent)
+{
+    if (acceleratedEffectsExtent() == extent)
+        return;
+
+    GraphicsLayer::setAcceleratedEffectsExtent(extent);
+    // The extent is passed to the primary layer as this layer gets committed.
+    noteLayerPropertyChanged(CoverageRectChanged);
+}
+#endif
 
 void GraphicsLayerCA::setIsTrackingDisplayListReplay(bool isTracking)
 {

@@ -440,8 +440,8 @@ bool RemoteLayerTreeNode::animatedContentMayBeVisible(CALayer *layer, const WebC
     if (!ancestor)
         return true;
 
-    // The extent is in the layer's coordinate space without its transform, which is what time-based animations
-    // change, so map it to the superlayer's coordinate space using only the layer's position.
+    // The extent is in the layer's coordinate space and already accounts for its transform, either the course of
+    // its transform animations or its static transform, so map it to the superlayer using only the layer's position.
     auto bounds = [layer bounds];
     auto anchorPoint = [layer anchorPoint];
     auto position = [layer position];
@@ -452,7 +452,8 @@ bool RemoteLayerTreeNode::animatedContentMayBeVisible(CALayer *layer, const WebC
         if (auto ancestorMayBeVisible = animatedAncestorMayBeVisible(ancestor.get()))
             return *ancestorMayBeVisible;
 
-        if ([ancestor isHidden] || ![ancestor opacity])
+        // Opacity is not considered since it may be animated without the geometry changing.
+        if ([ancestor isHidden])
             return false;
 
         if ([ancestor masksToBounds]) {
