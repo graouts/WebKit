@@ -423,6 +423,21 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
 {
     ASSERT(isMainRunLoop());
 
+#if ENABLE(THREADED_ANIMATIONS)
+    bool timeBasedAnimationsNeedDisplayLink = false;
+    std::optional<MonotonicTime> timeBasedAnimationsWakeUpTime;
+    {
+        Locker lock { m_animationLock };
+        if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty()) {
+            if (!m_timeBasedAnimationsIdleUntil || MonotonicTime::now() >= m_timeBasedAnimationsIdleUntil)
+                timeBasedAnimationsNeedDisplayLink = true;
+            else if (m_timeBasedAnimationsIdleUntil.isFinite())
+                timeBasedAnimationsWakeUpTime = m_timeBasedAnimationsIdleUntil;
+        }
+    }
+    updateTimeBasedAnimationsWakeUpTimer(timeBasedAnimationsWakeUpTime);
+#endif
+
     auto needsDisplayLink = [&]() {
 #if ENABLE(MOMENTUM_EVENT_DISPATCHER)
         if (m_momentumEventDispatcherNeedsDisplayLink)
@@ -432,11 +447,8 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
             return true;
 
 #if ENABLE(THREADED_ANIMATIONS)
-        {
-            Locker lock { m_animationLock };
-            if (m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty())
-                return true;
-        }
+        if (timeBasedAnimationsNeedDisplayLink)
+            return true;
 #endif
 
         auto scrollingTree = this->scrollingTree();
@@ -448,6 +460,28 @@ void RemoteLayerTreeEventDispatcher::startOrStopDisplayLinkOnMainThread()
     else
         stopDisplayLinkObserver();
 }
+
+#if ENABLE(THREADED_ANIMATIONS)
+void RemoteLayerTreeEventDispatcher::updateTimeBasedAnimationsWakeUpTimer(std::optional<MonotonicTime> wakeUpTime)
+{
+    ASSERT(isMainRunLoop());
+
+    if (!wakeUpTime) {
+        if (m_timeBasedAnimationsWakeUpTimer)
+            m_timeBasedAnimationsWakeUpTimer->stop();
+        return;
+    }
+
+    if (!m_timeBasedAnimationsWakeUpTimer) {
+        m_timeBasedAnimationsWakeUpTimer = makeUnique<RunLoop::Timer>(RunLoop::mainSingleton(), "RemoteLayerTreeEventDispatcher::TimeBasedAnimationsWakeUpTimer"_s, [weakThis = ThreadSafeWeakPtr { *this }] {
+            if (RefPtr protectedThis = weakThis.get())
+                protectedThis->startOrStopDisplayLinkOnMainThread();
+        });
+    }
+
+    m_timeBasedAnimationsWakeUpTimer->startOneShot(std::max(0_s, *wakeUpTime - MonotonicTime::now()));
+}
+#endif
 
 void RemoteLayerTreeEventDispatcher::startDisplayLinkObserver()
 {
@@ -737,6 +771,8 @@ void RemoteLayerTreeEventDispatcher::animationsWereAddedToNode(RemoteLayerTreeNo
     auto animationStack = node.takeAnimationStack();
     ASSERT(animationStack);
     m_animationStacks.set(node.layerID(), animationStack.releaseNonNull());
+    // The display link is reconsidered once animation changes are unlocked.
+    m_timeBasedAnimationsIdleUntil = { };
 }
 
 void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTreeNode& node)
@@ -745,6 +781,7 @@ void RemoteLayerTreeEventDispatcher::animationsWereRemovedFromNode(RemoteLayerTr
     assertIsHeld(m_animationLock);
     if (auto animationStack = m_animationStacks.take(node.layerID()))
         animationStack->clear(protect(node.layer()).get());
+    m_timeBasedAnimationsIdleUntil = { };
 }
 
 void RemoteLayerTreeEventDispatcher::updateTimelinesRegistration(WebCore::ProcessIdentifier processIdentifier, const WebCore::AcceleratedTimelinesUpdate& timelinesUpdate, MonotonicTime now)
@@ -757,6 +794,7 @@ void RemoteLayerTreeEventDispatcher::updateTimelinesRegistration(WebCore::Proces
     m_monotonicTimelineRegistry->update(processIdentifier, timelinesUpdate, now);
     if (m_monotonicTimelineRegistry->isEmpty())
         m_monotonicTimelineRegistry = nullptr;
+    m_timeBasedAnimationsIdleUntil = { };
 }
 
 void RemoteLayerTreeEventDispatcher::removeTimelines(WebCore::ProcessIdentifier processIdentifier)
@@ -771,6 +809,7 @@ void RemoteLayerTreeEventDispatcher::removeTimelines(WebCore::ProcessIdentifier 
         if (m_monotonicTimelineRegistry->isEmpty())
             m_monotonicTimelineRegistry = nullptr;
     }
+    m_timeBasedAnimationsIdleUntil = { };
 }
 
 RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeEventDispatcher::timeline(const TimelineID& timelineID)
@@ -790,6 +829,13 @@ RefPtr<const RemoteAnimationTimeline> RemoteLayerTreeEventDispatcher::timeline(c
 bool RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate animationStacksToUpdate)
 {
     ASSERT(isMainRunLoop() || ScrollingThread::isCurrentThread());
+
+    auto frameDuration = [&] {
+        if (RefPtr scrollingTree = this->scrollingTree())
+            return scrollingTree->frameDuration();
+        return 1_s / 60;
+    }();
+
     Locker lock { m_animationLock };
 
     TraceScope scope(RemoteLayerTreeAnimationsUpdateStart, RemoteLayerTreeAnimationsUpdateEnd, m_animationStacks.size());
@@ -816,7 +862,47 @@ bool RemoteLayerTreeEventDispatcher::updateAnimations(AnimationStacksToUpdate an
             m_animationStacks.set(layerID, WTF::move(animationStack));
     }
 
+    if (animationStacksToUpdate == AnimationStacksToUpdate::All)
+        updateTimeBasedAnimationsIdleState(frameDuration);
+
     return appliedEffects;
+}
+
+void RemoteLayerTreeEventDispatcher::updateTimeBasedAnimationsIdleState(Seconds frameDuration)
+{
+    assertIsHeld(m_animationLock);
+
+    std::optional<Seconds> timeUntilNextValueChange = Seconds::infinity();
+    for (auto& animationStack : m_animationStacks.values()) {
+        if (!animationStack->hasTimeBasedAnimations())
+            continue;
+        auto timeUntilStackValueChange = animationStack->timeUntilNextValueChange();
+        if (!timeUntilStackValueChange) {
+            timeUntilNextValueChange = std::nullopt;
+            break;
+        }
+        timeUntilNextValueChange = std::min(*timeUntilNextValueChange, *timeUntilStackValueChange);
+    }
+
+    // Only stop updating time-based animations if their values won't change for a few frames, and plan on
+    // updating them again a couple of frames early so that the display link is running by the time they do.
+    constexpr unsigned framesToWakeUpEarly = 2;
+    constexpr unsigned minimumNumberOfIdleFrames = 2;
+    MonotonicTime idleUntil;
+    if (timeUntilNextValueChange && *timeUntilNextValueChange > frameDuration * (framesToWakeUpEarly + minimumNumberOfIdleFrames))
+        idleUntil = MonotonicTime::now() + *timeUntilNextValueChange - frameDuration * framesToWakeUpEarly;
+
+    bool wasIdle = !!m_timeBasedAnimationsIdleUntil;
+    m_timeBasedAnimationsIdleUntil = idleUntil;
+
+    // Since animation changes reset this state, we only need to reconsider the display link as animations
+    // become idle, or stop being so while the display link kept running for another reason. We always
+    // dispatch since the main thread acquires the animation lock, which we're holding, to make that decision.
+    if (wasIdle != !!idleUntil) {
+        RunLoop::mainSingleton().dispatch([protectedThis = Ref { *this }] {
+            protectedThis->startOrStopDisplayLinkOnMainThread();
+        });
+    }
 }
 
 RefPtr<const RemoteAnimationStack> RemoteLayerTreeEventDispatcher::animationStackForNodeWithIDForTesting(WebCore::PlatformLayerIdentifier layerID) const

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<body>
+<script src="../../resources/testharness.js"></script>
+<script src="../../resources/testharnessreport.js"></script>
+<script src="../../imported/w3c/web-platform-tests/web-animations/testcommon.js"></script>
+<script src="../../resources/ui-helper.js"></script>
+<script src="threaded-animations-utils.js"></script>
+
+<style>
+
+.target {
+    width: 100px;
+    height: 100px;
+    background-color: black;
+}
+
+@keyframes fade-in-and-out {
+    0% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.css-animation {
+    animation: fade-in-and-out 100s;
+}
+
+</style>
+
+<script>
+
+const duration = 100 * 1000;
+const fadeInAndOut = [
+    { opacity: 0 },
+    { opacity: 1, offset: 0.1 },
+    { opacity: 1, offset: 0.9 },
+    { opacity: 0 }
+];
+
+const createTarget = t => {
+    const target = document.body.appendChild(document.createElement("div"));
+    target.classList.add("target");
+    t.add_cleanup(() => target.remove());
+    return target;
+};
+
+// Unlike UIHelper.remoteAnimationStackForElement(), this resolves to null should there be no remote animation stack.
+const remoteAnimationStack = async (target, animations) => {
+    await Promise.all(animations.map(animation => animationAcceleration(animation)));
+    await threadedAnimationsCommit();
+    const layerID = window.internals?.layerIDForElement(target);
+    const json = await new Promise(resolve => testRunner.runUIScript(`uiController.uiScriptComplete(uiController.animationStackForLayerWithID(${layerID}))`, resolve));
+    return json ? JSON.parse(json) : null;
+};
+
+promise_test(async t => {
+    const target = createTarget(t);
+    const animation = target.animate(fadeInAndOut, duration);
+    animation.currentTime = duration / 2;
+
+    const stack = await remoteAnimationStack(target, [animation]);
+    const progress = stack.animations[0].progress;
+    assert_greater_than(progress, 0.1, "The animation is past the 10% keyframe");
+    assert_less_than(progress, 0.9, "The animation is before the 90% keyframe");
+    assert_approx_equals(stack.timeUntilNextValueChange, (0.9 - progress) * duration, 1, "Values remain the same until the 90% keyframe");
+}, "Values remain the same until the end of an interval between keyframes with the same value.");
+
+promise_test(async t => {
+    const target = createTarget(t);
+    target.classList.add("css-animation");
+    const animation = target.getAnimations()[0];
+    animation.currentTime = duration / 2;
+
+    const stack = await remoteAnimationStack(target, [animation]);
+    const progress = stack.animations[0].progress;
+    assert_approx_equals(stack.timeUntilNextValueChange, (0.9 - progress) * duration, 1, "Values remain the same until the 90% keyframe");
+}, "Values remain the same until the end of an interval between keyframes with the same value for a CSS Animation.");
+
+promise_test(async t => {
+    const target = createTarget(t);
+    const animation = target.animate(fadeInAndOut, duration);
+    animation.currentTime = duration * 0.05;
+
+    const stack = await remoteAnimationStack(target, [animation]);
+    assert_equals(stack.timeUntilNextValueChange, null, "Values may change at any time");
+}, "Values may change at any time within an interval between keyframes with different values.");
+
+promise_test(async t => {
+    const target = createTarget(t);
+    const animation = target.animate(fadeInAndOut, { duration, easing: "ease" });
+    animation.currentTime = duration / 2;
+
+    const stack = await remoteAnimationStack(target, [animation]);
+    assert_equals(stack.timeUntilNextValueChange, null, "Values may change at any time");
+}, "Values may change at any time with a non-linear effect timing function.");
+
+// The following tests pair an animation holding a value with another animation, since an animation that
+// isn't active yet wouldn't be running in the remote layer tree on its own.
+
+const holdingAnimation = target => {
+    const animation = target.animate(fadeInAndOut, duration);
+    animation.currentTime = duration / 2;
+    return animation;
+};
+
+const expectedTimeUntilEndOfHold = stack => (0.9 - stack.animations[0].progress) * duration;
+
+
+promise_test(async t => {
+    const target = createTarget(t);
+    const delay = duration * 10;
+    const animations = [
+        holdingAnimation(target),
+        target.animate({ transform: ["none", "translateX(100px)"] }, { duration, delay, fill: "backwards" })
+    ];
+
+    const stack = await remoteAnimationStack(target, animations);
+    assert_equals(stack.animations.length, 2, "Both animations are in the remote layer tree");
+    assert_approx_equals(stack.timeUntilNextValueChange, expectedTimeUntilEndOfHold(stack), 1, "Values remain the same until the first animation's hold ends, which is before the second animation's delay ends");
+}, "Values yielded by an animation in its delay don't change until it becomes active.");
+
+promise_test(async t => {
+    const target = createTarget(t);
+    const animations = [
+        holdingAnimation(target),
+        target.animate({ transform: ["none", "translateX(100px)"] }, duration)
+    ];
+    animations[1].currentTime = duration / 2;
+
+    const stack = await remoteAnimationStack(target, animations);
+    assert_equals(stack.animations.length, 2, "Both animations are in the remote layer tree");
+    assert_equals(stack.timeUntilNextValueChange, null, "Values may change at any time");
+}, "Values may change at any time if any animation in the stack yields changing values.");
+
+</script>
+</body>

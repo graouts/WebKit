@@ -200,10 +200,12 @@ void RemoteAnimationStack::initEffectsFromMainThread(PlatformLayer *layer)
 auto RemoteAnimationStack::applyEffects() -> ValuesChanged
 {
     auto changed = ValuesChanged::No;
-    if (!m_presentationModifierGroup)
+    if (!m_presentationModifierGroup) {
+        m_timeUntilNextValueChange = Seconds::infinity();
         return changed;
+    }
 
-    auto computedValues = computeValues();
+    auto computedValues = computeValues(&m_timeUntilNextValueChange);
 
     if (!m_filterPresentationModifiers.isEmpty()) {
         auto& filter = m_filtersAffectBackdrop ? computedValues.backdropFilter : computedValues.filter;
@@ -262,11 +264,25 @@ void RemoteAnimationStack::applyEffectsFromMainThread(PlatformLayer *layer, bool
     }
 }
 
-WebCore::AcceleratedEffectValues RemoteAnimationStack::computeValues() const
+WebCore::AcceleratedEffectValues RemoteAnimationStack::computeValues(std::optional<Seconds>* timeUntilNextValueChange) const
 {
+    if (timeUntilNextValueChange)
+        *timeUntilNextValueChange = Seconds::infinity();
+
     auto values = m_baseValues;
-    for (auto& animation : borrow(m_animations))
+    for (auto& animation : borrow(m_animations)) {
+        // Since animations further down the stack provide the underlying values for those further up, all
+        // computed values remain the same for as long as each animation yields the same values. We only
+        // consider time-based animations since progress-based animations only change as their timeline's
+        // source scrolls, at which point animation stacks are updated outside of display refreshes.
+        if (timeUntilNextValueChange && *timeUntilNextValueChange && animation->timeline().isMonotonic()) {
+            if (auto timeUntilAnimationValueChange = animation->timeUntilNextValueChange(values))
+                *timeUntilNextValueChange = std::min(**timeUntilNextValueChange, *timeUntilAnimationValueChange);
+            else
+                *timeUntilNextValueChange = std::nullopt;
+        }
         animation->apply(values);
+    }
     return values;
 }
 
@@ -292,6 +308,7 @@ void RemoteAnimationStack::clear(PlatformLayer *layer)
     m_lastAppliedOpacity = std::nullopt;
     m_lastAppliedTransform = std::nullopt;
     m_lastAppliedFilter = std::nullopt;
+    m_timeUntilNextValueChange = std::nullopt;
 #endif
 }
 
@@ -316,6 +333,16 @@ Ref<JSON::Object> RemoteAnimationStack::toJSONForTesting() const
     Ref object = JSON::Object::create();
     object->setArray("animations"_s, WTF::move(convertedAnimations));
     object->setObject("baseValues"_s, WebKit::toJSONForTesting(m_baseValues, animatedProperties));
+
+    std::optional<Seconds> timeUntilNextValueChange;
+    computeValues(&timeUntilNextValueChange);
+    if (!timeUntilNextValueChange)
+        object->setValue("timeUntilNextValueChange"_s, JSON::Value::null());
+    else if (timeUntilNextValueChange->isInfinity())
+        object->setString("timeUntilNextValueChange"_s, "infinity"_s);
+    else
+        object->setDouble("timeUntilNextValueChange"_s, timeUntilNextValueChange->milliseconds());
+
     return object;
 }
 

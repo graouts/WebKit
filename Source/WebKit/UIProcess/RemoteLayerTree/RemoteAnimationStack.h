@@ -62,6 +62,10 @@ public:
     // Returns whether any animated value changed since the last time effects were applied.
     enum class ValuesChanged : bool { No, Yes };
     ValuesChanged applyEffects();
+    // How long the values computed during the last call to applyEffects() will remain the same, as far as
+    // time-based animations are concerned: Seconds::infinity() if they won't change anymore, or std::nullopt
+    // if they may change at any time.
+    std::optional<Seconds> timeUntilNextValueChange() const { return m_timeUntilNextValueChange; }
 #endif
 
     void applyEffectsFromMainThread(PlatformLayer*, bool backdropRootIsOpaque) const;
@@ -77,7 +81,9 @@ public:
 private:
     explicit RemoteAnimationStack(RemoteAnimations&&, WebCore::AcceleratedEffectValues&&, WebCore::FloatRect);
 
-    WebCore::AcceleratedEffectValues computeValues() const;
+    // If provided, timeUntilNextValueChange is set to how long the computed values will remain the same
+    // as far as time-based animations are concerned, or std::nullopt if they may change at any time.
+    WebCore::AcceleratedEffectValues computeValues(std::optional<Seconds>* timeUntilNextValueChange = nullptr) const;
 
 #if PLATFORM(MAC)
     const WebCore::FilterOperations* longestFilterList() const;
@@ -103,6 +109,8 @@ private:
     std::optional<float> m_lastAppliedOpacity;
     std::optional<WebCore::TransformationMatrix> m_lastAppliedTransform;
     std::optional<WebCore::FilterOperations> m_lastAppliedFilter;
+
+    std::optional<Seconds> m_timeUntilNextValueChange;
 #endif
 
     bool m_hasProgressBasedAnimations { false };

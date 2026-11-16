@@ -111,6 +111,10 @@ public:
 
     std::optional<Seconds> timeUntilNextTransformRelatedStep(WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const;
 
+    // Returns how long the values this effect yields will remain the same, provided the underlying values don't change,
+    // Seconds::infinity() if they won't change anymore, or std::nullopt if they may change at any time.
+    WEBCORE_EXPORT std::optional<Seconds> timeUntilNextValueChange(const AcceleratedEffectValues& underlyingValues, WebAnimationTime timelineTime, std::optional<WebAnimationTime> timelineDuration) const;
+
 private:
     AcceleratedEffect(const KeyframeEffect&, const IntRect&, const OptionSet<AcceleratedEffectProperty>&);
     explicit AcceleratedEffect(AnimationEffectTiming, TimelineIdentifier&&, Vector<Keyframe>&&, WebAnimationType, CompositeOperation, RefPtr<TimingFunction>&& defaultKeyframeTimingFunction, OptionSet<AcceleratedEffectProperty>&&, bool paused, double playbackRate, std::optional<WebAnimationTime> startTime, std::optional<WebAnimationTime> holdTime);
