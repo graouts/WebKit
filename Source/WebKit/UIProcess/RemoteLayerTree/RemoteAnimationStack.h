@@ -59,7 +59,8 @@ public:
 
 #if PLATFORM(MAC)
     void initEffectsFromMainThread(PlatformLayer*);
-    void applyEffects() const;
+    // Returns whether any animated value changed since the last time effects were applied.
+    bool applyEffects();
 #endif
 
     void applyEffectsFromMainThread(PlatformLayer*, bool backdropRootIsOpaque) const;
@@ -98,6 +99,13 @@ private:
     RetainPtr<CAPresentationModifier> m_opacityPresentationModifier;
     RetainPtr<CAPresentationModifier> m_transformPresentationModifier;
     Vector<WebCore::TypedFilterPresentationModifier> m_filterPresentationModifiers;
+
+    // The values last set on the presentation modifiers. They let us avoid flushing the presentation
+    // modifier group, and thus committing to the render server, when animated values don't change,
+    // for instance while an animation holds a value between two identical keyframes.
+    std::optional<float> m_lastAppliedOpacity;
+    std::optional<WebCore::TransformationMatrix> m_lastAppliedTransform;
+    std::optional<WebCore::FilterOperations> m_lastAppliedFilter;
 #endif
 
     bool m_hasProgressBasedAnimations { false };
