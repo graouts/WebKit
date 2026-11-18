@@ -58,8 +58,6 @@ ipc/restrictedendpoints/mac [ Pass ]
 fast/page-color-sampling [ Pass ]
 [ Sequoia+ ] webanimations/threaded-animations [ Pass ]
 [ Sequoia+ ] webanimations/threaded-animations/ios [ Skip ]
-# FIXME: Time-based animations whose content can't be visible are still updated on macOS.
-[ Sequoia+ ] webanimations/threaded-animations/time-based-animations-out-of-view-are-not-updated.html [ Failure ]
 
 editing/pasteboard/data-transfer-get-data-on-drop-custom.html [ Pass ]
 editing/pasteboard/data-transfer-get-data-on-drop-plain-text.html [ Pass ]
