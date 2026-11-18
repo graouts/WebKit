@@ -28,6 +28,7 @@
 
 #if ENABLE(THREADED_ANIMATIONS)
 
+#import "RemoteAnimationStack.h"
 #import "RemoteLayerTreeNode.h"
 #import <QuartzCore/CALayer.h>
 
@@ -43,7 +44,17 @@ namespace WebKit {
 static constexpr CGFloat scrollViewVisibilityMarginRatio = 0.5;
 #endif
 
-bool RemoteAnimationVisibility::animatedContentMayBeVisible(const RemoteLayerTreeNode& node, CALayer *webViewLayer)
+bool RemoteAnimationVisibility::animatedContentMayBeVisible(const RemoteLayerTreeNode& node, CALayer *webViewLayer, VisibilityCache& visibilityCache, NOESCAPE const AnimationStackForNode& animationStackForNode)
+{
+    if (auto iterator = visibilityCache.find(node.layerID()); iterator != visibilityCache.end())
+        return iterator->value;
+
+    bool mayBeVisible = computeAnimatedContentMayBeVisible(node, webViewLayer, visibilityCache, animationStackForNode);
+    visibilityCache.set(node.layerID(), mayBeVisible);
+    return mayBeVisible;
+}
+
+bool RemoteAnimationVisibility::computeAnimatedContentMayBeVisible(const RemoteLayerTreeNode& node, CALayer *webViewLayer, VisibilityCache& visibilityCache, NOESCAPE const AnimationStackForNode& animationStackForNode)
 {
     // Without a known extent, the animated content could be anywhere.
     auto& animationExtent = node.animationExtent();
@@ -70,6 +81,13 @@ bool RemoteAnimationVisibility::animatedContentMayBeVisible(const RemoteLayerTre
         // Layers outside of the web view's layer don't affect the visibility of its content.
         if (ancestor == webViewLayer)
             return true;
+
+        // The transform of an ancestor with time-based transform animations changes as it animates, but the extent
+        // of these animations includes this layer's content, so this layer's content is visible if the ancestor's is.
+        if (RefPtr ancestorNode = RemoteLayerTreeNode::forCALayer(ancestor.get())) {
+            if (RefPtr animationStack = animationStackForNode(*ancestorNode); animationStack && animationStack->hasTimeBasedAnimations() && animationStack->affectsTransform())
+                return animatedContentMayBeVisible(*ancestorNode, webViewLayer, visibilityCache, animationStackForNode);
+        }
 
         if ([ancestor isHidden] || ![ancestor opacity])
             return false;
