@@ -882,20 +882,20 @@ void RemoteScrollingCoordinatorProxyIOS::updateTimeDependentAnimationStacks()
     // link update or vblank refresh.
     m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
 
-    updateAnimationStacks([](auto& animationStack) {
-        return animationStack.hasTimeBasedAnimations();
+    updateAnimationStacks([&](auto layerID, auto& animationStack) {
+        return animationStack.hasTimeBasedAnimations() && m_animationVisibility.mayBeVisible(layerID);
     });
 }
 
 void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacksDependentOnScrollingNode(const WebCore::ScrollingTreeScrollingNode& node)
 {
     auto scrollingNodeID = node.scrollingNodeID();
-    updateAnimationStacks([scrollingNodeID](auto& animationStack) {
+    updateAnimationStacks([scrollingNodeID](auto, auto& animationStack) {
         return animationStack.isDependentOnScrollingNodeWithID(scrollingNodeID);
     });
 }
 
-void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Function<bool(const RemoteAnimationStack&)>& predicate)
+void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Function<bool(WebCore::PlatformLayerIdentifier, const RemoteAnimationStack&)>& predicate)
 {
     TraceScope scope(RemoteLayerTreeAnimationsUpdateStart, RemoteLayerTreeAnimationsUpdateEnd, m_animatedNodeLayerIDs.size());
 
@@ -906,7 +906,7 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimationStacks(NOESCAPE const Fu
         RefPtr animatedNode = layerTreeHost.nodeForID(animatedNodeLayerID);
         RefPtr animationStack = animatedNode->animationStack();
         ASSERT(animationStack);
-        if (predicate(*animationStack))
+        if (predicate(animatedNodeLayerID, *animationStack))
             animationStack->applyEffectsFromMainThread(protect(animatedNode->layer()), animatedNode->backdropRootIsOpaque());
 
         // We can clear the effect stack if it's empty, but the previous
@@ -922,9 +922,11 @@ bool RemoteScrollingCoordinatorProxyIOS::hasHighImpactMonotonicAnimations() cons
     return m_animationVisibility.hasHighImpactMonotonicAnimationsThatMayBeVisible();
 }
 
-bool RemoteScrollingCoordinatorProxyIOS::hasMonotonicAnimations() const
+bool RemoteScrollingCoordinatorProxyIOS::hasMonotonicAnimationsThatMayBeVisible() const
 {
-    return m_monotonicTimelineRegistry && !m_monotonicTimelineRegistry->isEmpty() && !m_animatedNodeLayerIDs.isEmpty();
+    if (!m_monotonicTimelineRegistry || m_monotonicTimelineRegistry->isEmpty() || m_animatedNodeLayerIDs.isEmpty())
+        return false;
+    return m_animationVisibility.hasTimeBasedAnimationsThatMayBeVisible();
 }
 
 void RemoteScrollingCoordinatorProxyIOS::animatedContentGeometryMayHaveChanged()
@@ -954,9 +956,20 @@ void RemoteScrollingCoordinatorProxyIOS::updateAnimatedContentVisibilityIfNeeded
     }
 
     RetainPtr<CALayer> webViewLayer = [protect(webPageProxy())->cocoaView() layer];
-    m_animationVisibility.update(webViewLayer.get(), animatedLayers, [](auto& node) -> RefPtr<const RemoteAnimationStack> {
+    auto animatedLayersThatBecameVisible = m_animationVisibility.update(webViewLayer.get(), animatedLayers, [](auto& node) -> RefPtr<const RemoteAnimationStack> {
         return node.animationStack();
     });
+
+    if (animatedLayersThatBecameVisible.isEmpty() || !m_monotonicTimelineRegistry)
+        return;
+
+    // Time-based animations are not updated while their content can't be visible, so bring those
+    // that may be visible again up to date rather than wait for the next display refresh.
+    m_monotonicTimelineRegistry->advanceCurrentTime(MonotonicTime::now());
+    for (auto& animatedLayer : animatedLayersThatBecameVisible) {
+        if (RefPtr animatedNode = animatedLayer.node)
+            animatedLayer.animationStack->applyEffectsFromMainThread(protect(animatedNode->layer()), animatedNode->backdropRootIsOpaque());
+    }
 }
 #endif
 
