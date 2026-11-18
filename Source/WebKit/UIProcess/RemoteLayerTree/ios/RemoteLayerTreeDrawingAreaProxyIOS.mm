@@ -467,7 +467,7 @@ void RemoteLayerTreeDrawingAreaProxyIOS::updateDisplayRefreshCallbacksForMonoton
     if (RefPtr page = this->page()) {
         if (RefPtr scrollingCoordinatorProxy = page->scrollingCoordinatorProxy()) {
             scrollingCoordinatorProxy->updateAnimatedContentVisibilityIfNeeded();
-            needsDisplayRefreshCallbacks = scrollingCoordinatorProxy->hasMonotonicAnimations();
+            needsDisplayRefreshCallbacks = scrollingCoordinatorProxy->hasMonotonicAnimationsThatMayBeVisible();
             hasHighImpactMonotonicAnimations = needsDisplayRefreshCallbacks && scrollingCoordinatorProxy->hasHighImpactMonotonicAnimations();
         }
     }
