@@ -44,6 +44,39 @@ namespace WebKit {
 static constexpr CGFloat scrollViewVisibilityMarginRatio = 0.5;
 #endif
 
+auto RemoteAnimationVisibility::update(CALayer *webViewLayer, const Vector<AnimatedLayer>& animatedLayers, NOESCAPE const AnimationStackForNode& animationStackForNode) -> Vector<AnimatedLayer>
+{
+    m_needsUpdate = false;
+
+    VisibilityCache visibilityCache;
+    HashSet<WebCore::PlatformLayerIdentifier> layerIDsThatMayBeVisible;
+    Vector<AnimatedLayer> animatedLayersThatBecameVisible;
+    bool hasTimeBasedAnimationsThatMayBeVisible = false;
+    bool hasHighImpactMonotonicAnimationsThatMayBeVisible = false;
+
+    for (auto& animatedLayer : animatedLayers) {
+        RefPtr node = animatedLayer.node;
+        if (node && !animatedContentMayBeVisible(*node, webViewLayer, visibilityCache, animationStackForNode))
+            continue;
+
+        layerIDsThatMayBeVisible.add(animatedLayer.layerID);
+        if (node && node->hasHighImpactMonotonicAnimations())
+            hasHighImpactMonotonicAnimationsThatMayBeVisible = true;
+
+        if (!animatedLayer.animationStack->hasTimeBasedAnimations())
+            continue;
+
+        hasTimeBasedAnimationsThatMayBeVisible = true;
+        if (!m_layerIDsThatMayBeVisible.contains(animatedLayer.layerID))
+            animatedLayersThatBecameVisible.append(animatedLayer);
+    }
+
+    m_layerIDsThatMayBeVisible = WTF::move(layerIDsThatMayBeVisible);
+    m_hasTimeBasedAnimationsThatMayBeVisible = hasTimeBasedAnimationsThatMayBeVisible;
+    m_hasHighImpactMonotonicAnimationsThatMayBeVisible = hasHighImpactMonotonicAnimationsThatMayBeVisible;
+    return animatedLayersThatBecameVisible;
+}
+
 bool RemoteAnimationVisibility::animatedContentMayBeVisible(const RemoteLayerTreeNode& node, CALayer *webViewLayer, VisibilityCache& visibilityCache, NOESCAPE const AnimationStackForNode& animationStackForNode)
 {
     if (auto iterator = visibilityCache.find(node.layerID()); iterator != visibilityCache.end())

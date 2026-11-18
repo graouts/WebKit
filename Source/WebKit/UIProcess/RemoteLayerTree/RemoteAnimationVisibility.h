@@ -30,7 +30,9 @@
 #include <WebCore/PlatformLayerIdentifier.h>
 #include <wtf/Function.h>
 #include <wtf/HashMap.h>
+#include <wtf/HashSet.h>
 #include <wtf/RefPtr.h>
+#include <wtf/Vector.h>
 
 OBJC_CLASS CALayer;
 
@@ -39,19 +41,45 @@ namespace WebKit {
 class RemoteAnimationStack;
 class RemoteLayerTreeNode;
 
-// Determines whether the content of animated layers may be visible within the web view.
+// Keeps track of which animated layers may have visible content within the web view, so that
+// time-based animations whose content can't be visible need not be updated.
 class RemoteAnimationVisibility {
 public:
     // Animation stacks are owned by the node on iOS, but by RemoteLayerTreeEventDispatcher on macOS.
     using AnimationStackForNode = Function<RefPtr<const RemoteAnimationStack>(const RemoteLayerTreeNode&)>;
+
+    struct AnimatedLayer {
+        WebCore::PlatformLayerIdentifier layerID;
+        // Without a node, there is no telling where the animated content is, so it may be visible.
+        RefPtr<RemoteLayerTreeNode> node;
+        Ref<const RemoteAnimationStack> animationStack;
+    };
+
+    void setNeedsUpdate() { m_needsUpdate = true; }
+    bool needsUpdate() const { return m_needsUpdate; }
+
+    // Determines which of the provided animated layers may be visible, and returns those with
+    // time-based animations that may be visible but were not as of the previous update.
+    Vector<AnimatedLayer> update(CALayer *webViewLayer, const Vector<AnimatedLayer>&, NOESCAPE const AnimationStackForNode&);
+
+    bool mayBeVisible(WebCore::PlatformLayerIdentifier layerID) const { return m_layerIDsThatMayBeVisible.contains(layerID); }
+    bool hasTimeBasedAnimationsThatMayBeVisible() const { return m_hasTimeBasedAnimationsThatMayBeVisible; }
+    bool hasHighImpactMonotonicAnimationsThatMayBeVisible() const { return m_hasHighImpactMonotonicAnimationsThatMayBeVisible; }
+    void remove(WebCore::PlatformLayerIdentifier layerID) { m_layerIDsThatMayBeVisible.remove(layerID); }
+
+private:
     // Determining whether animated content may be visible accounts for the visibility of ancestors with
     // time-based transform animations, which is cached so that it is only computed once per ancestor.
     using VisibilityCache = HashMap<WebCore::PlatformLayerIdentifier, bool>;
 
     static bool animatedContentMayBeVisible(const RemoteLayerTreeNode&, CALayer *webViewLayer, VisibilityCache&, NOESCAPE const AnimationStackForNode&);
-
-private:
     static bool computeAnimatedContentMayBeVisible(const RemoteLayerTreeNode&, CALayer *webViewLayer, VisibilityCache&, NOESCAPE const AnimationStackForNode&);
+
+    HashSet<WebCore::PlatformLayerIdentifier> m_layerIDsThatMayBeVisible;
+    // Until visibility is first determined, animations may be visible.
+    bool m_hasTimeBasedAnimationsThatMayBeVisible { true };
+    bool m_hasHighImpactMonotonicAnimationsThatMayBeVisible { true };
+    bool m_needsUpdate { false };
 };
 
 } // namespace WebKit
