@@ -26,9 +26,11 @@
 #pragma once
 
 #include <WebCore/StyleAnimation.h>
+#include <WebCore/StyleSingleAnimationRange.h>
 #include <WebCore/StyleOriginatedAnimation.h>
 #include <WebCore/Styleable.h>
 #include <WebCore/TimelineRangeValue.h>
+#include <WebCore/ViewTimeline.h>
 #include <wtf/OptionSet.h>
 #include <wtf/Ref.h>
 
@@ -61,10 +63,16 @@ public:
 
     void setBackingStyleAnimation(const Style::Animation&, Style::ZoomFactor);
 
+    void syncTriggerTimeline();
+    void setTriggerTimeline(RefPtr<ViewTimeline>&& timeline) { m_triggerTimeline = WTF::move(timeline); }
+    void updateTriggerTimeline(const Style::ComputedStyle&);
+
 private:
     CSSAnimation(const Styleable&, Style::ScopedName&&, Style::Animation&&, Style::ZoomFactor);
 
     bool isCSSAnimation() const final { return true; }
+    void tick(WebAnimation::ShouldDispatchProgressEvent) final;
+    Seconds timeToNextTick() const final;
 
     void syncPropertiesWithBackingAnimation() final;
     AnimationPlayState backingAnimationPlayState() const final;
@@ -97,6 +105,8 @@ private:
         RangeEnd = 1 << 12,
     };
 
+    RefPtr<ViewTimeline> m_triggerTimeline;
+    std::optional<ResolvableTimelineRange> m_triggerTimelineActivationRange;
     Style::ScopedName m_animationName;
     OptionSet<Property> m_overriddenProperties;
     std::optional<AnimationPlayState> m_lastStyleOriginatedPlayState;

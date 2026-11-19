@@ -326,9 +326,9 @@ void ScrollTimeline::updateCurrentTimeIfStale()
         protect(source->element->document())->updateStyleIfNeeded();
 }
 
-void ScrollTimeline::setTimelineScopeElement(const Element& element)
+void ScrollTimeline::setScopeElement(const Element& element)
 {
-    m_timelineScopeElement = WeakPtr { &element };
+    m_scopeElement = WeakPtr { &element };
 }
 
 ScrollableArea* ScrollTimeline::scrollableAreaForSourceRenderer(const RenderElement* renderer, Document& document)

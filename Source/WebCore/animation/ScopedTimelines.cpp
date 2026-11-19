@@ -1,0 +1,541 @@
+/*
+ * Copyright (C) 2020 Apple Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "config.h"
+#include "ScopedTimelines.h"
+
+#include "AnimationEventBase.h"
+#include "CSSAnimation.h"
+#include "CSSTransition.h"
+#include "Document.h"
+#include "DocumentTimeline.h"
+#include "ElementInlines.h"
+#include "EventLoop.h"
+#include "KeyframeEffect.h"
+#include "LocalDOMWindow.h"
+#include "Logging.h"
+#include "Page.h"
+#include "ScrollTimeline.h"
+#include "Settings.h"
+#include "StyleableInlines.h"
+#include "StyleScope.h"
+#include "ViewTimeline.h"
+#include "WebAnimation.h"
+#include "WebAnimationTypes.h"
+#include "WebAnimationUtilities.h"
+#include <JavaScriptCore/VM.h>
+#include <wtf/HashSet.h>
+#include <wtf/text/TextStream.h>
+
+#if ENABLE(THREADED_ANIMATIONS)
+#include "AcceleratedEffectStackUpdater.h"
+#endif
+
+namespace WebCore {
+DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(ScopedTimelines);
+
+NODELETE static const WeakStyleable& originatingStyleable(const Ref<ScrollTimeline>& timeline LIFETIME_BOUND)
+{
+    if (auto* viewTimeline = dynamicDowncast<ViewTimeline>(timeline.get()))
+        return viewTimeline->subjectStyleable();
+    return timeline->sourceStyleable();
+}
+
+NODELETE static Element* originatingElement(const Ref<ScrollTimeline>& timeline)
+{
+    return originatingStyleable(timeline).element().get();
+}
+
+NODELETE static Element* originatingElementIncludingTimelineScope(const Ref<ScrollTimeline>& timeline)
+{
+    if (auto* timelineScopeElement = timeline->scopeElement())
+        return timelineScopeElement;
+    return originatingElement(timeline);
+}
+
+NODELETE static Element* originatingElementExcludingTimelineScope(const Ref<ScrollTimeline>& timeline)
+{
+    return timeline->scopeElement() ? nullptr : originatingElement(timeline);
+}
+
+void ScopedTimelines::registerTimeline(Vector<Ref<ScrollTimeline>>& timelines, Ref<ScrollTimeline>&& timeline)
+{
+    auto& scopedName = timeline->name();
+    updateTimelineForTimelineScope(timeline, scopedName.name);
+    timelines.append(WTF::move(timeline));
+    m_timelineNamesPendingAnimationUpdate.add(scopedName.name);
+}
+
+Vector<WeakStyleable> ScopedTimelines::scopeElements(const Style::CustomIdent& name)
+{
+    Vector<WeakStyleable> timelineScopeElements;
+    for (auto& scope : m_scopeEntries) {
+        if (scope.second && (scope.first.type == Style::NameScope::Type::All || (scope.first.type == Style::NameScope::Type::Ident && scope.first.names.contains(name))))
+            timelineScopeElements.append(scope.second);
+    }
+    return timelineScopeElements;
+}
+
+ScrollTimeline& ScopedTimelines::inactiveTimeline(const AtomString& name)
+{
+    auto& timelines = this->timelines(name);
+    timelines.append(ScrollTimeline::createInactiveStyleOriginatedTimeline(name));
+    return timelines.last();
+}
+
+RefPtr<ScrollTimeline> ScopedTimelines::scopedTimelineForElement(const Vector<Ref<ScrollTimeline>>& ancestorTimelines, const Styleable& styleable, const Element* timelineScopeElement)
+{
+    RefPtr element = styleable.element.ptr();
+    while (element) {
+        Vector<Ref<ScrollTimeline>> matchedTimelines;
+        for (auto& timeline : ancestorTimelines) {
+            // A timeline hoisted by an ancestor's timeline-scope is still referenceable from its own declaring element's subtree.
+            if (element == originatingElementIncludingTimelineScope(timeline) || element == originatingElement(timeline))
+                matchedTimelines.append(timeline);
+        }
+        if (!matchedTimelines.isEmpty()) {
+            if (timelineScopeElement == element.get()) {
+                // Naming conflict due to timeline-scope, see if the element declares a non-deferred timeline.
+                for (auto& matchedTimeline : matchedTimelines) {
+                    if (element == originatingElement(matchedTimeline))
+                        return WTF::move(matchedTimeline);
+                }
+                // Prefer the nearest timeline in hierarchy.
+                for (auto& matchedTimeline : matchedTimelines | std::views::reverse) {
+                    if (styleable.element->isComposedTreeDescendantOf(*originatingElement(matchedTimeline)))
+                        return WTF::move(matchedTimeline);
+                }
+                // Otherwise return the last of the matching timelines per https://github.com/w3c/csswg-drafts/issues/12581.
+                return WTF::move(matchedTimelines.last());
+            }
+            ASSERT(matchedTimelines.size() <= 2);
+            // Favor scroll timelines in case of conflict
+            if (!is<ViewTimeline>(matchedTimelines.first()))
+                return WTF::move(matchedTimelines.first());
+            return WTF::move(matchedTimelines.last());
+        }
+        // Has blocking timeline scope element
+        if (timelineScopeElement == element.get()) {
+            ASSERT(!ancestorTimelines.isEmpty());
+            return &inactiveTimeline(ancestorTimelines.first()->name().name);
+        }
+        element = element->parentElementInComposedTree();
+    }
+
+    // If we get to this point, this means we haven't found a matching timeline that has
+    // its originating element in the provided `timeline-scope` element's hierarchy. Since
+    // timelines match globally, we must use global tree order..
+    ASSERT(!timelineScopeElement);
+    auto sortedTimelines = ancestorTimelines;
+    std::ranges::stable_sort(sortedTimelines, [](auto& lhs, auto& rhs) {
+        auto lhsStyleable = originatingStyleable(lhs).styleable();
+        auto rhsStyleable = originatingStyleable(rhs).styleable();
+        ASSERT(lhsStyleable);
+        ASSERT(rhsStyleable);
+
+        // https://drafts.csswg.org/scroll-animations-1/#timeline-scoping
+        // An element may only define one timeline per name: In case of a name conflict, names
+        // declared later in the naming property (scroll-timeline-name, view-timeline-name) take
+        // precedence, and scroll progress timelines take precedence over view progress timelines.
+        if (lhsStyleable == rhsStyleable) {
+            ASSERT(is<ViewTimeline>(lhs) != is<ViewTimeline>(rhs));
+            return !is<ViewTimeline>(lhs);
+        }
+
+        return compareStyleablePositionsInDocumentTreeOrder(*lhsStyleable, *rhsStyleable);
+    });
+    return WTF::move(sortedTimelines.first());
+}
+
+RefPtr<ScrollTimeline> ScopedTimelines::timelineForElement(const Vector<Ref<ScrollTimeline>>& timelines, const Styleable& styleable, Style::ScopeOrdinal targetTimelineScopeOrdinal, const Element* timelineScopeElement)
+{
+    // https://drafts.csswg.org/scroll-animations-1/#timeline-scoping
+    // A named scroll progress timeline or view progress timeline is referenceable by:
+    // 1. the name-declaring element itself
+    // 2. that element’s descendants
+    // If multiple elements have declared the same timeline name, the matching timeline is the one declared on the nearest element in tree order.
+    // In case of a name conflict on the same element, names declared later in the naming property (scroll-timeline-name, view-timeline-name) take
+    // precedence, and scroll progress timelines take precedence over view progress timelines.
+    Ref targetElement { styleable.element };
+    if (!targetElement->isConnected())
+        return nullptr;
+
+    // While timeline names match globally, matching a timeline declared within the target's own
+    // hierarchy is the most common case. We split candidate timelines in two buckets such that calling
+    // scopedTimelineForElement() only considers the handful of timelines that can actually qualify, this way
+    // we only perform tree scope checks of the remaining timelines in the rare case where the
+    // target's hierarchy yields no match at all.
+    Vector<Ref<ScrollTimeline>> timelinesInTargetHierarchy;
+    Vector<Ref<ScrollTimeline>> timelinesOutsideTargetHierarchy;
+    for (auto& timeline : timelines) {
+        RefPtr elementForTimeline = originatingElementIncludingTimelineScope(timeline);
+        if (!elementForTimeline)
+            continue;
+        if (targetElement->isComposedTreeInclusiveDescendantOf(*elementForTimeline))
+            timelinesInTargetHierarchy.append(timeline);
+        else
+            timelinesOutsideTargetHierarchy.append(timeline);
+    }
+
+    auto timelineIsNotInScopeForTarget = [&](auto& timeline) {
+        RefPtr timelineOriginatingElement { originatingElement(timeline) };
+        ASSERT(timelineOriginatingElement);
+        CheckedPtr scrollTimelineNameStyleScope = Style::Scope::forOrdinal(*timelineOriginatingElement, timeline->name().scopeOrdinal);
+        ASSERT(scrollTimelineNameStyleScope);
+        return !Style::resolveTreeScopedReference(targetElement, { timeline->name().name, targetTimelineScopeOrdinal }, [&](const Style::Scope& scope, const Style::ScopedName&) {
+            return scrollTimelineNameStyleScope == &scope;
+        });
+    };
+
+    timelinesInTargetHierarchy.removeAllMatching(timelineIsNotInScopeForTarget);
+    if (!timelinesInTargetHierarchy.isEmpty())
+        return scopedTimelineForElement(timelinesInTargetHierarchy, styleable, timelineScopeElement);
+
+    timelinesOutsideTargetHierarchy.removeAllMatching(timelineIsNotInScopeForTarget);
+    if (!timelinesOutsideTargetHierarchy.isEmpty())
+        return scopedTimelineForElement(timelinesOutsideTargetHierarchy, styleable, timelineScopeElement);
+
+    return nullptr;
+}
+
+Vector<Ref<ScrollTimeline>>& ScopedTimelines::timelines(const AtomString& name)
+{
+    return m_nameToTimelineMap.ensure(name, [] {
+        return Vector<Ref<ScrollTimeline>> { };
+    }).iterator->value;
+}
+
+void ScopedTimelines::updateTimelineForTimelineScope(const Ref<ScrollTimeline>& timeline, const AtomString& name)
+{
+    Vector<Styleable> matchedTimelineScopeElements;
+    RefPtr timelineElement = originatingElementExcludingTimelineScope(timeline);
+    if (!timelineElement)
+        return;
+
+    for (auto& entry : m_scopeEntries) {
+        if (auto entryElement = entry.second.styleable()) {
+            Ref protectedEntryElement { entryElement->element };
+            if (timelineElement->isComposedTreeInclusiveDescendantOf(protectedEntryElement.get()) && (entry.first.type == Style::NameScope::Type::All || entry.first.names.contains(Style::CustomIdent { name })))
+                matchedTimelineScopeElements.appendIfNotContains(*entryElement);
+        }
+    }
+    RefPtr element = timelineElement;
+    while (element) {
+        auto it = matchedTimelineScopeElements.findIf([element] (const Styleable& entry) {
+            return entry.element.ptr() == element;
+        });
+        if (it != notFound) {
+            Ref protectedTimelineScopeElement { matchedTimelineScopeElements.at(it).element };
+            timeline->setScopeElement(protectedTimelineScopeElement.get());
+            return;
+        }
+        element = element->parentElementInComposedTree();
+    }
+}
+
+void ScopedTimelines::updateCSSAnimationsAssociatedWithNamedTimeline(const AtomString& name)
+{
+    // First, we need to gather all CSS Animations attached to existing timelines
+    // with the specified name. We do this prior to updating animation-to-timeline
+    // relationship because this could mutate the timeline's animations list.
+    HashSet<Ref<CSSAnimation>> cssAnimationsWithMatchingTimelineName;
+    for (auto& timeline : timelines(name)) {
+        for (auto& animation : timeline->relevantAnimations()) {
+            if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation.get())) {
+                if (!cssAnimation->owningElement())
+                    continue;
+                if (auto timelineName = cssAnimation->backingStyleAnimation().timeline().tryScopedName()) {
+                    if (timelineName->name == name)
+                        cssAnimationsWithMatchingTimelineName.add(*cssAnimation);
+                }
+            }
+        }
+    }
+
+    for (auto& cssAnimation : cssAnimationsWithMatchingTimelineName)
+        cssAnimation->syncStyleOriginatedTimeline();
+}
+
+void ScopedTimelines::removePendingOperationsForCSSAnimation(const CSSAnimation& animation)
+{
+    m_cssAnimationsPendingAttachment.remove(animation);
+}
+
+void ScopedTimelines::documentDidResolveStyle()
+{
+    auto timelineNamesPendingAnimationUpdate = std::exchange(m_timelineNamesPendingAnimationUpdate, { });
+    for (auto& name : timelineNamesPendingAnimationUpdate)
+        updateCSSAnimationsAssociatedWithNamedTimeline(name);
+
+    auto cssAnimationsPendingAttachment = std::exchange(m_cssAnimationsPendingAttachment, { });
+    for (auto& cssAnimationPendingAttachment : cssAnimationsPendingAttachment) {
+        if (cssAnimationPendingAttachment->owningElement())
+            attachAnimation(cssAnimationPendingAttachment.get(), AllowsDeferral::No);
+    }
+
+    // Purge any inactive named timeline no longer attached to an animation.
+    m_nameToTimelineMap.removeIf([](auto& keyValuePair) {
+        auto& timelines = keyValuePair.value;
+        timelines.removeAllMatching([](auto& timeline) {
+            return timeline->isInactiveStyleOriginatedTimeline() && timeline->relevantAnimations().isEmpty();
+        });
+        return timelines.isEmpty();
+    });
+
+    m_removedTimelines.clear();
+}
+
+void ScopedTimelines::unregisterNamedTimeline(const AtomString& name, const Styleable& styleable)
+{
+    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::unregisterNamedTimeline: " << name << " styleable: " << styleable);
+
+    auto it = m_nameToTimelineMap.find(name);
+    if (it == m_nameToTimelineMap.end())
+        return;
+
+    auto& timelines = it->value;
+
+    auto i = timelines.findIf([&] (auto& entry) {
+        return originatingStyleable(entry) == styleable;
+    });
+
+    if (i == notFound)
+        return;
+
+    Ref timeline = timelines.at(i);
+
+    // Make sure to remove the named timeline from our name-to-timelines map first,
+    // such that re-syncing any CSS Animation previously registered with it resolves
+    // their `animation-timeline` properly.
+    timelines.removeAt(i);
+
+    // Ensure we iterate on a copy of this timeline's registered animations as calling
+    // CSSAnimation::syncStyleOriginatedTimeline() may mutate it.
+    for (Ref animation : copyToVector(timeline->relevantAnimations())) {
+        if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
+            if (cssAnimation->owningElement())
+                cssAnimation->syncStyleOriginatedTimeline();
+        }
+    }
+
+    if (timelines.isEmpty())
+        m_nameToTimelineMap.remove(it);
+    else
+        m_timelineNamesPendingAnimationUpdate.add(name);
+}
+
+void ScopedTimelines::attachAnimation(CSSAnimation& animation)
+{
+    attachAnimation(animation, AllowsDeferral::Yes);
+}
+
+void ScopedTimelines::attachAnimation(CSSAnimation& animation, AllowsDeferral allowsDeferral)
+{
+    Ref protectedAnimation { animation };
+
+    auto target = protectedAnimation->owningElement();
+    if (!target)
+        return;
+
+    auto timelineName = protectedAnimation->backingStyleAnimation().timeline().tryScopedName();
+    if (!timelineName)
+        return;
+
+    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::attachAnimation: " << timelineName->name << " target: " << *target);
+
+    auto relevantTimelineScopeElement = [&] -> RefPtr<Element> {
+        auto timelineScopeElements = scopeElements(Style::CustomIdent { timelineName->name });
+        if (timelineScopeElements.isEmpty())
+            return nullptr;
+        for (RefPtr currentElement = target->element.ptr(); currentElement; currentElement = currentElement->parentElementInComposedTree()) {
+            for (auto& timelineScopeElement : timelineScopeElements) {
+                if (currentElement == timelineScopeElement.element())
+                    return currentElement;
+            }
+        }
+        return nullptr;
+    }();
+
+    auto it = m_nameToTimelineMap.find(timelineName->name);
+    auto hasNamedTimeline = it != m_nameToTimelineMap.end() && it->value.containsIf([&](auto& timeline) {
+        RefPtr timelineScope = timeline->scopeElement();
+        if (timelineScope && timelineScope != relevantTimelineScopeElement) {
+            RefPtr timelineElement = originatingElement(timeline);
+            if (!timelineElement || !target->element->isComposedTreeInclusiveDescendantOf(*timelineElement))
+                return false;
+        }
+        return !timeline->isInactiveStyleOriginatedTimeline();
+    });
+
+    // If we don't have an active named timeline yet and deferral is allowed,
+    // just register a pending timeline attachment operation so we can try again
+    // when style has resolved.
+    if (!hasNamedTimeline && allowsDeferral == AllowsDeferral::Yes) {
+        m_cssAnimationsPendingAttachment.add(animation);
+        return;
+    }
+
+    if (!hasNamedTimeline) {
+        ASSERT(allowsDeferral == AllowsDeferral::No);
+        protectedAnimation->setTimeline(&inactiveTimeline(timelineName->name));
+    } else {
+        auto& timelines = it->value;
+        RefPtr timeline = timelineForElement(timelines, *target, timelineName->scopeOrdinal, relevantTimelineScopeElement.get());
+        LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::attachAnimation: " << timelineName->name << " styleable: " << *target << " attaching to timeline of element: " << originatingStyleable(*timeline));
+        // A deferred inactive timeline means there was a conflict with multiple timelines existing within
+        // a parent element with a "timeline-scope" property. In that case, we must reconsider timeline attachment
+        // once style resolution completes as further updates may occur that would yield a different timeline
+        // and possibly also mark that animation's target as dirty to update the animated style.
+        if (allowsDeferral == AllowsDeferral::Yes && timeline && timeline->isInactiveStyleOriginatedTimeline())
+            m_cssAnimationsPendingAttachment.add(animation);
+        protectedAnimation->setTimeline(WTF::move(timeline));
+    }
+
+    // Since we have no timeline defined for this name yet, we need
+    // to mark this animation as pending attachment in case this name
+    // resolves in the future.
+    if (!protectedAnimation->timeline())
+        m_cssAnimationsPendingAttachment.add(animation);
+}
+
+void ScopedTimelines::updateTimelinesForScope(Vector<Ref<ScrollTimeline>> entries, const Styleable& styleable)
+{
+    Ref element { styleable.element };
+    for (auto& entry : entries) {
+        RefPtr entryElement = originatingElement(entry);
+        if (!entryElement || !entryElement->isComposedTreeInclusiveDescendantOf(element))
+            continue;
+        RefPtr currentScopeElement = entry->scopeElement();
+        if (currentScopeElement == element.ptr() || (currentScopeElement && !element->isComposedTreeDescendantOf(*currentScopeElement)))
+            continue;
+        entry->setScopeElement(element);
+        for (Ref animation : copyToVector(entry->relevantAnimations())) {
+            if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation))
+                attachAnimation(*cssAnimation, AllowsDeferral::Yes);
+        }
+    }
+}
+
+void ScopedTimelines::updateNamedTimelineMapForTimelineScope(const Style::NameScope& scope, const Styleable& styleable)
+{
+    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::updateNamedTimelineMapForTimelineScope: " << scope << " styleable: " << styleable);
+
+    auto addScopeEntryIfNew = [&] {
+        ScopeEntry timelineScopeEntry { scope, styleable };
+        if (!m_scopeEntries.contains(timelineScopeEntry))
+            m_scopeEntries.append(timelineScopeEntry);
+    };
+
+    // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
+    // This property declares the scope of the specified timeline names to extend across this element’s subtree. This allows a named timeline
+    // (such as a named scroll progress timeline or named view progress timeline) to be referenced by elements outside the timeline-defining element’s
+    // subtree—​for example, by siblings, cousins, or ancestors.
+    switch (scope.type) {
+    case Style::NameScope::Type::None: {
+        HashSet<Ref<ScrollTimeline>> namedTimelinesToUpdate;
+        for (auto& entry : m_nameToTimelineMap) {
+            for (auto& timeline : entry.value) {
+                if (timeline->scopeElement() == styleable.element.ptr())
+                    timeline->clearScopeElement();
+                // Make sure to track this timeline to be updated in a separate
+                // step since updating timeline relationships could affect m_nameToTimelineMap.
+                namedTimelinesToUpdate.add(timeline.get());
+            }
+        }
+        m_scopeEntries.removeAllMatching([&](auto& entry) {
+            return entry.second == styleable;
+        });
+        for (auto& timeline : namedTimelinesToUpdate) {
+            for (Ref animation : copyToVector(timeline->relevantAnimations())) {
+                if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation)) {
+                    if (cssAnimation->owningElement())
+                        cssAnimation->syncStyleOriginatedTimeline();
+                }
+            }
+        }
+        break;
+    }
+    case Style::NameScope::Type::All:
+        for (auto& entry : m_nameToTimelineMap)
+            updateTimelinesForScope(entry.value, styleable);
+        addScopeEntryIfNew();
+        break;
+    case Style::NameScope::Type::Ident:
+        for (auto& name : scope.names) {
+            auto it = m_nameToTimelineMap.find(name.value);
+            if (it != m_nameToTimelineMap.end())
+                updateTimelinesForScope(it->value, styleable);
+        }
+        addScopeEntryIfNew();
+        break;
+    }
+}
+
+bool ScopedTimelines::isPendingTimelineAttachment(const WebAnimation& animation) const
+{
+    if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation))
+        return m_cssAnimationsPendingAttachment.contains(*cssAnimation);
+    return false;
+}
+
+void ScopedTimelines::unregisterNamedTimelinesAssociatedWithElement(const Styleable& styleable)
+{
+    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::unregisterNamedTimelinesAssociatedWithElement element: " << styleable);
+
+    m_nameToTimelineMap.removeIf([&](auto& entry) {
+        auto& timelines = entry.value;
+        for (size_t i = 0; i < timelines.size(); ++i) {
+            auto& timeline = timelines[i];
+            if (originatingStyleable(timeline) == styleable) {
+                m_removedTimelines.add(timeline.get());
+                timelines.removeAt(i--);
+            }
+        }
+        return timelines.isEmpty();
+    });
+}
+
+void ScopedTimelines::styleableWasRemoved(const Styleable& styleable)
+{
+    m_scopeEntries.removeAllMatching([&](auto& entry) {
+        return entry.second == styleable;
+    });
+
+    for (Ref timeline : m_removedTimelines) {
+        if (originatingStyleable(timeline) != styleable)
+            continue;
+        for (Ref animation : copyToVector(timeline->relevantAnimations())) {
+            if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation.get())) {
+                if (auto owningElement = cssAnimation->owningElement()) {
+                    attachAnimation(*cssAnimation, AllowsDeferral::Yes);
+                    Ref { owningElement->element }->invalidateStyleForAnimation();
+                }
+            }
+        }
+    }
+}
+
+} // namespace WebCore
+

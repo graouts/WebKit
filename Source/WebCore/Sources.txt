@@ -710,12 +710,14 @@ animation/FrameRateAligner.cpp
 animation/KeyframeEffect.cpp @header:RenderStyleGetters
 animation/KeyframeEffectStack.cpp @header:RenderStyleGetters
 animation/KeyframeInterpolation.cpp
+animation/ScopedTimelines.cpp
 animation/ScrollAxis.cpp
 animation/ScrollTimeline.cpp @header:RenderStyleGetters
 animation/StyleOriginatedAnimation.cpp
 animation/StyleOriginatedAnimationEvent.cpp
 animation/StyleOriginatedTimelinesController.cpp
 animation/TimelineRangeValue.cpp
+animation/TriggerTimelinesController.cpp
 animation/ViewTimeline.cpp @header:RenderStyleGetters
 animation/ViewTimelineInsetValue.cpp
 animation/WebAnimation.cpp

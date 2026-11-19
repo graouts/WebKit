@@ -25,20 +25,12 @@
 
 #pragma once
 
-#include "CSSAnimation.h"
 #include "ScopedName.h"
+#include "ScopedTimelines.h"
 #include "ScrollAxis.h"
-#include "StyleNameScope.h"
 #include "Styleable.h"
-#include <wtf/CheckedRef.h>
-#include <wtf/ListHashSet.h>
-#include <wtf/WeakHashSet.h>
-#include <wtf/text/AtomStringHash.h>
 
 namespace WebCore {
-
-class ScrollTimeline;
-class WebAnimation;
 
 namespace Style {
 struct ViewTimelineInsetItem;
@@ -59,7 +51,7 @@ struct ViewTimelineInsetItem;
 // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(StyleOriginatedTimelinesController);
-class StyleOriginatedTimelinesController final : public CanMakeCheckedPtr<StyleOriginatedTimelinesController> {
+class StyleOriginatedTimelinesController final : public ScopedTimelines {
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(StyleOriginatedTimelinesController, StyleOriginatedTimelinesController);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(StyleOriginatedTimelinesController);
 public:
@@ -68,34 +60,6 @@ public:
 
     void registerNamedScrollTimeline(const Style::ScopedName&, const Styleable&, ScrollAxis);
     void registerNamedViewTimeline(const Style::ScopedName&, const Styleable&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
-    void unregisterNamedTimeline(const AtomString&, const Styleable&);
-    void attachAnimation(CSSAnimation&);
-    void updateNamedTimelineMapForTimelineScope(const Style::NameScope&, const Styleable&);
-    void updateTimelineForTimelineScope(const Ref<ScrollTimeline>&, const AtomString&);
-    void unregisterNamedTimelinesAssociatedWithElement(const Styleable&);
-    void removePendingOperationsForCSSAnimation(const CSSAnimation&);
-    bool isPendingTimelineAttachment(const WebAnimation&) const;
-    void documentDidResolveStyle();
-    void styleableWasRemoved(const Styleable&);
-
-private:
-    Vector<Ref<ScrollTimeline>>& timelinesForName(const AtomString&) LIFETIME_BOUND;
-    Vector<WeakStyleable> relatedTimelineScopeElements(const Style::CustomIdent&);
-    void updateCSSAnimationsAssociatedWithNamedTimeline(const AtomString&);
-    void updateTimelinesForTimelineScope(Vector<Ref<ScrollTimeline>>, const Styleable&);
-
-    enum class AllowsDeferral : bool { No, Yes };
-    void attachAnimation(CSSAnimation&, AllowsDeferral);
-    RefPtr<ScrollTimeline> determineTimelineForElement(const Vector<Ref<ScrollTimeline>>&, const Styleable&, Style::ScopeOrdinal targetTimelineScopeOrdinal, const Element*);
-    RefPtr<ScrollTimeline> determineTreeOrder(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Element*);
-    ScrollTimeline& inactiveNamedTimeline(const AtomString&);
-
-    using TimelineScopeEntry = std::pair<Style::NameScope, WeakStyleable>;
-    ListHashSet<Ref<CSSAnimation>> m_cssAnimationsPendingAttachment;
-    Vector<TimelineScopeEntry> m_timelineScopeEntries;
-    HashMap<AtomString, Vector<Ref<ScrollTimeline>>> m_nameToTimelineMap;
-    HashSet<Ref<ScrollTimeline>> m_removedTimelines;
-    HashSet<AtomString> m_timelineNamesPendingAnimationUpdate;
 };
 
 } // namespace WebCore

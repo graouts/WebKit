@@ -79,9 +79,9 @@ public:
 
     std::optional<WebAnimationTime> currentTime(UseCachedCurrentTime = UseCachedCurrentTime::Yes) override;
     Style::SingleAnimationRange defaultRange() const override;
-    NODELETE Element* timelineScopeDeclaredElement() const { return m_timelineScopeElement.get(); }
-    NODELETE void setTimelineScopeElement(const Element&);
-    void clearTimelineScopeDeclaredElement() { m_timelineScopeElement = nullptr; }
+    NODELETE Element* scopeElement() const { return m_scopeElement.get(); }
+    NODELETE void setScopeElement(const Element&);
+    void clearScopeElement() { m_scopeElement = nullptr; }
 
     virtual std::pair<WebAnimationTime, WebAnimationTime> intervalForAttachmentRange(const ResolvableTimelineRange&) const;
 
@@ -143,7 +143,7 @@ private:
     ScrollAxis m_axis { ScrollAxis::Block };
     Style::ScopedName m_name;
     Scroller m_scroller { Scroller::Self };
-    WeakPtr<Element, WeakPtrImplWithEventTargetData> m_timelineScopeElement;
+    WeakPtr<Element, WeakPtrImplWithEventTargetData> m_scopeElement;
     CurrentTimeData m_cachedCurrentTimeData { };
     bool m_isInactiveStyleOriginatedTimeline { false };
     bool m_isStyleOriginated { false };
