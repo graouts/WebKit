@@ -8360,7 +8360,7 @@ webkit.org/b/314100 imported/w3c/web-platform-tests/css/selectors/has-specificit
 imported/w3c/web-platform-tests/scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative.html [ Pass ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/animation-trigger/animation-trigger-fill-mode-none.tentative.html [ Pass ImageOnlyFailure ]
 imported/w3c/web-platform-tests/scroll-animations/animation-trigger/timeline-trigger-source-starts-in-trigger-range.tentative.html [ Pass Failure ]
-
+imported/w3c/web-platform-tests/scroll-animations/responsive/repaint-after-finished.html [ Skip ]
 
 webkit.org/b/317017 imported/w3c/web-platform-tests/largest-contentful-paint/multiple-redirects-TAO.html [ Pass Failure ]
 webkit.org/b/????? imported/w3c/web-platform-tests/largest-contentful-paint/larger-image.html [ Pass Failure ]
