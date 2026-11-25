@@ -36,6 +36,8 @@
 
 namespace WebCore {
 
+class ScopedTimelines;
+
 namespace Style {
 class ComputedStyle;
 }
@@ -66,6 +68,8 @@ public:
     void syncTriggerTimeline();
     void setTriggerTimeline(RefPtr<ViewTimeline>&& timeline) { m_triggerTimeline = WTF::move(timeline); }
     void updateTriggerTimeline(const Style::ComputedStyle&);
+
+    void scopedTimelineWasResolved(RefPtr<ScrollTimeline>&&);
 
 private:
     CSSAnimation(const Styleable&, Style::ScopedName&&, Style::Animation&&, Style::ZoomFactor);
@@ -112,6 +116,8 @@ private:
     std::optional<AnimationPlayState> m_lastStyleOriginatedPlayState;
     Style::Animation m_backingStyleAnimation;
     Style::ZoomFactor m_backingStyleZoomForLength;
+    enum class PendingScopedTimelineResolutionType : uint8_t { Main, Trigger };
+    PendingScopedTimelineResolutionType m_pendingScopedTimelineResolutionType { PendingScopedTimelineResolutionType::Main };
 };
 
 } // namespace WebCore

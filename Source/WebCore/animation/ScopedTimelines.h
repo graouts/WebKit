@@ -47,7 +47,7 @@ public:
 
     void registerNamedTimeline(const Ref<ScrollTimeline>&, const AtomString&);
     void unregisterNamedTimeline(const AtomString&, const Styleable&);
-    void attachAnimation(CSSAnimation&);
+    void resolveScopedTimelineForAnimation(CSSAnimation&);
     void updateNamedTimelineMapForTimelineScope(const Style::NameScope&, const Styleable&);
     void updateTimelineForTimelineScope(const Ref<ScrollTimeline>&, const AtomString&);
     void unregisterNamedTimelinesAssociatedWithElement(const Styleable&);
@@ -66,7 +66,7 @@ private:
     void updateTimelinesForScope(Vector<Ref<ScrollTimeline>>, const Styleable&);
 
     enum class AllowsDeferral : bool { No, Yes };
-    void attachAnimation(CSSAnimation&, AllowsDeferral);
+    void resolveScopedTimelineForAnimation(CSSAnimation&, AllowsDeferral);
     RefPtr<ScrollTimeline> timelineForElement(const Vector<Ref<ScrollTimeline>>&, const Styleable&, Style::ScopeOrdinal targetTimelineScopeOrdinal, const Element*);
     RefPtr<ScrollTimeline> scopedTimelineForElement(const Vector<Ref<ScrollTimeline>>&, const Styleable&, const Element*);
     ScrollTimeline& inactiveTimeline(const AtomString&);

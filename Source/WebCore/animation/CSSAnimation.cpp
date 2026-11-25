@@ -231,7 +231,8 @@ void CSSAnimation::syncStyleOriginatedTimeline()
         },
         [&](const Style::ScopedName&) {
             CheckedRef styleOriginatedTimelinesController = document->ensureStyleOriginatedTimelinesController();
-            styleOriginatedTimelinesController->attachAnimation(*this);
+            m_pendingScopedTimelineResolutionType = PendingScopedTimelineResolutionType::Main;
+            styleOriginatedTimelinesController->resolveScopedTimelineForAnimation(*this);
         },
         [&](const Style::ScrollFunction& scrollFunction) {
             if (auto* existingScrollTimeline = dynamicDowncast<ScrollTimeline>(timeline())) {
@@ -275,27 +276,28 @@ void CSSAnimation::syncTriggerTimeline()
     ASSERT(owningElement());
     Ref document = owningElement()->element->document();
 
+    WTFLogAlways("[GRAOUTS] syncTriggerTimeline()");
     CheckedRef triggerTimelinesController = document->ensureTriggerTimelinesController();
-    triggerTimelinesController->attachAnimation(*this);
+    m_pendingScopedTimelineResolutionType = PendingScopedTimelineResolutionType::Trigger;
+    triggerTimelinesController->resolveScopedTimelineForAnimation(*this);
+}
 
-//    // FIXME: support mulitple named triggers
-//    ASSERT(trigger.size());
-//    auto& triggerName = trigger[0].name;
-//    // FIXME: use a utility to look the name up accounting for scope.
-//    auto& timelineTriggers = style.timelineTriggers();
-//    for (auto& timelineTrigger : timelineTriggers.computedValues()) {
-//        if (triggerName != timelineTrigger.name().tryValue())
-//            continue;
-//        WTFLogAlways("[GRAOUTS] Creating trigger timeline named %s", triggerName.value.string().ascii().data());
-//        m_triggerTimeline = ViewTimeline::create(triggerName.value, ScrollAxis::Block, CSS::Keyword::Auto { });
-//        ASSERT(owningElement());
-//        m_triggerTimeline->setSubject(*owningElement());
-//        m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd() };
-//        return;
-//    }
-//
-//    m_triggerTimeline = nullptr;
-//    m_triggerTimelineActivationRange = std::nullopt;
+void CSSAnimation::scopedTimelineWasResolved(RefPtr<ScrollTimeline>&& timeline)
+{
+    switch (m_pendingScopedTimelineResolutionType) {
+        case PendingScopedTimelineResolutionType::Main:
+            setTimeline(WTF::move(timeline));
+            break;
+        case PendingScopedTimelineResolutionType::Trigger:
+            if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline))
+                m_triggerTimeline = viewTimeline;
+            else
+                m_triggerTimeline = nullptr;
+            break;
+        default:
+            ASSERT_NOT_REACHED();
+            break;
+    }
 }
 
 AnimationTimeline* CSSAnimation::bindingsTimeline() const

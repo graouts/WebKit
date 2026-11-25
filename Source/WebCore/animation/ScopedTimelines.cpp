@@ -292,7 +292,7 @@ void ScopedTimelines::documentDidResolveStyle()
     auto cssAnimationsPendingAttachment = std::exchange(m_cssAnimationsPendingAttachment, { });
     for (auto& cssAnimationPendingAttachment : cssAnimationsPendingAttachment) {
         if (cssAnimationPendingAttachment->owningElement())
-            attachAnimation(cssAnimationPendingAttachment.get(), AllowsDeferral::No);
+            resolveScopedTimelineForAnimation(cssAnimationPendingAttachment.get(), AllowsDeferral::No);
     }
 
     // Purge any inactive named timeline no longer attached to an animation.
@@ -346,12 +346,12 @@ void ScopedTimelines::unregisterNamedTimeline(const AtomString& name, const Styl
         m_timelineNamesPendingAnimationUpdate.add(name);
 }
 
-void ScopedTimelines::attachAnimation(CSSAnimation& animation)
+void ScopedTimelines::resolveScopedTimelineForAnimation(CSSAnimation& animation)
 {
-    attachAnimation(animation, AllowsDeferral::Yes);
+    resolveScopedTimelineForAnimation(animation, AllowsDeferral::Yes);
 }
 
-void ScopedTimelines::attachAnimation(CSSAnimation& animation, AllowsDeferral allowsDeferral)
+void ScopedTimelines::resolveScopedTimelineForAnimation(CSSAnimation& animation, AllowsDeferral allowsDeferral)
 {
     Ref protectedAnimation { animation };
 
@@ -363,7 +363,7 @@ void ScopedTimelines::attachAnimation(CSSAnimation& animation, AllowsDeferral al
     if (!timelineName)
         return;
 
-    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::attachAnimation: " << timelineName->name << " target: " << *target);
+    LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::resolveScopedTimeline: " << timelineName->name << " target: " << *target);
 
     auto relevantTimelineScopeElement = [&] -> RefPtr<Element> {
         auto timelineScopeElements = scopeElements(Style::CustomIdent { timelineName->name });
@@ -399,18 +399,19 @@ void ScopedTimelines::attachAnimation(CSSAnimation& animation, AllowsDeferral al
 
     if (!hasNamedTimeline) {
         ASSERT(allowsDeferral == AllowsDeferral::No);
-        protectedAnimation->setTimeline(&inactiveTimeline(timelineName->name));
+        RefPtr resolvedInactiveTimeline = &inactiveTimeline(timelineName->name);
+        protectedAnimation->scopedTimelineWasResolved(WTF::move(resolvedInactiveTimeline));
     } else {
         auto& timelines = it->value;
         RefPtr timeline = timelineForElement(timelines, *target, timelineName->scopeOrdinal, relevantTimelineScopeElement.get());
-        LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::attachAnimation: " << timelineName->name << " styleable: " << *target << " attaching to timeline of element: " << originatingStyleable(*timeline));
+        LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::resolveScopedTimeline: " << timelineName->name << " styleable: " << *target << " attaching to timeline of element: " << originatingStyleable(*timeline));
         // A deferred inactive timeline means there was a conflict with multiple timelines existing within
         // a parent element with a "timeline-scope" property. In that case, we must reconsider timeline attachment
         // once style resolution completes as further updates may occur that would yield a different timeline
         // and possibly also mark that animation's target as dirty to update the animated style.
         if (allowsDeferral == AllowsDeferral::Yes && timeline && timeline->isInactiveStyleOriginatedTimeline())
             m_cssAnimationsPendingAttachment.add(animation);
-        protectedAnimation->setTimeline(WTF::move(timeline));
+        protectedAnimation->scopedTimelineWasResolved(WTF::move(timeline));
     }
 
     // Since we have no timeline defined for this name yet, we need
@@ -433,7 +434,7 @@ void ScopedTimelines::updateTimelinesForScope(Vector<Ref<ScrollTimeline>> entrie
         entry->setScopeElement(element);
         for (Ref animation : copyToVector(entry->relevantAnimations())) {
             if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation))
-                attachAnimation(*cssAnimation, AllowsDeferral::Yes);
+                resolveScopedTimelineForAnimation(*cssAnimation, AllowsDeferral::Yes);
         }
     }
 }
@@ -529,7 +530,7 @@ void ScopedTimelines::styleableWasRemoved(const Styleable& styleable)
         for (Ref animation : copyToVector(timeline->relevantAnimations())) {
             if (RefPtr cssAnimation = dynamicDowncast<CSSAnimation>(animation.get())) {
                 if (auto owningElement = cssAnimation->owningElement()) {
-                    attachAnimation(*cssAnimation, AllowsDeferral::Yes);
+                    resolveScopedTimelineForAnimation(*cssAnimation, AllowsDeferral::Yes);
                     Ref { owningElement->element }->invalidateStyleForAnimation();
                 }
             }
