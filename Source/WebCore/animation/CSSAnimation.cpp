@@ -291,6 +291,7 @@ void CSSAnimation::scopedTimelineWasResolved(RefPtr<ScrollTimeline>&& timeline)
             break;
         case PendingScopedTimelineResolutionType::Trigger:
             if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline)) {
+                // FIXME: read this from the computed style.
                 auto range = Style::SingleAnimationRange::defaultForViewTimeline();
                 m_triggerTimelineActivationRange = { range.start, range.end, Style::ZoomFactor::none(), Style::ZoomFactor::none() };
                 m_triggerTimeline = viewTimeline;
@@ -548,14 +549,6 @@ void CSSAnimation::tick(WebAnimation::ShouldDispatchProgressEvent shouldDispatch
     }
 
     StyleOriginatedAnimation::tick(shouldDispatchProgressEvent);
-}
-
-Seconds CSSAnimation::timeToNextTick() const
-{
-//    // FIXME: don't do that, schedule animation updates if the trigger timeline's source changes.
-//    if (m_triggerTimeline && !startTime())
-//        return 0_s;
-    return StyleOriginatedAnimation::timeToNextTick();
 }
 
 } // namespace WebCore

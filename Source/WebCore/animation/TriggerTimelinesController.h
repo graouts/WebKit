@@ -32,6 +32,8 @@
 
 namespace WebCore {
 
+class ScrollableArea;
+
 namespace Style {
 struct ViewTimelineInsetItem;
 }
@@ -45,6 +47,8 @@ public:
     ~TriggerTimelinesController() = default;
 
     void registerNamedTimeline(const AtomString&, const Styleable&, ScrollAxis, const Style::ViewTimelineInsetItem&);
+
+    void scrollableAreaDidScroll(const ScrollableArea&);
 
 private:
     std::optional<Style::ScopedName> resolutionScopedNameForAnimation(const CSSAnimation&) const override;

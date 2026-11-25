@@ -81,4 +81,10 @@ std::optional<Style::ScopedName> TriggerTimelinesController::resolutionScopedNam
     return Style::ScopedName { trigger[0].name.value };
 }
 
+void TriggerTimelinesController::scrollableAreaDidScroll(const ScrollableArea&)
+{
+    // FIXME: check whether we have a matching scrollable area for one of our managed
+    // timelines and schedule an animation update if that is the case.
+}
+
 } // namespace WebCore

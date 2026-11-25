@@ -76,7 +76,6 @@ private:
 
     bool isCSSAnimation() const final { return true; }
     void tick(WebAnimation::ShouldDispatchProgressEvent) final;
-    Seconds timeToNextTick() const final;
 
     void syncPropertiesWithBackingAnimation() final;
     AnimationPlayState backingAnimationPlayState() const final;

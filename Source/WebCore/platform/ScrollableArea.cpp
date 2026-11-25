@@ -296,6 +296,7 @@ void ScrollableArea::scrollPositionChanged(const ScrollPosition& position)
             updateScrolledDirections(oldPosition, scrollPosition());
 
         updateAnchorPositionedAfterScroll();
+        updateTriggerTimelinesAfterScroll();
     }
 }
 

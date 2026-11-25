@@ -508,6 +508,8 @@ protected:
     bool shouldTrackScrolledDirections() const { return m_currentScrollRelativity == ScrollRelativity::Delta; }
     void updateScrolledDirections(const ScrollPosition& oldPosition, const ScrollPosition& newPosition);
 
+    virtual void updateTriggerTimelinesAfterScroll() { }
+
 private:
     WEBCORE_EXPORT virtual IntRect visibleContentRectInternal(VisibleContentRectIncludesScrollbars, VisibleContentRectBehavior) const;
     void scrollPositionChanged(const ScrollPosition&);

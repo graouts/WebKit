@@ -90,6 +90,7 @@
 #include "ScrollingCoordinator.h"
 #include "ShadowRoot.h"
 #include "StyleComputedStyle+GettersInlines.h"
+#include "TriggerTimelinesController.h"
 #include <wtf/SetForScope.h>
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/text/MakeString.h>
@@ -2066,6 +2067,12 @@ float RenderLayerScrollableArea::deviceScaleFactor() const
 void RenderLayerScrollableArea::updateAnchorPositionedAfterScroll()
 {
     Style::AnchorPositionEvaluator::updateScrollAdjustments(protect(m_layer.renderer().view()));
+}
+
+void RenderLayerScrollableArea::updateTriggerTimelinesAfterScroll()
+{
+    if (CheckedPtr triggerTimelinesController = protect(m_layer.renderer().document())->triggerTimelinesController())
+        triggerTimelinesController->scrollableAreaDidScroll(*this);
 }
 
 std::optional<FrameIdentifier> RenderLayerScrollableArea::rootFrameID() const

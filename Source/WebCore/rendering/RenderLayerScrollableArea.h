@@ -265,6 +265,8 @@ public:
 
     void updateAnchorPositionedAfterScroll() final;
 
+    void updateTriggerTimelinesAfterScroll() final;
+
     void createScrollbarsController() final;
 
     NODELETE std::optional<FrameIdentifier> rootFrameID() const final;
