@@ -72,4 +72,13 @@ void TriggerTimelinesController::registerNamedTimeline(const AtomString& name, c
     }
 }
 
+std::optional<Style::ScopedName> TriggerTimelinesController::resolutionScopedNameForAnimation(const CSSAnimation& animation) const
+{
+    Ref protectedAnimation = animation;
+    auto& trigger = protectedAnimation->backingStyleAnimation().trigger();
+    ASSERT(!trigger.isNone());
+    ASSERT(trigger.size());
+    return Style::ScopedName { trigger[0].name.value };
+}
+
 } // namespace WebCore

@@ -57,6 +57,8 @@ public:
     void styleableWasRemoved(const Styleable&);
 
 protected:
+    virtual std::optional<Style::ScopedName> resolutionScopedNameForAnimation(const CSSAnimation&) const { return std::nullopt; }
+
     Vector<Ref<ScrollTimeline>>& timelines(const AtomString&) LIFETIME_BOUND;
     void registerTimeline(Vector<Ref<ScrollTimeline>>&, Ref<ScrollTimeline>&&);
 

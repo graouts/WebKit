@@ -284,14 +284,17 @@ void CSSAnimation::syncTriggerTimeline()
 
 void CSSAnimation::scopedTimelineWasResolved(RefPtr<ScrollTimeline>&& timeline)
 {
+    WTFLogAlways("[GRAOUTS] scopedTimelineWasResolved()");
     switch (m_pendingScopedTimelineResolutionType) {
         case PendingScopedTimelineResolutionType::Main:
             setTimeline(WTF::move(timeline));
             break;
         case PendingScopedTimelineResolutionType::Trigger:
-            if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline))
+            if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline)) {
+                auto range = Style::SingleAnimationRange::defaultForViewTimeline();
+                m_triggerTimelineActivationRange = { range.start, range.end, Style::ZoomFactor::none(), Style::ZoomFactor::none() };
                 m_triggerTimeline = viewTimeline;
-            else
+            } else
                 m_triggerTimeline = nullptr;
             break;
         default:
@@ -549,8 +552,9 @@ void CSSAnimation::tick(WebAnimation::ShouldDispatchProgressEvent shouldDispatch
 
 Seconds CSSAnimation::timeToNextTick() const
 {
-    if (m_triggerTimeline && !startTime())
-        return 0_s;
+//    // FIXME: don't do that, schedule animation updates if the trigger timeline's source changes.
+//    if (m_triggerTimeline && !startTime())
+//        return 0_s;
     return StyleOriginatedAnimation::timeToNextTick();
 }
 

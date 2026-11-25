@@ -100,4 +100,9 @@ void StyleOriginatedTimelinesController::registerNamedViewTimeline(const Style::
     }
 }
 
+std::optional<Style::ScopedName> StyleOriginatedTimelinesController::resolutionScopedNameForAnimation(const CSSAnimation& animation) const
+{
+    return protect(animation)->backingStyleAnimation().timeline().tryScopedName();
+}
+
 } // namespace WebCore

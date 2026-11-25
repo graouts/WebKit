@@ -45,6 +45,9 @@ public:
     ~TriggerTimelinesController() = default;
 
     void registerNamedTimeline(const AtomString&, const Styleable&, ScrollAxis, const Style::ViewTimelineInsetItem&);
+
+private:
+    std::optional<Style::ScopedName> resolutionScopedNameForAnimation(const CSSAnimation&) const override;
 };
 
 } // namespace WebCore

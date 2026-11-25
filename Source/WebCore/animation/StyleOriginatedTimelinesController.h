@@ -60,6 +60,9 @@ public:
 
     void registerNamedScrollTimeline(const Style::ScopedName&, const Styleable&, ScrollAxis);
     void registerNamedViewTimeline(const Style::ScopedName&, const Styleable&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
+
+private:
+    std::optional<Style::ScopedName> resolutionScopedNameForAnimation(const CSSAnimation&) const override;
 };
 
 } // namespace WebCore

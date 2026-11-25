@@ -356,12 +356,16 @@ void ScopedTimelines::resolveScopedTimelineForAnimation(CSSAnimation& animation,
     Ref protectedAnimation { animation };
 
     auto target = protectedAnimation->owningElement();
-    if (!target)
+    if (!target) {
+        WTFLogAlways("[GRAOUTS] resolveScopedTimelineForAnimation() - no target");
         return;
+    }
 
-    auto timelineName = protectedAnimation->backingStyleAnimation().timeline().tryScopedName();
-    if (!timelineName)
+    auto timelineName = resolutionScopedNameForAnimation(animation);
+    if (!timelineName) {
+        WTFLogAlways("[GRAOUTS] resolveScopedTimelineForAnimation() - no name");
         return;
+    }
 
     LOG_WITH_STREAM(Animations, stream << "ScopedTimelines::resolveScopedTimeline: " << timelineName->name << " target: " << *target);
 
@@ -393,6 +397,7 @@ void ScopedTimelines::resolveScopedTimelineForAnimation(CSSAnimation& animation,
     // just register a pending timeline attachment operation so we can try again
     // when style has resolved.
     if (!hasNamedTimeline && allowsDeferral == AllowsDeferral::Yes) {
+        WTFLogAlways("[GRAOUTS] add pending animation for timeline resolution");
         m_cssAnimationsPendingAttachment.add(animation);
         return;
     }
@@ -417,6 +422,7 @@ void ScopedTimelines::resolveScopedTimelineForAnimation(CSSAnimation& animation,
     // Since we have no timeline defined for this name yet, we need
     // to mark this animation as pending attachment in case this name
     // resolves in the future.
+    // FIXME: make this work with TriggerTimelineController.
     if (!protectedAnimation->timeline())
         m_cssAnimationsPendingAttachment.add(animation);
 }
