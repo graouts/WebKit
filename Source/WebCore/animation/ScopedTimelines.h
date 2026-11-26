@@ -61,7 +61,7 @@ protected:
 
     Vector<Ref<ScrollTimeline>>& timelines(const AtomString&) LIFETIME_BOUND;
     void registerTimeline(Vector<Ref<ScrollTimeline>>&, Ref<ScrollTimeline>&&);
-
+    void forEachTimeline(NOESCAPE const Function<bool(ScrollTimeline&)>&) const;
 private:
     Vector<WeakStyleable> scopeElements(const Style::CustomIdent&);
     void updateCSSAnimationsAssociatedWithNamedTimeline(const AtomString&);

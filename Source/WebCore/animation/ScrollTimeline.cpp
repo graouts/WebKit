@@ -484,13 +484,18 @@ std::optional<ScrollingNodeID> ScrollTimeline::scrollingNodeIDForTesting() const
 {
     if (!m_acceleratedRepresentation)
         return std::nullopt;
-    if (RefPtr source = this->source()) {
-        if (CheckedPtr sourceScrollableArea = scrollableAreaForSourceRenderer(protect(source->renderer()), protect(source->document())))
-            return sourceScrollableArea->scrollingNodeID();
-    }
+    if (CheckedPtr sourceScrollableArea = this->sourceScrollableArea())
+        return sourceScrollableArea->scrollingNodeID();
     return std::nullopt;
 }
 #endif
+
+ScrollableArea* ScrollTimeline::sourceScrollableArea() const
+{
+    if (RefPtr source = this->source())
+        return scrollableAreaForSourceRenderer(protect(source->renderer()), protect(source->document()));
+    return nullptr;
+}
 
 TextStream& operator<<(TextStream& ts, const ScrollTimeline& timeline)
 {

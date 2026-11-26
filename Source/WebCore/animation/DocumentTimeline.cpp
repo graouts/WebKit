@@ -28,6 +28,7 @@
 
 #include "AnimationEventBase.h"
 #include "AnimationTimelinesController.h"
+#include "CSSAnimation.h"
 #include "CSSProperty.h"
 #include "CSSTransition.h"
 #include "CustomAnimationOptions.h"
@@ -184,7 +185,8 @@ bool DocumentTimeline::shouldRunUpdateAnimationsAndSendEventsIgnoringSuspensionS
         }
     }
 #endif
-    return !m_animations.isEmpty() || !m_pendingAnimationEvents.isEmpty() || !m_acceleratedAnimationsPendingRunningStateChange.isEmpty();
+    return !m_animations.isEmpty() || !m_pendingAnimationEvents.isEmpty() || !m_acceleratedAnimationsPendingRunningStateChange.isEmpty()
+        || !m_pendingTriggeredAnimations.isEmpty();
 }
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents DocumentTimeline::documentWillUpdateAnimationsAndSendEvents()
@@ -202,6 +204,8 @@ AnimationTimeline::ShouldUpdateAnimationsAndSendEvents DocumentTimeline::documen
     // procedure is run and enqueued events are dispatched in the next frame. However, events that are enqueued while
     // this procedure is running should not schedule animation resolution until the event queue has been cleared.
     m_shouldScheduleAnimationResolutionForNewPendingEvents = false;
+
+    m_pendingTriggeredAnimations.clear();
 
     return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;
 }
@@ -553,5 +557,16 @@ Ref<AcceleratedTimeline> DocumentTimeline::createAcceleratedRepresentation() con
     return AcceleratedTimeline::create(m_acceleratedTimelineIdentifier, convertedOriginTime);
 }
 #endif
+
+void DocumentTimeline::scheduleUpdateForTriggeredAnimation(const CSSAnimation& cssAnimation)
+{
+    // FIXME: perhaps we only need to maintain a boolean flag here since just the one
+    // triggered animation is all we need.
+    WTFLogAlways("[GRAOUTS] DocumentTimeline::scheduleUpdateForTriggeredAnimation()");
+    Ref triggeredAnimation = cssAnimation;
+    auto addResult = m_pendingTriggeredAnimations.add(WTF::move(triggeredAnimation));
+    if (addResult.isNewEntry)
+        scheduleAnimationResolution();
+}
 
 } // namespace WebCore

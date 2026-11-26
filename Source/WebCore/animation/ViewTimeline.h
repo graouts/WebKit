@@ -70,7 +70,7 @@ struct StickinessAdjustmentData {
     StickinessLocation bottomOrRightAdjustmentLocation { StickinessLocation::WhileContained };
 };
 
-class ViewTimeline final : public ScrollTimeline {
+class ViewTimeline : public ScrollTimeline {
 public:
     static ExceptionOr<Ref<ViewTimeline>> create(Document&, ViewTimelineOptions&&);
     NODELETE static Ref<ViewTimeline> create(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
@@ -102,9 +102,10 @@ public:
     bool matchesAnonymousViewFunctionForSubject(const Style::ViewFunction&, const Style::ZoomFactor&, const Styleable&) const;
     NODELETE WebAnimationTime epsilon() const;
 
-private:
-    ViewTimeline(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
+protected:
+    explicit ViewTimeline(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
 
+private:
     ScrollTimeline::Data computeTimelineData(UseCachedCurrentTime = UseCachedCurrentTime::Yes) const final;
     std::pair<double, double> intervalForTimelineRangeName(const ScrollTimeline::Data&, Style::SingleAnimationRangeName) const;
     template<typename F> double mapOffsetToTimelineRange(const ScrollTimeline::Data&, Style::SingleAnimationRangeName, NOESCAPE const F&) const;

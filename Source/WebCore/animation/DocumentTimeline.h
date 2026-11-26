@@ -91,6 +91,8 @@ public:
     void scheduleAcceleratedEffectStackUpdate();
 #endif
 
+    void scheduleUpdateForTriggeredAnimation(const CSSAnimation&);
+
 private:
     DocumentTimeline(Document&, Seconds);
 
@@ -110,6 +112,7 @@ private:
     bool shouldRunUpdateAnimationsAndSendEventsIgnoringSuspensionState() const;
 
     Timer m_tickScheduleTimer;
+    HashSet<Ref<const CSSAnimation>> m_pendingTriggeredAnimations;
     HashSet<Ref<WebAnimation>> m_acceleratedAnimationsPendingRunningStateChange;
     AnimationEvents m_pendingAnimationEvents;
     WeakPtr<Document, WeakPtrImplWithEventTargetData> m_document;

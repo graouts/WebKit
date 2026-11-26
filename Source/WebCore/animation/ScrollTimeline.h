@@ -98,6 +98,8 @@ public:
     bool canBeAccelerated() const final;
 #endif
 
+    ScrollableArea* sourceScrollableArea() const;
+
 protected:
     explicit ScrollTimeline(const Style::ScopedName&, ScrollAxis);
 

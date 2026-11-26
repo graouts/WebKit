@@ -544,5 +544,15 @@ void ScopedTimelines::styleableWasRemoved(const Styleable& styleable)
     }
 }
 
+void ScopedTimelines::forEachTimeline(NOESCAPE const Function<bool(ScrollTimeline&)>& function) const
+{
+    for (auto& timelines : m_nameToTimelineMap.values()) {
+        for (auto& timeline : timelines) {
+            if (function(timeline.get()))
+                return;
+        }
+    }
+}
+
 } // namespace WebCore
 

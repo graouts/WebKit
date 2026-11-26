@@ -37,6 +37,7 @@
 #include "StyleSingleAnimationTrigger.h"
 #include "StyleTimelineTrigger.h"
 #include "StyleTimelineTriggers.h"
+#include "TriggerTimeline.h"
 #include "TriggerTimelinesController.h"
 #include "ViewTimeline.h"
 #include <wtf/TZoneMallocInlines.h>
@@ -248,9 +249,10 @@ void CSSAnimation::syncStyleOriginatedTimeline()
                 if (existingViewTimeline->matchesAnonymousViewFunctionForSubject(viewFunction, m_backingStyleZoomForLength, *owningElement()))
                     return;
             }
-            auto viewTimeline = ViewTimeline::create({ nullAtom() }, viewFunction->axis, viewFunction->insets, m_backingStyleZoomForLength);
-            viewTimeline->setSubject(*owningElement());
-            setTimeline(WTF::move(viewTimeline));
+            auto triggerTimeline = TriggerTimeline::create({ nullAtom() }, viewFunction->axis, viewFunction->insets, m_backingStyleZoomForLength);
+            triggerTimeline->setCSSAnimation(this);
+            triggerTimeline->setSubject(*owningElement());
+            setTimeline(WTF::move(triggerTimeline));
         }
     );
 
@@ -290,11 +292,12 @@ void CSSAnimation::scopedTimelineWasResolved(RefPtr<ScrollTimeline>&& timeline)
             setTimeline(WTF::move(timeline));
             break;
         case PendingScopedTimelineResolutionType::Trigger:
-            if (RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline)) {
+            if (RefPtr triggerTimeline = dynamicDowncast<TriggerTimeline>(timeline)) {
                 // FIXME: read this from the computed style.
                 auto range = Style::SingleAnimationRange::defaultForViewTimeline();
                 m_triggerTimelineActivationRange = { range.start, range.end, Style::ZoomFactor::none(), Style::ZoomFactor::none() };
-                m_triggerTimeline = viewTimeline;
+                m_triggerTimeline = triggerTimeline;
+                m_triggerTimeline->setCSSAnimation(this);
             } else
                 m_triggerTimeline = nullptr;
             break;
@@ -511,9 +514,10 @@ void CSSAnimation::updateTriggerTimeline(const Style::ComputedStyle& style)
         if (triggerName != timelineTrigger.name().tryValue())
             continue;
         WTFLogAlways("[GRAOUTS] Creating trigger timeline named %s", triggerName.value.string().ascii().data());
-        m_triggerTimeline = ViewTimeline::create({ triggerName.value }, ScrollAxis::Block, CSS::Keyword::Auto { }, Style::ZoomFactor::none());
+        m_triggerTimeline = TriggerTimeline::create({ triggerName.value }, ScrollAxis::Block, CSS::Keyword::Auto { }, Style::ZoomFactor::none());
         ASSERT(owningElement());
         m_triggerTimeline->setSubject(*owningElement());
+        m_triggerTimeline->setCSSAnimation(this);
         m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd(), Style::ZoomFactor::none(), Style::ZoomFactor::none() };
         return;
     }

@@ -37,7 +37,7 @@
 #include "Page.h"
 #include "Settings.h"
 #include "StyleableInlines.h"
-#include "ViewTimeline.h"
+#include "TriggerTimeline.h"
 #include "WebAnimation.h"
 #include "WebAnimationTypes.h"
 #include <JavaScriptCore/VM.h>
@@ -54,21 +54,21 @@ void TriggerTimelinesController::registerNamedTimeline(const AtomString& name, c
     auto& timelines = this->timelines(name);
 
     auto existingTimelineIndex = timelines.findIf([&](auto& timeline) {
-        ASSERT(is<ViewTimeline>(timeline));
-        RefPtr viewTimeline = dynamicDowncast<ViewTimeline>(timeline);
-        return viewTimeline->subjectStyleable() == subject;
+        ASSERT(is<TriggerTimeline>(timeline));
+        Ref triggerTimeline = downcast<TriggerTimeline>(timeline);
+        return triggerTimeline->subjectStyleable() == subject;
     });
 
     auto hasExistingTimeline = existingTimelineIndex != notFound;
 
     if (hasExistingTimeline) {
-        Ref existingViewTimeline = downcast<ViewTimeline>(timelines[existingTimelineIndex].get());
-        existingViewTimeline->setAxis(axis);
-        existingViewTimeline->setInsets({ insets, Style::ZoomFactor::none() });
+        Ref existingTriggerTimeline = downcast<TriggerTimeline>(timelines[existingTimelineIndex].get());
+        existingTriggerTimeline->setAxis(axis);
+        existingTriggerTimeline->setInsets({ insets, Style::ZoomFactor::none() });
     } else {
-        auto newViewTimeline = ViewTimeline::create({ name }, axis, insets, Style::ZoomFactor::none());
-        newViewTimeline->setSubject(subject);
-        registerTimeline(timelines, WTF::move(newViewTimeline));
+        auto newTriggerTimeline = TriggerTimeline::create({ name }, axis, insets, Style::ZoomFactor::none());
+        newTriggerTimeline->setSubject(subject);
+        registerTimeline(timelines, WTF::move(newTriggerTimeline));
     }
 }
 
@@ -81,10 +81,25 @@ std::optional<Style::ScopedName> TriggerTimelinesController::resolutionScopedNam
     return Style::ScopedName { trigger[0].name.value };
 }
 
-void TriggerTimelinesController::scrollableAreaDidScroll(const ScrollableArea&)
+void TriggerTimelinesController::scrollableAreaDidScroll(const ScrollableArea& scrollableArea)
 {
-    // FIXME: check whether we have a matching scrollable area for one of our managed
-    // timelines and schedule an animation update if that is the case.
+    // FIXME: we should maintain a list of trigger timelines with pending animations,
+    // this ought to be more efficient.
+    forEachTimeline([&](ScrollTimeline& timeline) {
+        ASSERT(is<TriggerTimeline>(timeline));
+        Ref triggerTimeline = downcast<TriggerTimeline>(timeline);
+        if (triggerTimeline->sourceScrollableArea() == &scrollableArea) {
+            if (RefPtr cssAnimation = triggerTimeline->cssAnimation()) {
+                if (!cssAnimation->startTime()) {
+                    if (RefPtr documentTimeline = dynamicDowncast<DocumentTimeline>(cssAnimation->timeline())) {
+                        documentTimeline->scheduleUpdateForTriggeredAnimation(*cssAnimation);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    });
 }
 
 } // namespace WebCore

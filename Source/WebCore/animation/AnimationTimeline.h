@@ -52,6 +52,7 @@ public:
     virtual bool isDocumentTimeline() const { return false; }
     virtual bool isScrollTimeline() const { return false; }
     virtual bool isViewTimeline() const { return false; }
+    virtual bool isTriggerTimeline() const { return false; }
 
     bool isMonotonic() const { return !m_duration; }
     bool isProgressBased() const { return !isMonotonic(); }

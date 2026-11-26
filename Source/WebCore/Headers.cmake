@@ -789,12 +789,15 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     animation/PlaybackDirection.h
     animation/ResolvableTimelineRange.h
     animation/ResolvableViewTimelineInsets.h
+    animation/ScopedTimelines.h
     animation/ScrollAxis.h
     animation/ScrollTimeline.h
     animation/ScrollTimelineOptions.h
     animation/StyleOriginatedAnimation.h
     animation/TimelineRangeOffset.h
     animation/TimelineRangeValue.h
+    animation/TriggerTimeline.h
+    animation/TriggerTimelinesController.h
     animation/ViewTimeline.h
     animation/WebAnimation.h
     animation/WebAnimationTime.h

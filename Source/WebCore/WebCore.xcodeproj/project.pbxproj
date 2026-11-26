@@ -2901,6 +2901,7 @@
 		7177B03E2C944B8100FC201F /* WebAnimationTime.h in Headers */ = {isa = PBXBuildFile; fileRef = 7177B03B2C944B8100FC201F /* WebAnimationTime.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		717CE23A29335E9C001463BC /* StyleOriginatedAnimationEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = 717CE23829335E8D001463BC /* StyleOriginatedAnimationEvent.h */; };
 		7181A16C244F0F40007D8A24 /* AnimationTimelinesController.h in Headers */ = {isa = PBXBuildFile; fileRef = 7181A169244F0F2C007D8A24 /* AnimationTimelinesController.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		718AC59530B8978400D5D9DF /* TriggerTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 718AC59330B8978400D5D9DF /* TriggerTimeline.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		71999DDC2EABB4D8000470E1 /* ProgressResolutionData.h in Headers */ = {isa = PBXBuildFile; fileRef = 71999DDB2EABB4D8000470E1 /* ProgressResolutionData.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		719A4FD02CC1881B0050BFCF /* JSScrollTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 719A4FCC2CC187E90050BFCF /* JSScrollTimeline.h */; };
 		719A4FD12CC188220050BFCF /* JSViewTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 719A4FCE2CC187E90050BFCF /* JSViewTimeline.h */; };
@@ -14338,6 +14339,8 @@
 		718675441DF101C60033D7F3 /* seek-backward-support.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "seek-backward-support.js"; sourceTree = "<group>"; };
 		718675451DF101C60033D7F3 /* seek-forward-support.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "seek-forward-support.js"; sourceTree = "<group>"; };
 		718675461DF101C60033D7F3 /* seek-support.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "seek-support.js"; sourceTree = "<group>"; };
+		718AC59330B8978400D5D9DF /* TriggerTimeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TriggerTimeline.h; sourceTree = "<group>"; };
+		718AC59430B8978400D5D9DF /* TriggerTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TriggerTimeline.cpp; sourceTree = "<group>"; };
 		718C7F561DD385C500B733C8 /* status-label.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; path = "status-label.css"; sourceTree = "<group>"; };
 		718C7F571DD385C500B733C8 /* status-label.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "status-label.js"; sourceTree = "<group>"; };
 		718F2486279DE9EF00C3204D /* CompositeOperation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompositeOperation.cpp; sourceTree = "<group>"; };
@@ -32127,8 +32130,8 @@
 				712BE47F1FE8649E002031CC /* PlaybackDirection.idl */,
 				BCB19185300A93CD00A9A5C7 /* ResolvableTimelineRange.h */,
 				BCB1CBB9300E960200A9A5C7 /* ResolvableViewTimelineInsets.h */,
-				71AC483430B843A000618E1A /* ScopedTimelines.h */,
 				71AC483530B843A000618E1A /* ScopedTimelines.cpp */,
+				71AC483430B843A000618E1A /* ScopedTimelines.h */,
 				BCB0259A2C87DDD800ACC2B3 /* ScrollAxis.cpp */,
 				713516962AE6D29600718EBE /* ScrollAxis.h */,
 				713516952AE6D29600718EBE /* ScrollAxis.idl */,
@@ -32147,8 +32150,10 @@
 				1A7398452CA4A08700FDD4F8 /* TimelineRangeOffset.idl */,
 				BC9CC61D2E79E53200592740 /* TimelineRangeValue.cpp */,
 				BC9CC61B2E79E4ED00592740 /* TimelineRangeValue.h */,
-				71AC483630B843A000618E1A /* TriggerTimelinesController.h */,
+				718AC59430B8978400D5D9DF /* TriggerTimeline.cpp */,
+				718AC59330B8978400D5D9DF /* TriggerTimeline.h */,
 				71AC483730B843A000618E1A /* TriggerTimelinesController.cpp */,
+				71AC483630B843A000618E1A /* TriggerTimelinesController.h */,
 				7135169D2AE6EF2800718EBE /* ViewTimeline.cpp */,
 				7135169F2AE6EF2900718EBE /* ViewTimeline.h */,
 				713516A12AE6EF2A00718EBE /* ViewTimeline.idl */,
@@ -49155,6 +49160,7 @@
 				D2232DEB23EEEB90663C2CA3 /* SchedulerPostTaskOptions.h in Headers */,
 				9BD0BF9312A42BF50072FD43 /* ScopedEventQueue.h in Headers */,
 				E401B3632A942E3F0018B557 /* ScopedName.h in Headers */,
+				71AC483B30B843A000618E1A /* ScopedTimelines.h in Headers */,
 				BCEC01BE0C274DAC009F4EC9 /* Screen.h in Headers */,
 				070BED98273F415D00583926 /* ScreenCaptureKitCaptureSource.h in Headers */,
 				073955BB27AB277F009A08D2 /* ScreenCaptureKitSharingSessionManager.h in Headers */,
@@ -50065,8 +50071,6 @@
 				B28C6A2A0D00C44800334AA4 /* SVGImageLoader.h in Headers */,
 				7134496E146941B300720312 /* SVGLengthContext.h in Headers */,
 				B2227A360D00BF220071B782 /* SVGLengthList.h in Headers */,
-				71AC483A30B843A000618E1A /* TriggerTimelinesController.h in Headers */,
-				71AC483B30B843A000618E1A /* ScopedTimelines.h in Headers */,
 				7CCEBFC01DD8F6AB002C40B8 /* SVGLengthValue.h in Headers */,
 				B2227A390D00BF220071B782 /* SVGLinearGradientElement.h in Headers */,
 				B2227A3C0D00BF220071B782 /* SVGLineElement.h in Headers */,
@@ -50342,6 +50346,8 @@
 				4644BDC52ADBA502000A2245 /* TreeScopeInlines.h in Headers */,
 				14947FFE12F80CD200A0F631 /* TreeScopeOrderedMap.h in Headers */,
 				854FE7390A2297BE0058D7AD /* TreeWalker.h in Headers */,
+				718AC59530B8978400D5D9DF /* TriggerTimeline.h in Headers */,
+				71AC483A30B843A000618E1A /* TriggerTimelinesController.h in Headers */,
 				4C15D8D0294786F000A220AD /* TrustedFonts.h in Headers */,
 				A336CF332B8649B100464599 /* TrustedHTML.h in Headers */,
 				A336CF342B8649B800464599 /* TrustedScript.h in Headers */,
