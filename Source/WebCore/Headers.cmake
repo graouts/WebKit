@@ -769,6 +769,9 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     animation/AnimationPlaybackEventInit.h
     animation/AnimationTimeline.h
     animation/AnimationTimelinesController.h
+    animation/AnimationTrigger.h
+    animation/AnimationTriggerBehavior.h
+    animation/AnimationTriggerOptions.h
     animation/BasicEffectTiming.h
     animation/CSSAnimation.h
     animation/CompositeOperation.h

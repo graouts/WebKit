@@ -61,6 +61,7 @@ typedef (double or CSSNumericValue) CSSNumberish;
     [ImplementedAs=bindingsPlayState] readonly attribute AnimationPlayState playState;
     [ImplementedAs=bindingsReplaceState] readonly attribute AnimationReplaceState replaceState;
     [ImplementedAs=bindingsPending] readonly attribute boolean pending;
+    [EnabledBySetting=AnimationTriggersEnabled] attribute AnimationTrigger? trigger;
     attribute EventHandler onfinish;
     attribute EventHandler oncancel;
     attribute EventHandler onremove;

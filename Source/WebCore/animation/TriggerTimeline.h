@@ -30,21 +30,21 @@
 
 namespace WebCore {
 
-class CSSAnimation;
+class WebAnimation;
 
 class TriggerTimeline final : public ViewTimeline {
 public:
     NODELETE static Ref<TriggerTimeline> create(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
 
-    void setCSSAnimation(CSSAnimation*);
-    CSSAnimation* cssAnimation() const;
+    void setAnimation(WebAnimation*);
+    WebAnimation* animation() const;
 
 private:
     TriggerTimeline(const Style::ScopedName&, ScrollAxis, const Style::ViewTimelineInsetItem&, const Style::ZoomFactor&);
 
     bool isTriggerTimeline() const override { return true; }
 
-    WeakPtr<CSSAnimation, WeakPtrImplWithEventTargetData> m_cssAnimation;
+    WeakPtr<WebAnimation, WeakPtrImplWithEventTargetData> m_animation;
 };
 
 } // namespace WebCore

@@ -66,7 +66,6 @@ public:
     void setBackingStyleAnimation(const Style::Animation&, Style::ZoomFactor);
 
     void syncTriggerTimeline();
-    void setTriggerTimeline(RefPtr<TriggerTimeline>&& timeline) { m_triggerTimeline = WTF::move(timeline); }
     void updateTriggerTimeline(const Style::ComputedStyle&);
 
     void scopedTimelineWasResolved(RefPtr<ScrollTimeline>&&);
@@ -75,7 +74,6 @@ private:
     CSSAnimation(const Styleable&, Style::ScopedName&&, Style::Animation&&, Style::ZoomFactor);
 
     bool isCSSAnimation() const final { return true; }
-    void tick(WebAnimation::ShouldDispatchProgressEvent) final;
 
     void syncPropertiesWithBackingAnimation() final;
     AnimationPlayState backingAnimationPlayState() const final;
@@ -108,8 +106,6 @@ private:
         RangeEnd = 1 << 12,
     };
 
-    RefPtr<TriggerTimeline> m_triggerTimeline;
-    std::optional<ResolvableTimelineRange> m_triggerTimelineActivationRange;
     Style::ScopedName m_animationName;
     OptionSet<Property> m_overriddenProperties;
     std::optional<AnimationPlayState> m_lastStyleOriginatedPlayState;

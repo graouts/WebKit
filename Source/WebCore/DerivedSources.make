@@ -979,6 +979,9 @@ JS_BINDING_IDLS := \
     $(WebCore)/animation/AnimationPlaybackEvent.idl \
     $(WebCore)/animation/AnimationPlaybackEventInit.idl \
     $(WebCore)/animation/AnimationTimeline.idl \
+    $(WebCore)/animation/AnimationTrigger.idl \
+    $(WebCore)/animation/AnimationTriggerBehavior.idl \
+    $(WebCore)/animation/AnimationTriggerOptions.idl \
     $(WebCore)/animation/CSSAnimation.idl \
     $(WebCore)/animation/CSSAnimationEvent.idl \
     $(WebCore)/animation/CSSTransition.idl \

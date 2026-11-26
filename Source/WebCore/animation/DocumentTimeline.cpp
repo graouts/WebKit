@@ -186,7 +186,7 @@ bool DocumentTimeline::shouldRunUpdateAnimationsAndSendEventsIgnoringSuspensionS
     }
 #endif
     return !m_animations.isEmpty() || !m_pendingAnimationEvents.isEmpty() || !m_acceleratedAnimationsPendingRunningStateChange.isEmpty()
-        || !m_pendingTriggeredAnimations.isEmpty();
+        || !m_hasPendingTriggeredAnimations;
 }
 
 AnimationTimeline::ShouldUpdateAnimationsAndSendEvents DocumentTimeline::documentWillUpdateAnimationsAndSendEvents()
@@ -205,7 +205,7 @@ AnimationTimeline::ShouldUpdateAnimationsAndSendEvents DocumentTimeline::documen
     // this procedure is running should not schedule animation resolution until the event queue has been cleared.
     m_shouldScheduleAnimationResolutionForNewPendingEvents = false;
 
-    m_pendingTriggeredAnimations.clear();
+    m_hasPendingTriggeredAnimations = false;
 
     return AnimationTimeline::ShouldUpdateAnimationsAndSendEvents::Yes;
 }
@@ -558,15 +558,14 @@ Ref<AcceleratedTimeline> DocumentTimeline::createAcceleratedRepresentation() con
 }
 #endif
 
-void DocumentTimeline::scheduleUpdateForTriggeredAnimation(const CSSAnimation& cssAnimation)
+void DocumentTimeline::scheduleUpdateForTriggeredAnimation()
 {
-    // FIXME: perhaps we only need to maintain a boolean flag here since just the one
-    // triggered animation is all we need.
     WTFLogAlways("[GRAOUTS] DocumentTimeline::scheduleUpdateForTriggeredAnimation()");
-    Ref triggeredAnimation = cssAnimation;
-    auto addResult = m_pendingTriggeredAnimations.add(WTF::move(triggeredAnimation));
-    if (addResult.isNewEntry)
-        scheduleAnimationResolution();
+    if (m_hasPendingTriggeredAnimations)
+        return;
+
+    m_hasPendingTriggeredAnimations = true;
+    scheduleAnimationResolution();
 }
 
 } // namespace WebCore

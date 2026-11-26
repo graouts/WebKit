@@ -27,6 +27,7 @@
 #include "CSSAnimation.h"
 
 #include "AnimationEffect.h"
+#include "AnimationTrigger.h"
 #include "CSSAnimationEvent.h"
 #include "DocumentTimeline.h"
 #include "InspectorInstrumentation.h"
@@ -250,7 +251,6 @@ void CSSAnimation::syncStyleOriginatedTimeline()
                     return;
             }
             auto triggerTimeline = TriggerTimeline::create({ nullAtom() }, viewFunction->axis, viewFunction->insets, m_backingStyleZoomForLength);
-            triggerTimeline->setCSSAnimation(this);
             triggerTimeline->setSubject(*owningElement());
             setTimeline(WTF::move(triggerTimeline));
         }
@@ -270,8 +270,7 @@ void CSSAnimation::syncTriggerTimeline()
 {
     auto& trigger = m_backingStyleAnimation.trigger();
     if (trigger.isNone()) {
-        m_triggerTimeline = nullptr;
-        m_triggerTimelineActivationRange = std::nullopt;
+        setTrigger(nullptr);
         return;
     }
 
@@ -292,14 +291,10 @@ void CSSAnimation::scopedTimelineWasResolved(RefPtr<ScrollTimeline>&& timeline)
             setTimeline(WTF::move(timeline));
             break;
         case PendingScopedTimelineResolutionType::Trigger:
-            if (RefPtr triggerTimeline = dynamicDowncast<TriggerTimeline>(timeline)) {
-                // FIXME: read this from the computed style.
-                auto range = Style::SingleAnimationRange::defaultForViewTimeline();
-                m_triggerTimelineActivationRange = { range.start, range.end, Style::ZoomFactor::none(), Style::ZoomFactor::none() };
-                m_triggerTimeline = triggerTimeline;
-                m_triggerTimeline->setCSSAnimation(this);
-            } else
-                m_triggerTimeline = nullptr;
+            if (RefPtr triggerTimeline = dynamicDowncast<TriggerTimeline>(timeline))
+                setTrigger(AnimationTrigger::create(triggerTimeline.releaseNonNull()));
+            else
+                setTrigger(nullptr);
             break;
         default:
             ASSERT_NOT_REACHED();
@@ -514,45 +509,14 @@ void CSSAnimation::updateTriggerTimeline(const Style::ComputedStyle& style)
         if (triggerName != timelineTrigger.name().tryValue())
             continue;
         WTFLogAlways("[GRAOUTS] Creating trigger timeline named %s", triggerName.value.string().ascii().data());
-        m_triggerTimeline = TriggerTimeline::create({ triggerName.value }, ScrollAxis::Block, CSS::Keyword::Auto { }, Style::ZoomFactor::none());
-        ASSERT(owningElement());
-        m_triggerTimeline->setSubject(*owningElement());
-        m_triggerTimeline->setCSSAnimation(this);
-        m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd(), Style::ZoomFactor::none(), Style::ZoomFactor::none() };
+        auto triggerTimeline = TriggerTimeline::create({ triggerName.value }, ScrollAxis::Block, CSS::Keyword::Auto { }, Style::ZoomFactor::none());
+        triggerTimeline->setSubject(*owningElement());
+        setTrigger(AnimationTrigger::create(WTF::move(triggerTimeline)));
+//        m_triggerTimelineActivationRange = { timelineTrigger.activationRangeStart(), timelineTrigger.activationRangeEnd(), Style::ZoomFactor::none(), Style::ZoomFactor::none() };
         return;
     }
 
-    m_triggerTimeline = nullptr;
-    m_triggerTimelineActivationRange = std::nullopt;
-}
-
-void CSSAnimation::tick(WebAnimation::ShouldDispatchProgressEvent shouldDispatchProgressEvent)
-{
-    if (m_triggerTimeline && !startTime()) {
-        m_triggerTimeline->documentWillUpdateAnimationsAndSendEvents();
-        auto triggerTimelineTime = m_triggerTimeline->currentTime(UseCachedCurrentTime::No);
-        if (!triggerTimelineTime)
-            WTFLogAlways("[GRAOUTS] Trigger timeline has no current time.");
-        else {
-            ASSERT(m_triggerTimelineActivationRange);
-            auto activationInterval = m_triggerTimeline->intervalForAttachmentRange(*m_triggerTimelineActivationRange);
-            auto activationRangeStart = activationInterval.first;
-            auto activationRangeEnd = activationInterval.second;
-
-            TextStream ts;
-            ts << "[GRAOUTS] Trigger activation range start = " << activationRangeStart << ", Trigger activation range end = " << activationRangeEnd << ", trigger timeline time = " << *triggerTimelineTime << ".";
-            WTFLogAlways("%s", ts.release().ascii().data());
-
-            if (*triggerTimelineTime >= activationRangeStart && *triggerTimelineTime <= activationRangeEnd) {
-                WTFLogAlways("[GRAOUTS] Triggering CSS Animation.");
-                setStartTime(timeline()->currentTime());
-                play();
-            } else
-                WTFLogAlways("[GRAOUTS] Will try to trigger CSS Animation when the scroll offset changes.");
-        }
-    }
-
-    StyleOriginatedAnimation::tick(shouldDispatchProgressEvent);
+    setTrigger(nullptr);
 }
 
 } // namespace WebCore

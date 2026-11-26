@@ -696,6 +696,7 @@ animation/AnimationMalloc.cpp
 animation/AnimationPlaybackEvent.cpp
 animation/AnimationTimeline.cpp
 animation/AnimationTimelinesController.cpp
+animation/AnimationTrigger.cpp
 animation/BlendingKeyframes.cpp @header:RenderStyleGetters
 animation/CSSAnimation.cpp
 animation/CSSAnimationEvent.cpp
@@ -3968,6 +3969,9 @@ JSAnimationFrameRatePreset.cpp
 JSAnimationPlaybackEvent.cpp
 JSAnimationPlaybackEventInit.cpp
 JSAnimationTimeline.cpp
+JSAnimationTrigger.cpp
+JSAnimationTriggerBehavior.cpp
+JSAnimationTriggerOptions.cpp
 JSAriaNotifyOptions.cpp
 JSAttestationConveyancePreference.cpp
 JSAttr.cpp

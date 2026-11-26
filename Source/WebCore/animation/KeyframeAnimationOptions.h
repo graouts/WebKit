@@ -28,6 +28,7 @@
 #include <WebCore/AnimationFrameRate.h>
 #include "AnimationFrameRatePreset.h"
 #include <WebCore/AnimationTimeline.h>
+#include <WebCore/AnimationTrigger.h>
 #include <WebCore/CSSOMKeywordValue.h>
 #include <WebCore/KeyframeEffectOptions.h>
 #include <WebCore/TimelineRangeValue.h>
@@ -40,6 +41,7 @@ struct KeyframeAnimationOptions : KeyframeEffectOptions {
     Variant<FramesPerSecond, AnimationFrameRatePreset> frameRate;
     TimelineRangeValue rangeStart;
     TimelineRangeValue rangeEnd;
+    std::optional<RefPtr<AnimationTrigger>> trigger;
 };
 
 } // namespace WebCore

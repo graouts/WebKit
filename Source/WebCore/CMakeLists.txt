@@ -971,6 +971,9 @@ set(WebCore_NON_SVG_IDL_FILES
     animation/AnimationPlaybackEvent.idl
     animation/AnimationPlaybackEventInit.idl
     animation/AnimationTimeline.idl
+    animation/AnimationTrigger.idl
+    animation/AnimationTriggerBehavior.idl
+    animation/AnimationTriggerOptions.idl
     animation/CSSAnimation.idl
     animation/CSSAnimationEvent.idl
     animation/CSSTransition.idl

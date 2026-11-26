@@ -26,7 +26,7 @@
 #include "config.h"
 #include "TriggerTimeline.h"
 
-#include "CSSAnimation.h"
+#include "WebAnimation.h"
 
 namespace WebCore {
 
@@ -40,14 +40,14 @@ TriggerTimeline::TriggerTimeline(const Style::ScopedName& scopedName, ScrollAxis
 {
 }
 
-void TriggerTimeline::setCSSAnimation(CSSAnimation* cssAnimation)
+void TriggerTimeline::setAnimation(WebAnimation* animation)
 {
-    m_cssAnimation = cssAnimation;
+    m_animation = animation;
 }
 
-CSSAnimation* TriggerTimeline::cssAnimation() const
+WebAnimation* TriggerTimeline::animation() const
 {
-    return m_cssAnimation.get();
+    return m_animation.get();
 }
 
 } // namespace WebCore

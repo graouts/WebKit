@@ -67,7 +67,7 @@ public:
     void setTimeline(RefPtr<AnimationTimeline>&&) final;
     void cancel(WebAnimation::Silently = WebAnimation::Silently::No) override;
 
-    void tick(WebAnimation::ShouldDispatchProgressEvent) override;
+    void tick(WebAnimation::ShouldDispatchProgressEvent) final;
 
     bool canHaveGlobalPosition() final;
 

@@ -1263,6 +1263,9 @@ $(PROJECT_DIR)/animation/AnimationFrameRatePreset.idl
 $(PROJECT_DIR)/animation/AnimationPlaybackEvent.idl
 $(PROJECT_DIR)/animation/AnimationPlaybackEventInit.idl
 $(PROJECT_DIR)/animation/AnimationTimeline.idl
+$(PROJECT_DIR)/animation/AnimationTrigger.idl
+$(PROJECT_DIR)/animation/AnimationTriggerBehavior.idl
+$(PROJECT_DIR)/animation/AnimationTriggerOptions.idl
 $(PROJECT_DIR)/animation/CSSAnimation.idl
 $(PROJECT_DIR)/animation/CSSAnimationEvent.idl
 $(PROJECT_DIR)/animation/CSSTransition.idl

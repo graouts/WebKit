@@ -89,10 +89,10 @@ void TriggerTimelinesController::scrollableAreaDidScroll(const ScrollableArea& s
         ASSERT(is<TriggerTimeline>(timeline));
         Ref triggerTimeline = downcast<TriggerTimeline>(timeline);
         if (triggerTimeline->sourceScrollableArea() == &scrollableArea) {
-            if (RefPtr cssAnimation = triggerTimeline->cssAnimation()) {
-                if (!cssAnimation->startTime()) {
-                    if (RefPtr documentTimeline = dynamicDowncast<DocumentTimeline>(cssAnimation->timeline())) {
-                        documentTimeline->scheduleUpdateForTriggeredAnimation(*cssAnimation);
+            if (RefPtr animation = triggerTimeline->animation()) {
+                if (!animation->startTime()) {
+                    if (RefPtr documentTimeline = dynamicDowncast<DocumentTimeline>(animation->timeline())) {
+                        documentTimeline->scheduleUpdateForTriggeredAnimation();
                         return true;
                     }
                 }

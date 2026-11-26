@@ -2902,6 +2902,9 @@
 		717CE23A29335E9C001463BC /* StyleOriginatedAnimationEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = 717CE23829335E8D001463BC /* StyleOriginatedAnimationEvent.h */; };
 		7181A16C244F0F40007D8A24 /* AnimationTimelinesController.h in Headers */ = {isa = PBXBuildFile; fileRef = 7181A169244F0F2C007D8A24 /* AnimationTimelinesController.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		718AC59530B8978400D5D9DF /* TriggerTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 718AC59330B8978400D5D9DF /* TriggerTimeline.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		718AC5A330B8ACA600D5D9DF /* AnimationTrigger.h in Headers */ = {isa = PBXBuildFile; fileRef = 718AC59C30B8AC9800D5D9DF /* AnimationTrigger.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		718AC5A430B8ACB100D5D9DF /* AnimationTriggerBehavior.h in Headers */ = {isa = PBXBuildFile; fileRef = 718AC59F30B8AC9800D5D9DF /* AnimationTriggerBehavior.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		718AC5A530B8ACBC00D5D9DF /* AnimationTriggerOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 718AC5A130B8AC9800D5D9DF /* AnimationTriggerOptions.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		71999DDC2EABB4D8000470E1 /* ProgressResolutionData.h in Headers */ = {isa = PBXBuildFile; fileRef = 71999DDB2EABB4D8000470E1 /* ProgressResolutionData.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		719A4FD02CC1881B0050BFCF /* JSScrollTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 719A4FCC2CC187E90050BFCF /* JSScrollTimeline.h */; };
 		719A4FD12CC188220050BFCF /* JSViewTimeline.h in Headers */ = {isa = PBXBuildFile; fileRef = 719A4FCE2CC187E90050BFCF /* JSViewTimeline.h */; };
@@ -14341,6 +14344,13 @@
 		718675461DF101C60033D7F3 /* seek-support.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "seek-support.js"; sourceTree = "<group>"; };
 		718AC59330B8978400D5D9DF /* TriggerTimeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TriggerTimeline.h; sourceTree = "<group>"; };
 		718AC59430B8978400D5D9DF /* TriggerTimeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TriggerTimeline.cpp; sourceTree = "<group>"; };
+		718AC59C30B8AC9800D5D9DF /* AnimationTrigger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AnimationTrigger.h; sourceTree = "<group>"; };
+		718AC59D30B8AC9800D5D9DF /* AnimationTrigger.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AnimationTrigger.cpp; sourceTree = "<group>"; };
+		718AC59E30B8AC9800D5D9DF /* AnimationTrigger.idl */ = {isa = PBXFileReference; lastKnownFileType = text; path = AnimationTrigger.idl; sourceTree = "<group>"; };
+		718AC59F30B8AC9800D5D9DF /* AnimationTriggerBehavior.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AnimationTriggerBehavior.h; sourceTree = "<group>"; };
+		718AC5A030B8AC9800D5D9DF /* AnimationTriggerBehavior.idl */ = {isa = PBXFileReference; lastKnownFileType = text; path = AnimationTriggerBehavior.idl; sourceTree = "<group>"; };
+		718AC5A130B8AC9800D5D9DF /* AnimationTriggerOptions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AnimationTriggerOptions.h; sourceTree = "<group>"; };
+		718AC5A230B8AC9800D5D9DF /* AnimationTriggerOptions.idl */ = {isa = PBXFileReference; lastKnownFileType = text; path = AnimationTriggerOptions.idl; sourceTree = "<group>"; };
 		718C7F561DD385C500B733C8 /* status-label.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; path = "status-label.css"; sourceTree = "<group>"; };
 		718C7F571DD385C500B733C8 /* status-label.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "status-label.js"; sourceTree = "<group>"; };
 		718F2486279DE9EF00C3204D /* CompositeOperation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompositeOperation.cpp; sourceTree = "<group>"; };
@@ -32062,6 +32072,13 @@
 				71025EC91F99F096004A250C /* AnimationTimeline.idl */,
 				7181A16B244F0F2D007D8A24 /* AnimationTimelinesController.cpp */,
 				7181A169244F0F2C007D8A24 /* AnimationTimelinesController.h */,
+				718AC59D30B8AC9800D5D9DF /* AnimationTrigger.cpp */,
+				718AC59C30B8AC9800D5D9DF /* AnimationTrigger.h */,
+				718AC59E30B8AC9800D5D9DF /* AnimationTrigger.idl */,
+				718AC59F30B8AC9800D5D9DF /* AnimationTriggerBehavior.h */,
+				718AC5A030B8AC9800D5D9DF /* AnimationTriggerBehavior.idl */,
+				718AC5A130B8AC9800D5D9DF /* AnimationTriggerOptions.h */,
+				718AC5A230B8AC9800D5D9DF /* AnimationTriggerOptions.idl */,
 				7156BC9F21CA350600534397 /* BasicEffectTiming.h */,
 				BC5EBA0E0E823E4700B25965 /* BlendingKeyframes.cpp */,
 				BC5EBA0F0E823E4700B25965 /* BlendingKeyframes.h */,
@@ -44634,6 +44651,9 @@
 				714C7C671FDAD2A900F2BEE1 /* AnimationPlaybackEventInit.h in Headers */,
 				71025ECD1F99F0CE004A250C /* AnimationTimeline.h in Headers */,
 				7181A16C244F0F40007D8A24 /* AnimationTimelinesController.h in Headers */,
+				718AC5A330B8ACA600D5D9DF /* AnimationTrigger.h in Headers */,
+				718AC5A430B8ACB100D5D9DF /* AnimationTriggerBehavior.h in Headers */,
+				718AC5A530B8ACBC00D5D9DF /* AnimationTriggerOptions.h in Headers */,
 				0F580FAF149800D400FB5BD8 /* AnimationUtilities.h in Headers */,
 				A4C123B1612DD272D1371C17 /* AnnexBUtilities.h in Headers */,
 				57152B5A21CB3E88000C37CA /* ApduCommand.h in Headers */,

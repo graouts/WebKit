@@ -29,6 +29,7 @@
 #include "AnimationEffect.h"
 #include "AnimationPlaybackEvent.h"
 #include "AnimationTimeline.h"
+#include "AnimationTrigger.h"
 #include "CSSAnimationEvent.h"
 #include "CSSSerializationContext.h"
 #include "CSSStyleProperties.h"
@@ -1583,6 +1584,8 @@ void WebAnimation::tick(ShouldDispatchProgressEvent shouldDispatchProgressEvent)
     if (m_timeline && m_timeline->isProgressBased())
         autoAlignStartTime();
 
+    maybeStartWithTrigger();
+
     maybeMarkAsReady();
 
     m_hasScheduledEventsDuringTick = false;
@@ -1601,6 +1604,16 @@ void WebAnimation::tick(ShouldDispatchProgressEvent shouldDispatchProgressEvent)
                 enqueueAnimationPlaybackEvent(eventNames().progressEvent, currentTime(), std::nullopt);
         }
     }
+}
+
+void WebAnimation::maybeStartWithTrigger()
+{
+    if (m_startTime || !m_trigger || !m_trigger->isInActivationRange())
+        return;
+
+    // FIXME: is that necessary?
+    setStartTime(timeline()->currentTime());
+    play();
 }
 
 void WebAnimation::maybeMarkAsReady()
@@ -2078,6 +2091,20 @@ void WebAnimation::progressBasedTimelineSourceDidChangeMetrics()
     ASSERT(m_timeline && m_timeline->isProgressBased());
     if (RefPtr effect = m_effect)
         effect->animationProgressBasedTimelineSourceDidChangeMetrics(range());
+}
+
+void WebAnimation::setTrigger(RefPtr<AnimationTrigger>&& trigger)
+{
+    if (m_trigger) {
+        if (RefPtr triggerTimeline = dynamicDowncast<TriggerTimeline>(m_trigger->timeline()))
+            triggerTimeline->setAnimation(nullptr);
+    }
+
+    m_trigger = WTF::move(trigger);
+    if (m_trigger) {
+        if (RefPtr triggerTimeline = dynamicDowncast<TriggerTimeline>(m_trigger->timeline()))
+            triggerTimeline->setAnimation(this);
+    }
 }
 
 } // namespace WebCore

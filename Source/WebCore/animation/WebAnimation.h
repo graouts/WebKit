@@ -51,6 +51,7 @@ namespace WebCore {
 class AnimationEffect;
 class AnimationEventBase;
 class AnimationTimeline;
+class AnimationTrigger;
 class Document;
 class KeyframeEffect;
 
@@ -158,6 +159,9 @@ public:
     void setRangeEnd(Style::SingleAnimationRangeEnd&&, Style::ZoomFactor);
     const ResolvableTimelineRange& range() LIFETIME_BOUND { return m_timelineRange; }
 
+    AnimationTrigger* trigger() const { return m_trigger.get(); }
+    void setTrigger(RefPtr<AnimationTrigger>&&);
+
     bool needsTick() const;
     enum class ShouldDispatchProgressEvent : bool { No, Yes };
     virtual void tick(ShouldDispatchProgressEvent);
@@ -230,6 +234,7 @@ private:
     void applyPendingPlaybackRate();
     void setEffectiveFrameRate(std::optional<FramesPerSecond>);
     void autoAlignStartTime();
+    void maybeStartWithTrigger();
     void maybeMarkAsReady();
     NODELETE bool isTimeValid(const std::optional<WebAnimationTime>&) const;
 
@@ -272,6 +277,7 @@ private:
     uint64_t m_globalPosition { 0 };
 
     ResolvableTimelineRange m_timelineRange;
+    RefPtr<AnimationTrigger> m_trigger;
 };
 
 } // namespace WebCore
